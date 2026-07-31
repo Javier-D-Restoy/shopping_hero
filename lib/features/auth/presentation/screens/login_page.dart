@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:shopping_hero/features/auth/presentation/screens/list_manager_page.dart';
+import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_manager_page.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -60,18 +60,21 @@ class LoginPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (formKey.currentState!.validate()) {
-                      context.read<ShoppingProvider>().continueWithProfile(
-                            username: usernameController.text,
-                            password: passwordController.text,
-                          );
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: ((context) => ListManager())
-                        )
+                      await context.read<ShoppingProvider>().continueWithProfile(
+                        username: usernameController.text,
+                        password: passwordController.text,
                       );
+
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ListManager(),
+                          ),
+                        );
+                      }
                     }
                   },
                   child: const Text('Continuar'),

@@ -1,0 +1,5 @@
+class AuthController {
+  // propiedades
+
+  // metodos
+}
