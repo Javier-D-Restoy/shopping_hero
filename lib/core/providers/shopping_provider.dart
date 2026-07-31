@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-class ShoppingProvider extends ChangeNotifier {
-  String _name = '';
+class ShoppingProvider extends ChangeNotifier {  
   String _username = '';
+  String _password = '';
   bool _isLoading = false;
   bool _isOffline = false;
   bool _isLoggedIn = false;
   String? _errorMessage;
-
-  String get name => _name;
+  
   String get username => _username;
+  String get password => _password;
   bool get isLoading => _isLoading;
   bool get isOffline => _isOffline;
   bool get isLoggedIn => _isLoggedIn;
@@ -30,9 +30,9 @@ class ShoppingProvider extends ChangeNotifier {
     notifyListeners();
 
     await Future.delayed(const Duration(milliseconds: 400));
-
-    _name = username.trim();
-    _username = password.trim();
+    
+    _username = username.trim();
+    _password = password.trim();
     _isOffline = false;
     _isLoggedIn = true;
     _isLoading = false;
@@ -55,7 +55,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     await Future.delayed(const Duration(milliseconds: 400));
 
-    _name = username.trim();
+    _password = username.trim();
     _username = password.trim();
     _isOffline = true;
     _isLoggedIn = true;
@@ -64,7 +64,7 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   void clearSession() {
-    _name = '';
+    _password = '';
     _username = '';
     _isOffline = false;
     _isLoggedIn = false;
