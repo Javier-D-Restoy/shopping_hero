@@ -10,6 +10,8 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final usernameController = TextEditingController();
     final passwordController = TextEditingController();
+    final focusNode = FocusNode();
+
     final formKey = GlobalKey<FormState>();
 
     return Scaffold(
@@ -37,6 +39,10 @@ class LoginPage extends StatelessWidget {
                       TextFormField(
                         controller: usernameController,
                         decoration: const InputDecoration(labelText: 'Username'),
+                        // focusNode: focusNode,
+                        onTapOutside: (event) {
+                          focusNode.unfocus();  // si toco fuera del formulario, remuevo el foco
+                        },
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Introduce tu username';
@@ -48,6 +54,10 @@ class LoginPage extends StatelessWidget {
                       TextFormField(
                         controller: passwordController,
                         decoration: const InputDecoration(labelText: 'Password'),
+                        // focusNode: focusNode,
+                        onTapOutside: (event) {
+                          focusNode.unfocus();  // si toco fuera del formulario, remuevo el foco
+                        },
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Introduce tu password';
