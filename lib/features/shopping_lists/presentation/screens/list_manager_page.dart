@@ -13,9 +13,10 @@ class ListManager extends StatefulWidget {
 class _ListManagerState extends State<ListManager> {
   @override
   Widget build(BuildContext context) {
-    final username = context.watch<ShoppingProvider>().username;
-
+    final shoppingProvider = context.watch<ShoppingProvider>();
+    final username = shoppingProvider.username;
     final colors = Theme.of(context).colorScheme;
+    final listNames = shoppingProvider.shoppingLists.keys.toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -25,27 +26,36 @@ class _ListManagerState extends State<ListManager> {
             Navigator.pop(context);
           },
         ),
-        title: Text('Listas de $username', style: TextStyle(fontSize: 20),
+        title: Text(
+          'Listas de $username',
+          style: const TextStyle(fontSize: 20),
         ),
         centerTitle: true,
-
       ),
       body: ListView(
+        padding: const EdgeInsets.all(12),
         children: [
           Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ListBubble(colors: colors),
-              Container(
-                height: 20,
-                width: 20,
-                color: Colors.red,
-              ),
-              Container(
-                height: 20,
-                width: 20,
-                color: Colors.blue,
+              ...listNames.map((listName) {
+                return ListBubble(
+                  colors: colors,
+                  listName: listName,
+                  productCount: shoppingProvider.productsForList(listName).length,
+                  onRename: (newName) {
+                    shoppingProvider.renameList(listName, newName);
+                  },
+                );
+              }),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  shoppingProvider.createList();
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Crear lista'),
               ),
             ],
           ),
