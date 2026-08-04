@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shopping_hero/features/auth/presentation/screens/register_page.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_manager_page.dart';
 
 class LoginPage extends StatelessWidget {
@@ -27,7 +28,7 @@ class LoginPage extends StatelessWidget {
                   width: 240,
                   height: 240,
                   child: Image.asset(
-                    'assets/images/Logo_ShoppingHero.png',
+                    'assets/images/logos/Logo_ShoppingHero.png',
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -78,7 +79,7 @@ class LoginPage extends StatelessWidget {
                       );
 
                       if (context.mounted) {
-                        Navigator.push(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                             builder: (context) => const ListManager(),
@@ -87,16 +88,32 @@ class LoginPage extends StatelessWidget {
                       }
                     }
                   },
-                  child: const Text('Continuar'),
+                  child: const Text('Login'),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 TextButton(
                   onPressed: () {
-                    if (formKey.currentState!.validate()) {
-                      context.read<ShoppingProvider>().continueOffline(
-                            username: usernameController.text,
-                            password: passwordController.text,
-                          );                      
+                    if (context.mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => RegisterPage()),
+                      );
+                    }
+                  },
+                  child: const Text('Aún no tienes cuenta, Pisha?', style: TextStyle(fontSize: 13),),
+                ),
+                const SizedBox(height: 30),
+                TextButton(
+                  onPressed: () async {
+                    await context.read<ShoppingProvider>().continueOffline(
+                      username: 'Shopping Hero',
+                      password: '',
+                    );
+                    if (context.mounted) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ListManager()),
+                      );
                     }
                   },
                   child: const Text('Modo Offline'),
