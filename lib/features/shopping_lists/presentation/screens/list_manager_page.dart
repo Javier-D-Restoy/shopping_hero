@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
+import 'package:shopping_hero/features/auth/presentation/screens/login_page.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/widgets/list_bubble.dart';
 
 class ListManager extends StatefulWidget {
@@ -23,7 +24,15 @@ class _ListManagerState extends State<ListManager> {
         backgroundColor: Colors.lightBlueAccent,
         leading: BackButton(
           onPressed: () {
-            Navigator.pop(context);
+            if (context.mounted) {
+              context.read<ShoppingProvider>().clearSession();
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LoginPage(),
+                ),
+              );
+            }
           },
         ),
         title: Text(
@@ -32,35 +41,42 @@ class _ListManagerState extends State<ListManager> {
         ),
         centerTitle: true,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
+      body: Stack(
         children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              ...listNames.map((listName) {
-                return ListBubble(
-                  colors: colors,
-                  listName: listName,
-                  productCount: shoppingProvider.productsForList(listName).length,
-                  onRename: (newName) {
-                    shoppingProvider.renameList(listName, newName);
-                  },
-                );
-              }),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () {
-                  shoppingProvider.createList();
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Crear lista'),
-              ),
-            ],
+          Positioned.fill(child: Image.asset('assets/images/background/Background_Image_1.jpg', fit: BoxFit.cover,)),
+          SafeArea(
+            child: ListView(
+              padding: const EdgeInsets.all(12),
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    ...listNames.map((listName) {
+                      return ListBubble(
+                        colors: colors,
+                        listName: listName,
+                        productCount: shoppingProvider.productsForList(listName).length,
+                        onRename: (newName) {
+                          shoppingProvider.renameList(listName, newName);
+                        },
+                      );
+                    }),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        shoppingProvider.createList();
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Crear lista'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
-      ),
+      )
     );
   }
 }

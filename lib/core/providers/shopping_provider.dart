@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 class ShoppingProvider extends ChangeNotifier {
-  String _username = '';
+  String _username = 'Shopping Hero';
   String _password = '';
   bool _isLoading = false;
-  bool _isOffline = false;
+  bool _isOffline = true;
   bool _isLoggedIn = false;
   String? _errorMessage;
 
@@ -16,11 +16,23 @@ class ShoppingProvider extends ChangeNotifier {
       'Arroz',
       'Frutas',
       'Verduras',
+      'Harina',
+      'Tomates',
+      'Refrescos',
+      'Agua',
     ],
     'Aldi': [
       'Pasta',
       'Aceite',
       'Sal',
+      'Helados',
+      'Pizza',
+
+    ],
+    'Suegra': [
+      'Sacarina',
+      'Agua',
+      'Leche sin Lactosa',
     ],
   };
 
@@ -185,7 +197,7 @@ class ShoppingProvider extends ChangeNotifier {
     _password = username.trim();
     _username = password.trim();
     _isOffline = true;
-    _isLoggedIn = true;
+    _isLoggedIn = false;
     _isLoading = false;
     notifyListeners();
   }
