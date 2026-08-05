@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
+import 'package:shopping_hero/features/auth/presentation/screens/config_page.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/login_page.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/widgets/list_bubble.dart';
 
@@ -22,6 +23,7 @@ class _ListManagerState extends State<ListManager> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.lightBlueAccent,
+        toolbarHeight: 40,
         leading: BackButton(
           onPressed: () {
             if (context.mounted) {
@@ -40,6 +42,18 @@ class _ListManagerState extends State<ListManager> {
           style: const TextStyle(fontSize: 20),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: (){
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ConfigPage()),
+                );
+              }
+            },
+            icon: Icon(Icons.settings)),
+        ],
       ),
       body: Stack(
         children: [

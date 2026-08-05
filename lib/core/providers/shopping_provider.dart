@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 
 class ShoppingProvider extends ChangeNotifier {
@@ -29,7 +31,7 @@ class ShoppingProvider extends ChangeNotifier {
       'Pizza',
 
     ],
-    'Suegra': [
+    'Abuela': [
       'Sacarina',
       'Agua',
       'Leche sin Lactosa',
@@ -95,12 +97,31 @@ class ShoppingProvider extends ChangeNotifier {
       return;
     }
 
-    final products = _shoppingLists.remove(oldName);
+    final products = _shoppingLists[oldName];
     if (products == null) {
       return;
     }
 
-    _shoppingLists[cleanedName] = products;
+    final reorderedLists = LinkedHashMap<String, List<String>>();
+    var inserted = false;
+
+    for (final entry in _shoppingLists.entries) {
+      if (entry.key == oldName) {
+        reorderedLists[cleanedName] = products;
+        inserted = true;
+        continue;
+      }
+
+      reorderedLists[entry.key] = entry.value;
+    }
+
+    if (!inserted) {
+      reorderedLists[cleanedName] = products;
+    }
+
+    _shoppingLists
+      ..clear()
+      ..addAll(reorderedLists);
 
     if (_selectedListName == oldName) {
       _selectedListName = cleanedName;
@@ -194,8 +215,8 @@ class ShoppingProvider extends ChangeNotifier {
 
     await Future.delayed(const Duration(milliseconds: 400));
 
-    _password = username.trim();
     _username = password.trim();
+    _password = username.trim();
     _isOffline = true;
     _isLoggedIn = false;
     _isLoading = false;
@@ -203,8 +224,8 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   void clearSession() {
+    _username = 'Shopping Hero';
     _password = '';
-    _username = '';
     _isOffline = false;
     _isLoggedIn = false;
     _errorMessage = null;
