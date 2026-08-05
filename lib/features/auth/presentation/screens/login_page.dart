@@ -16,111 +16,127 @@ class LoginPage extends StatelessWidget {
     final formKey = GlobalKey<FormState>();
 
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SizedBox(
-                  width: 240,
-                  height: 240,
-                  child: Image.asset(
-                    'assets/images/logos/Logo_ShoppingHero.png',
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Form(
-                  key: formKey,
-                  child: Column(
-                    children: [
-                      TextFormField(
-                        controller: usernameController,
-                        decoration: const InputDecoration(labelText: 'Username'),
-                        // focusNode: focusNode,
-                        onTapOutside: (event) {
-                          focusNode.unfocus();  // si toco fuera del formulario, remuevo el foco
-                        },
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Introduce tu username';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: passwordController,
-                        decoration: const InputDecoration(labelText: 'Password'),
-                        // focusNode: focusNode,
-                        onTapOutside: (event) {
-                          focusNode.unfocus();  // si toco fuera del formulario, remuevo el foco
-                        },
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Introduce tu password';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (formKey.currentState!.validate()) {
-                      await context.read<ShoppingProvider>().continueWithProfile(
-                        username: usernameController.text,
-                        password: passwordController.text,
-                      );
-
-                      if (context.mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ListManager(),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 240,
+                          height: 240,
+                          child: Image.asset(
+                            'assets/images/logos/Logo_ShoppingHero.png',
+                            fit: BoxFit.contain,
                           ),
-                        );
-                      }
-                    }
-                  },
-                  child: const Text('Login'),
+                        ),
+                        const SizedBox(height: 24),
+                        Form(
+                          key: formKey,
+                          child: SizedBox(
+                            width: 250,
+                            child: Column(
+                              children: [
+                                TextFormField(
+                                  controller: usernameController,
+                                  decoration: const InputDecoration(labelText: 'Username'),
+                                  // focusNode: focusNode,
+                                  onTapOutside: (event) {
+                                    focusNode.unfocus();
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Introduce tu username';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                TextFormField(
+                                  controller: passwordController,
+                                  decoration: const InputDecoration(labelText: 'Password'),
+                                  // focusNode: focusNode,
+                                  onTapOutside: (event) {
+                                    focusNode.unfocus();
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Introduce tu password';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (formKey.currentState!.validate()) {
+                              await context.read<ShoppingProvider>().continueWithProfile(
+                                username: usernameController.text,
+                                password: passwordController.text,
+                              );
+
+                              if (context.mounted) {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ListManager(),
+                                  ),
+                                );
+                              }
+                            }
+                          },
+                          child: const Text('Login'),
+                        ),
+                        const SizedBox(height: 4),
+                        TextButton(
+                          onPressed: () {
+                            if (context.mounted) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => RegisterPage()),
+                              );
+                            }
+                          },
+                          child: const Text(
+                            'Aún no tienes cuenta, Pisha?',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        TextButton(
+                          onPressed: () async {
+                            await context.read<ShoppingProvider>().continueOffline(
+                              username: 'Shopping Hero',
+                              password: '',
+                            );
+                            if (context.mounted) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => const ListManager()),
+                              );
+                            }
+                          },
+                          child: const Text('Modo Offline'),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 4),
-                TextButton(
-                  onPressed: () {
-                    if (context.mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => RegisterPage()),
-                      );
-                    }
-                  },
-                  child: const Text('Aún no tienes cuenta, Pisha?', style: TextStyle(fontSize: 13),),
-                ),
-                const SizedBox(height: 30),
-                TextButton(
-                  onPressed: () async {
-                    await context.read<ShoppingProvider>().continueOffline(
-                      username: 'Shopping Hero',
-                      password: '',
-                    );
-                    if (context.mounted) {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ListManager()),
-                      );
-                    }
-                  },
-                  child: const Text('Modo Offline'),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         ),
       ),
     );

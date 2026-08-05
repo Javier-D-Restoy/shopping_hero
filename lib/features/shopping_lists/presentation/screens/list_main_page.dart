@@ -40,13 +40,20 @@ class _ListMainPageState extends State<ListMainPage> {
         ),
         centerTitle: true,
       ),
-      body: IndexedStack(
-        index: _selectedIndex,
+      body: Stack(
         children: [
-          _buildListContent(products, shoppingProvider),
-          const ProfilePage(),
-          const SharingPage(),
-        ],
+          if (_selectedIndex == 0) Positioned.fill(child: Image.asset('assets/images/background/Background_Image_2.png', fit: BoxFit.cover,)),
+          if (_selectedIndex == 1) Positioned.fill(child: Image.asset('assets/images/background/Background_Profile_Image_1.png', fit: BoxFit.cover,)),
+          if (_selectedIndex == 2) Positioned.fill(child: Image.asset('assets/images/background/Background_Image_4.png', fit: BoxFit.cover,)),
+          IndexedStack(
+            index: _selectedIndex,
+            children: [
+              _buildListContent(products, shoppingProvider),
+              const ProfilePage(),
+              const SharingPage(),
+            ],
+          ),
+        ]
       ),
       bottomNavigationBar: _selectedIndex == 0
           ? SafeArea(
