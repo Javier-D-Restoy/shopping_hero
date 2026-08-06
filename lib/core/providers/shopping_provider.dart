@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class ShoppingProvider extends ChangeNotifier {
-  static const String _boxName = 'shopping_lists';
+  static const String _boxName =
+      'shopping_lists'; // Hive CE. Box para Shopping Provider
 
   Box? _box;
   String _username = 'Shopping Hero';
@@ -27,19 +28,8 @@ class ShoppingProvider extends ChangeNotifier {
       'Refrescos',
       'Agua',
     ],
-    'Aldi': [
-      'Pasta',
-      'Aceite',
-      'Sal',
-      'Helados',
-      'Pizza',
-
-    ],
-    'Abuela': [
-      'Sacarina',
-      'Agua',
-      'Leche sin Lactosa',
-    ],
+    'Aldi': ['Pasta', 'Aceite', 'Sal', 'Helados', 'Pizza'],
+    'Abuela': ['Sacarina', 'Agua', 'Leche sin Lactosa'],
   };
 
   String _selectedListName = 'Lista 1';
@@ -79,7 +69,8 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     final storedSelectedList = _box!.get('selected_list_name');
-    if (storedSelectedList is String && _shoppingLists.containsKey(storedSelectedList)) {
+    if (storedSelectedList is String &&
+        _shoppingLists.containsKey(storedSelectedList)) {
       _selectedListName = storedSelectedList;
     } else if (_shoppingLists.isNotEmpty) {
       _selectedListName = _shoppingLists.keys.first;
@@ -99,7 +90,10 @@ class ShoppingProvider extends ChangeNotifier {
 
     await _ensureInitialized();
     if (_box != null) {
-      await _box!.put('shopping_lists', Map<String, List<String>>.from(_shoppingLists));
+      await _box!.put(
+        'shopping_lists',
+        Map<String, List<String>>.from(_shoppingLists),
+      );
       await _box!.put('selected_list_name', _selectedListName);
     }
   }
