@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_manager_page.dart';
+import 'package:provider/provider.dart';
+import 'package:shopping_hero/core/providers/theme_provider.dart';
 
 class ConfigPage extends StatefulWidget {
   const ConfigPage({super.key});
@@ -10,14 +11,14 @@ class ConfigPage extends StatefulWidget {
 
 class _ConfigPageState extends State<ConfigPage> {
 
-  bool isFirstConfigActive = false;
-  bool isSecondConfigActive = false;
-  bool isThirdConfigActive = false;
-
   @override
   Widget build(BuildContext context) {
+
+    final themeProvider = context.watch<ThemeProvider>();
+
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 40,
         title: Text('Configuration'),
         leading: BackButton(
           onPressed: () {
@@ -36,58 +37,28 @@ class _ConfigPageState extends State<ConfigPage> {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    SizedBox(height: 245,),
                     Row(
                       children: [
-                        SizedBox(width: 50,),
+                        SizedBox(width: 90,),
                         Container(
-                          width: 120,
-                          height: 40,
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                          child: Text('Modo Dia/Noche',textAlign: TextAlign.center,),
+                          width: 130,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: themeProvider.isDarkMode? Colors.black : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border(),
+                            boxShadow: [BoxShadow(color: Colors.grey, spreadRadius: 1.5)]),
+                          child: Center(child: Text( themeProvider.isDarkMode? 'Tema Oscuro' : 'Tema Claro',style: TextStyle(fontSize: 15),)),
                         ),
                         Switch(
-                          value: isFirstConfigActive,
+                          value: themeProvider.isDarkMode,
                           onChanged: (value) {
-                            setState(() {
-                              isFirstConfigActive = value;
-                            });
+                            themeProvider.setDarkMode(value);
                           },
                         ),
                       ],
-                    ),
-                    SizedBox(height: 290,),
-                    Container(
-                      width: 200,
-                      height: 50,
-                      decoration: BoxDecoration(color: Colors.white),
-                      child: Row(
-                        children: [
-                          Text('Modo Claro/Oscuro')
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 60,),
-                    Container(
-                      width: 200,
-                      height: 50,
-                      decoration: BoxDecoration(color: Colors.white),
-                      child: Row(
-                        children: [
-                          Text('Modo Claro/Oscuro')
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 60,),
-                    Container(
-                      width: 200,
-                      height: 50,
-                      decoration: BoxDecoration(color: Colors.white),
-                      child: Row(
-                        children: [
-                          Text('Modo Claro/Oscuro')
-                        ],
-                      ),
-                    ),
+                    )
                   ],
                 )
               ],

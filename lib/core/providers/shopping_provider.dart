@@ -1,8 +1,12 @@
-import 'dart:collection';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class ShoppingProvider extends ChangeNotifier {
+  static const String _boxName = 'shopping_lists';
+
+  Box? _box;
   String _username = 'Shopping Hero';
   String _password = '';
   bool _isLoading = false;
@@ -48,6 +52,58 @@ class ShoppingProvider extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String get selectedListName => _selectedListName;
 
+  Future<void> init() async {
+    try {
+      if (!Hive.isBoxOpen(_boxName)) {
+        _box = await Hive.openBox(_boxName);
+      }
+    } catch (_) {
+      _box = null;
+    }
+
+    final storedLists = _box!.get('shopping_lists');
+    if (storedLists is Map) {
+      final restoredLists = <String, List<String>>{};
+      for (final entry in storedLists.entries) {
+        if (entry.key is String && entry.value is List) {
+          restoredLists[entry.key as String] = (entry.value as List)
+              .map((item) => item.toString())
+              .toList();
+        }
+      }
+      if (restoredLists.isNotEmpty) {
+        _shoppingLists
+          ..clear()
+          ..addAll(restoredLists);
+      }
+    }
+
+    final storedSelectedList = _box!.get('selected_list_name');
+    if (storedSelectedList is String && _shoppingLists.containsKey(storedSelectedList)) {
+      _selectedListName = storedSelectedList;
+    } else if (_shoppingLists.isNotEmpty) {
+      _selectedListName = _shoppingLists.keys.first;
+    }
+  }
+
+  Future<void> _ensureInitialized() async {
+    if (_box == null) {
+      await init();
+    }
+  }
+
+  Future<void> saveToStorage() async {
+    if (_box == null) {
+      return;
+    }
+
+    await _ensureInitialized();
+    if (_box != null) {
+      await _box!.put('shopping_lists', Map<String, List<String>>.from(_shoppingLists));
+      await _box!.put('selected_list_name', _selectedListName);
+    }
+  }
+
   Map<String, List<String>> get shoppingLists =>
       Map.unmodifiable(_shoppingLists);
 
@@ -65,6 +121,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _selectedListName = listName;
     notifyListeners();
+    unawaited(saveToStorage());
   }
 
   void createList({String? name}) {
@@ -81,6 +138,7 @@ class ShoppingProvider extends ChangeNotifier {
     _shoppingLists[uniqueName] = <String>[];
     _selectedListName = uniqueName;
     notifyListeners();
+    unawaited(saveToStorage());
   }
 
   void renameList(String oldName, String newName) {
@@ -102,7 +160,7 @@ class ShoppingProvider extends ChangeNotifier {
       return;
     }
 
-    final reorderedLists = LinkedHashMap<String, List<String>>();
+    final reorderedLists = <String, List<String>>{};
     var inserted = false;
 
     for (final entry in _shoppingLists.entries) {
@@ -128,6 +186,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     notifyListeners();
+    unawaited(saveToStorage());
   }
 
   String _getUniqueListName(String baseName) {
@@ -155,6 +214,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _shoppingLists[listName]!.add(cleanedName);
     notifyListeners();
+    unawaited(saveToStorage());
   }
 
   void addProductToSelectedList(String productName) {
@@ -169,10 +229,29 @@ class ShoppingProvider extends ChangeNotifier {
 
     _shoppingLists[listName]!.remove(cleanedName);
     notifyListeners();
+    unawaited(saveToStorage());
   }
 
   void removeProductFromSelectedList(String productName) {
     removeProductFromList(_selectedListName, productName);
+  }
+
+  void removeList(String listName) {
+    final cleanedName = listName.trim();
+    if (cleanedName.isEmpty || !_shoppingLists.containsKey(cleanedName)) {
+      return;
+    }
+
+    _shoppingLists.remove(cleanedName);
+
+    if (_selectedListName == cleanedName) {
+      _selectedListName = _shoppingLists.keys.isNotEmpty
+          ? _shoppingLists.keys.first
+          : 'Lista 1';
+    }
+
+    notifyListeners();
+    unawaited(saveToStorage());
   }
 
   Future<void> continueWithProfile({
@@ -197,6 +276,7 @@ class ShoppingProvider extends ChangeNotifier {
     _isLoggedIn = true;
     _isLoading = false;
     notifyListeners();
+    unawaited(saveToStorage());
   }
 
   Future<void> continueOffline({
@@ -221,6 +301,7 @@ class ShoppingProvider extends ChangeNotifier {
     _isLoggedIn = false;
     _isLoading = false;
     notifyListeners();
+    unawaited(saveToStorage());
   }
 
   void clearSession() {
@@ -230,5 +311,12 @@ class ShoppingProvider extends ChangeNotifier {
     _isLoggedIn = false;
     _errorMessage = null;
     notifyListeners();
+    unawaited(saveToStorage());
+  }
+
+  void changeUsername(String newName) {
+    _username = newName;
+    notifyListeners();
+    unawaited(saveToStorage());
   }
 }

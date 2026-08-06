@@ -13,4 +13,14 @@ void main() {
     final after = provider.shoppingLists.keys.toList();
     expect(after, ['Mercadona', 'Aldi Renombrada', 'Abuela']);
   });
+
+  test('deleting a list removes it and updates the selected list', () {
+    final provider = ShoppingProvider();
+
+    provider.selectList('Aldi');
+    provider.removeList('Aldi');
+
+    expect(provider.shoppingLists.keys.toList(), ['Mercadona', 'Abuela']);
+    expect(provider.selectedListName, 'Mercadona');
+  });
 }

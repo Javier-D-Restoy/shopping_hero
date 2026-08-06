@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
+import 'package:shopping_hero/core/providers/theme_provider.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/profile_page.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/sharing_page.dart';
 import 'package:shopping_hero/features/products/presentation/widgets/product_bubble.dart';
@@ -27,10 +28,12 @@ class _ListMainPageState extends State<ListMainPage> {
   @override
   Widget build(BuildContext context) {
     final shoppingProvider = context.watch<ShoppingProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
     final products = shoppingProvider.productsForList(widget.listName);
 
     return Scaffold(
       appBar: AppBar(
+        toolbarHeight: 40,
         title: Text(
           _selectedIndex == 0
               ? widget.listName
@@ -63,7 +66,7 @@ class _ListMainPageState extends State<ListMainPage> {
                 children: [
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.08),

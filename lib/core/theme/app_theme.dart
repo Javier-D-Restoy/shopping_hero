@@ -15,9 +15,11 @@ const List<Color> _colorThemes = [
 
 class AppTheme {
   final int selectedColor;
+  final bool isDarkMode;
 
   AppTheme({
-    this.selectedColor = 0  // Añadimos los assert para controlar el rango de inputs.
+    this.selectedColor = 0,  // Añadimos los assert para controlar el rango de inputs.
+    this.isDarkMode = false,
   }): assert(selectedColor >= 0 && selectedColor <= _colorThemes.length - 1, 'Colors must be between 0 and ${_colorThemes.length}');
 
   // Crearemos un método que retorne algo que de tipo ThemeData, porque eso es lo que espera
@@ -26,7 +28,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true, // Ahora viene por defecto en true.
       colorSchemeSeed: _colorThemes[selectedColor],
-      // brightness: Brightness.dark // modo oscuro o luminoso
+      brightness: isDarkMode ? Brightness.dark : Brightness.light,
     );
   } // Con esto ya puedo llamar a este tema para usarlo en nuestra aplicación incluso en tiempo de ejecución.
 }

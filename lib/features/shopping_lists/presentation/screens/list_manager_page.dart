@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
+import 'package:shopping_hero/core/providers/theme_provider.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/config_page.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/login_page.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/widgets/list_bubble.dart';
@@ -16,13 +17,13 @@ class _ListManagerState extends State<ListManager> {
   @override
   Widget build(BuildContext context) {
     final shoppingProvider = context.watch<ShoppingProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
     final username = shoppingProvider.username;
     final colors = Theme.of(context).colorScheme;
     final listNames = shoppingProvider.shoppingLists.keys.toList();
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.lightBlueAccent,
         toolbarHeight: 40,
         leading: BackButton(
           onPressed: () {
@@ -39,7 +40,7 @@ class _ListManagerState extends State<ListManager> {
         ),
         title: Text(
           'Listas de $username',
-          style: const TextStyle(fontSize: 20),
+          style: const TextStyle(fontSize: 18),
         ),
         centerTitle: true,
         actions: [
@@ -57,7 +58,10 @@ class _ListManagerState extends State<ListManager> {
       ),
       body: Stack(
         children: [
-          Positioned.fill(child: Image.asset('assets/images/background/Background_Image_1.jpg', fit: BoxFit.cover,)),
+          Positioned.fill(child: Image.asset(
+            themeProvider.isDarkMode ? 'assets/images/background/Background_Dark_Image_1.jpg'
+            : 'assets/images/background/Background_Image_1.jpg',
+            fit: BoxFit.cover,)),
           SafeArea(
             child: ListView(
               padding: const EdgeInsets.all(12),

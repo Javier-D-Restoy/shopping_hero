@@ -67,6 +67,34 @@ class _ListBubbleState extends State<ListBubble> {
     );
   }
 
+  Future<void> _showDeleteConfirmationDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Eliminar lista'),
+          content: Text(
+            '¿Estás seguro de que quieres eliminar la lista "${widget.listName}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Sí'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<ShoppingProvider>().removeList(widget.listName);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final shoppingProvider = context.read<ShoppingProvider>();
@@ -182,9 +210,20 @@ class _ListBubbleState extends State<ListBubble> {
             Positioned(
               top: 4,
               right: 4,
-              child: IconButton(
-                onPressed: _showRenameDialog,
-                icon: const Icon(Icons.edit, color: Colors.white),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    onPressed: _showDeleteConfirmationDialog,
+                    icon: const Icon(Icons.delete_outline, color: Colors.white),
+                    tooltip: 'Eliminar lista',
+                  ),
+                  IconButton(
+                    onPressed: _showRenameDialog,
+                    icon: const Icon(Icons.edit, color: Colors.white),
+                    tooltip: 'Renombrar lista',
+                  ),
+                ],
               ),
             ),
           ],
