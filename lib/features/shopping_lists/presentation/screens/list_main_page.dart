@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
+import 'package:shopping_hero/features/auth/presentation/screens/config_page.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/profile_page.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/sharing_page.dart';
 import 'package:shopping_hero/features/products/presentation/widgets/product_bubble.dart';
@@ -29,7 +30,7 @@ class _ListMainPageState extends State<ListMainPage> {
   Widget build(BuildContext context) {
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
-    final products = shoppingProvider.productsForList(widget.listName);
+    final activeProducts = shoppingProvider.productsForList(widget.listName);
 
     return Scaffold(
       appBar: AppBar(
@@ -38,10 +39,22 @@ class _ListMainPageState extends State<ListMainPage> {
           _selectedIndex == 0
               ? widget.listName
               : _selectedIndex == 1
-                  ? 'Profile'
+                  ? 'Perfil'
                   : 'Compartido',
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            onPressed: (){
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => ConfigPage()),
+                );
+              }
+            },
+            icon: Icon(Icons.settings)),
+        ],
       ),
       body: Stack(
         children: [
@@ -51,7 +64,7 @@ class _ListMainPageState extends State<ListMainPage> {
           IndexedStack(
             index: _selectedIndex,
             children: [
-              _buildListContent(products, shoppingProvider),
+              _buildListContent(activeProducts, shoppingProvider, themeProvider),
               const ProfilePage(),
               const SharingPage(),
             ],
@@ -125,6 +138,7 @@ class _ListMainPageState extends State<ListMainPage> {
   Widget _buildListContent(
     List<String> products,
     ShoppingProvider shoppingProvider,
+    ThemeProvider themeProvider,
   ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -141,6 +155,45 @@ class _ListMainPageState extends State<ListMainPage> {
             itemBuilder: (context, index) {
               return ProductBubble(
                 label: products[index],
+                productAdd: ProductAdd.active,
+                onTap: () => _removeProduct(shoppingProvider, products[index]),
+              );
+            },
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 30, bottom: 10),  //symmetric(vertical: 15.0, horizontal: 5.0),
+              child: Container(width: 100, height: 35,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border(),
+                  boxShadow: [BoxShadow(color: themeProvider.isDarkMode ? Colors.blueGrey : Colors.black, spreadRadius: 1.5)],
+                  color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+                ),
+                child: Center(
+                  child: Text('Productos Frecuentes',
+                    style: TextStyle(
+                      fontSize: 20,
+                      // fontWeight: FontWeight(600),
+                      letterSpacing: 1.0,
+                      wordSpacing: 5.0,
+                    ),),
+                ),
+              ),
+            ),
+          ),
+          SliverGrid.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1,
+            ),
+            itemCount: products.length,
+            itemBuilder: (context, index) {
+              return ProductBubble(
+                label: products[index],
+                productAdd: ProductAdd.active,
                 onTap: () => _removeProduct(shoppingProvider, products[index]),
               );
             },

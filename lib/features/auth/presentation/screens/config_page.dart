@@ -48,7 +48,8 @@ class _ConfigPageState extends State<ConfigPage> {
                             color: themeProvider.isDarkMode? Colors.black : Colors.white,
                             borderRadius: BorderRadius.circular(20),
                             border: Border(),
-                            boxShadow: [BoxShadow(color: Colors.grey, spreadRadius: 1.5)]),
+                            boxShadow: [BoxShadow(color: Colors.grey, spreadRadius: 1.5)]
+                          ),
                           child: Center(child: Text( themeProvider.isDarkMode? 'Tema Oscuro' : 'Tema Claro',style: TextStyle(fontSize: 15),)),
                         ),
                         Switch(

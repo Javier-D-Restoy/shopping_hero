@@ -32,6 +32,17 @@ class ShoppingProvider extends ChangeNotifier {
     'Abuela': ['Sacarina', 'Agua', 'Leche sin Lactosa'],
   };
 
+  final Map<String, Map<String, List<String>>> _shoppingLists2 = {
+    'Mercadona': {
+      'active' : ['Pan', 'Leche', 'Huevos', 'Arroz', 'Frutas', 'Verduras', 'Harina', 'Tomates', 'Refrescos', 'Agua',],
+      'frequent' : ['Patatas',],
+    },
+    'Aldi' : {
+      'active' : ['Pasta', 'Aceite', 'Sal', 'Helados', 'Pizza'],
+      'frequent' : ['Carne'],
+    }
+  };
+
   String _selectedListName = 'Lista 1';
 
   String get username => _username;
@@ -41,6 +52,8 @@ class ShoppingProvider extends ChangeNotifier {
   bool get isLoggedIn => _isLoggedIn;
   String? get errorMessage => _errorMessage;
   String get selectedListName => _selectedListName;
+
+  // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE CE ][ ---------------------------------------------- //
 
   Future<void> init() async {
     try {
@@ -98,8 +111,20 @@ class ShoppingProvider extends ChangeNotifier {
     }
   }
 
+  // ---------------------------------------------- ][ GESTION DE LISTAS Y PRODUCTOS ][ ---------------------------------------------- //
+
   Map<String, List<String>> get shoppingLists =>
       Map.unmodifiable(_shoppingLists);
+  
+  Map<String, Map<String, List<String>>> get shoppingLists2 =>  // CONVERSION a Map de String + (Map de String + List de String)
+      Map.unmodifiable(_shoppingLists2); 
+
+  Map<String, List<String>>? getListAdd(String listName) {
+    final listMap = _shoppingLists2[listName];
+    if (listMap == null) return null;
+    
+    return Map.unmodifiable(listMap);
+  }
 
   List<String> get selectedListProducts =>
       List.unmodifiable(_shoppingLists[_selectedListName] ?? const []);
@@ -107,6 +132,13 @@ class ShoppingProvider extends ChangeNotifier {
   List<String> productsForList(String listName) {
     return List.unmodifiable(_shoppingLists[listName] ?? const []);
   }
+
+  List<String> activeProductsForList(String listName) =>
+      List.unmodifiable(getListAdd(listName)?['active'] ?? const []); // OBTENER PRODUCTOS ACTIVOS DE UNA LISTA
+
+  List<String> frequentProductsForList(String listName) =>
+      List.unmodifiable(getListAdd(listName)?['frequent'] ?? const []); // OBTENER PRODUCTOS FREQUENTES DE UNA LISTA
+      
 
   void selectList(String listName) {
     if (!_shoppingLists.containsKey(listName)) {
@@ -204,6 +236,10 @@ class ShoppingProvider extends ChangeNotifier {
 
     if (!_shoppingLists.containsKey(listName)) {
       _shoppingLists[listName] = <String>[];
+    }
+
+    if (_shoppingLists[listName]!.contains(cleanedName)) {
+      return;
     }
 
     _shoppingLists[listName]!.add(cleanedName);
