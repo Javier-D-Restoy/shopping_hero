@@ -74,7 +74,7 @@ class _ListManagerState extends State<ListManager> {
                       return ListBubble(
                         colors: colors,
                         listName: listName,
-                        productCount: shoppingProvider.productsForList(listName).length,
+                        productCount: shoppingProvider.activeProductsForList(listName).length, //shoppingProvider.productsForList(listName).length,
                         onRename: (newName) {
                           shoppingProvider.renameList(listName, newName);
                         },

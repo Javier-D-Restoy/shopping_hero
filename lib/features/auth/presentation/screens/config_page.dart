@@ -19,7 +19,8 @@ class _ConfigPageState extends State<ConfigPage> {
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 40,
-        title: Text('Configuration'),
+        title: Text('Configuración'),
+        centerTitle: true,
         leading: BackButton(
           onPressed: () {
             if (context.mounted) {

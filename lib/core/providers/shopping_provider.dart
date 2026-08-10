@@ -39,7 +39,7 @@ class ShoppingProvider extends ChangeNotifier {
     },
     'Aldi' : {
       'active' : ['Pasta', 'Aceite', 'Sal', 'Helados', 'Pizza'],
-      'frequent' : ['Carne'],
+      'frequent' : [],
     }
   };
 
@@ -113,13 +113,15 @@ class ShoppingProvider extends ChangeNotifier {
 
   // ---------------------------------------------- ][ GESTION DE LISTAS Y PRODUCTOS ][ ---------------------------------------------- //
 
+  // ------------------------------------------------- ][ Gettes ][  ------------------------------------------------- //
+
   Map<String, List<String>> get shoppingLists =>
       Map.unmodifiable(_shoppingLists);
   
   Map<String, Map<String, List<String>>> get shoppingLists2 =>  // CONVERSION a Map de String + (Map de String + List de String)
       Map.unmodifiable(_shoppingLists2); 
 
-  Map<String, List<String>>? getListAdd(String listName) {
+  Map<String, List<String>>? getListAdd(String listName) {  // OBTENER PRODUCTOS (ACTIVOS + FRECUENTES) DE UNA LISTA
     final listMap = _shoppingLists2[listName];
     if (listMap == null) return null;
     
@@ -134,11 +136,15 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   List<String> activeProductsForList(String listName) =>
-      List.unmodifiable(getListAdd(listName)?['active'] ?? const []); // OBTENER PRODUCTOS ACTIVOS DE UNA LISTA
+      // List.unmodifiable(getListAdd(listName)?['active'] ?? const []); // OBTENER PRODUCTOS ACTIVOS DE UNA LISTA
+      getListAdd(listName)?['active'] ?? const [];
 
   List<String> frequentProductsForList(String listName) =>
-      List.unmodifiable(getListAdd(listName)?['frequent'] ?? const []); // OBTENER PRODUCTOS FREQUENTES DE UNA LISTA
-      
+      // List.unmodifiable(getListAdd(listName)?['frequent'] ?? const []); // OBTENER PRODUCTOS FREQUENTES DE UNA LISTA
+      getListAdd(listName)?['frequent'] ?? const [];
+
+
+  // -------------------------------------------- ][ Seleccion/gestion de Listas ][ -------------------------------------------- //      
 
   void selectList(String listName) {
     if (!_shoppingLists.containsKey(listName)) {
@@ -162,6 +168,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     final String uniqueName = _getUniqueListName(finalName);
     _shoppingLists[uniqueName] = <String>[];
+    _shoppingLists2[uniqueName] = <String, List<String>>{}; // Lista Activos + Frecuentes Actualizada.
     _selectedListName = uniqueName;
     notifyListeners();
     unawaited(saveToStorage());
@@ -182,11 +189,17 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     final products = _shoppingLists[oldName];
+    final products2 =  getListAdd(oldName);
     if (products == null) {
       return;
     }
 
+    if (products2 == null) { // <-- Lista Activos + Frecuentes.
+      return;
+    }
+
     final reorderedLists = <String, List<String>>{};
+    final reorderedLists2 = <String, Map<String, List<String>>>{};  // Lista Activos + Frequentes Actualizada
     var inserted = false;
 
     for (final entry in _shoppingLists.entries) {
@@ -198,10 +211,23 @@ class ShoppingProvider extends ChangeNotifier {
 
       reorderedLists[entry.key] = entry.value;
     }
+    // for (final entry in _shoppingLists2.entries) { // Lista Activos + Frequentes Actualizada
+    //   if (entry.key == oldName) {
+    //     reorderedLists2[cleanedName] = products2!;
+    //     inserted = true;
+    //     continue;
+    //   }
+
+    //   reorderedLists2[entry.key] = entry.value;
+    // }
 
     if (!inserted) {
       reorderedLists[cleanedName] = products;
     }
+
+    // if (!inserted) {
+    //   reorderedLists2[cleanedName] = products2!;
+    // }
 
     _shoppingLists
       ..clear()
@@ -210,6 +236,14 @@ class ShoppingProvider extends ChangeNotifier {
     if (_selectedListName == oldName) {
       _selectedListName = cleanedName;
     }
+
+    // _shoppingLists2 // Lista Activos + Frequentes Actualizada
+    //   ..clear()
+    //   ..addAll(reorderedLists2);
+
+    // if (_selectedListName == oldName) {
+    //   _selectedListName = cleanedName;
+    // }
 
     notifyListeners();
     unawaited(saveToStorage());
@@ -227,6 +261,8 @@ class ShoppingProvider extends ChangeNotifier {
 
     return '$baseName ($counter)';
   }
+
+  // -------------------------------------------- ][ Añadir/Quitar Productos ][ --------------------------------------------- //
 
   void addProductToList(String listName, String productName) {
     final cleanedName = productName.trim();
@@ -247,8 +283,54 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
+  void _addActiveProductToList2(String listName, String productName) {  // Lista Actualizada: Active + Frequent
+    final cleanedName = productName.trim();
+    if (cleanedName.isEmpty) {
+      return;
+    }
+
+    if (!_shoppingLists2.containsKey(listName)) {
+      _shoppingLists2[listName] = <String, List<String>>{};
+    }
+
+    if (activeProductsForList(listName).contains(cleanedName)) {
+      return;
+    }
+
+    activeProductsForList(listName).add(cleanedName);
+    notifyListeners();
+    unawaited(saveToStorage());
+  }
+
+  void _addFrequentProductToList2(String listName, String productName) {  // Lista Actualizada: Active + Frequent
+    final cleanedName = productName.trim();
+    if (cleanedName.isEmpty) {
+      return;
+    }
+
+    if (!_shoppingLists2.containsKey(listName)) {
+      _shoppingLists2[listName] = <String, List<String>>{};
+    }
+
+    if (frequentProductsForList(listName).contains(cleanedName)) {
+      return;
+    }
+
+    frequentProductsForList(listName).add(cleanedName);
+    notifyListeners();
+    unawaited(saveToStorage());
+  }
+
   void addProductToSelectedList(String productName) {
     addProductToList(_selectedListName, productName);
+  }
+
+  void addActiveProductToSelectedList2(String productName) {  // Lista Actualizada: Active + Frequent
+    _addActiveProductToList2(_selectedListName, productName);
+  }
+
+  void addFrequentProductToSelectedList2(String productName) {  // Lista Actualizada: Active + Frequent
+    _addFrequentProductToList2(_selectedListName, productName);
   }
 
   void removeProductFromList(String listName, String productName) {
@@ -262,8 +344,38 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
+  void _removeActiveProductFromList2(String listName, String productName) { // Lista Actualizada: Active + Frequent
+    final cleanedName = productName.trim();
+    if (cleanedName.isEmpty || !_shoppingLists.containsKey(listName)) {
+      return;
+    }
+
+    activeProductsForList(listName).remove(cleanedName);
+    notifyListeners();
+    unawaited(saveToStorage());
+  }
+
+  void _removeFrequentProductFromList2(String listName, String productName) { // Lista Actualizada: Active + Frequent
+    final cleanedName = productName.trim();
+    if (cleanedName.isEmpty || !_shoppingLists.containsKey(listName)) {
+      return;
+    }
+
+    frequentProductsForList(listName).remove(cleanedName);
+    notifyListeners();
+    unawaited(saveToStorage());
+  }
+
   void removeProductFromSelectedList(String productName) {
     removeProductFromList(_selectedListName, productName);
+  }
+
+  void removeActiveProductFromSelectedList2(String productName) { // Lista Actualizada: Active + Frequent
+    _removeActiveProductFromList2(_selectedListName, productName);
+  }
+
+  void removeFrequentProductFromSelectedList2(String productName) { // Lista Actualizada: Active + Frequent
+    _removeFrequentProductFromList2(_selectedListName, productName);
   }
 
   void removeList(String listName) {
@@ -283,6 +395,8 @@ class ShoppingProvider extends ChangeNotifier {
     notifyListeners();
     unawaited(saveToStorage());
   }
+
+  // ------------------------------------------------- ][ Sesion ][  ------------------------------------------------- //
 
   Future<void> continueWithProfile({
     required String username,
