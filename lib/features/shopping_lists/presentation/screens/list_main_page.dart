@@ -30,7 +30,7 @@ class _ListMainPageState extends State<ListMainPage> {
   Widget build(BuildContext context) {
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
-    final activeProducts = shoppingProvider.productsForList(widget.listName);
+    // final activeProducts = shoppingProvider.productsForList(widget.listName);  <- PARA LISTA ANTIGUA. QUITAR
     final activeProducts2 = shoppingProvider.activeProductsForList(widget.listName);
     final frequentProducts2 = shoppingProvider.frequentProductsForList(widget.listName);
 
@@ -94,30 +94,31 @@ class _ListMainPageState extends State<ListMainPage> {
                     child: Row(
                       children: [
                         Expanded(
-                          child: TextField(
+                          child: TextFormField(
                             controller: _productNameController,
                             onTapOutside: (event) {
                               focusNode.unfocus();
                             },
                             focusNode: focusNode,
                             decoration: const InputDecoration(
-                              hintText: 'Nombre del producto',
+                              hintText: 'Me hace falta...',
                               border: OutlineInputBorder(),
                               contentPadding: EdgeInsets.symmetric(horizontal: 12),
                             ),
-                            onSubmitted: (value) {
+                            onFieldSubmitted: (value) {
+                              _addProduct(shoppingProvider); //_addProduct(shoppingProvider),
                               focusNode.requestFocus();
                             },
                           ),
                         ),
                         const SizedBox(width: 8),
                         ElevatedButton(
-                          onPressed: () => _addProduct2(shoppingProvider), //_addProduct(shoppingProvider),
+                          onPressed: () => _addProduct(shoppingProvider), //_addProduct(shoppingProvider),
                           child: Center(
                             heightFactor: 1,
                             widthFactor: 0,
                             child: Padding(
-                              padding: const EdgeInsets.only(bottom: 5),
+                              padding: const EdgeInsets.only(bottom: 4.5),
                               child: const Text('+', style: TextStyle(fontSize: 30,fontWeight: FontWeight(1000)),),
                             )),
                         ),
@@ -150,7 +151,7 @@ class _ListMainPageState extends State<ListMainPage> {
     ThemeProvider themeProvider,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
       child: CustomScrollView(
         slivers: [
           SliverGrid.builder( // ------------------------ ][ PRODUCTOS ACTIVOS ][ ------------------------ //
@@ -165,7 +166,7 @@ class _ListMainPageState extends State<ListMainPage> {
               return ProductBubble(
                 label: activeProducts[index],
                 productAdd: ProductAdd.active,
-                onTap: () => _removeActiveProduct2(shoppingProvider, activeProducts[index]), //_removeProduct(shoppingProvider, products[index]),
+                onTap: () => _removeActiveProduct(shoppingProvider, activeProducts[index]), //_removeProduct(shoppingProvider, products[index]),
               );
             },
           ),
@@ -205,7 +206,7 @@ class _ListMainPageState extends State<ListMainPage> {
               return ProductBubble(
                 label: frequentProducts[index],
                 productAdd: ProductAdd.frequent,
-                onTap: () => _removeFrequentProduct2(shoppingProvider, frequentProducts[index]), //_removeProduct(shoppingProvider, products[index]),
+                onTap: () => _removeFrequentProduct(shoppingProvider, frequentProducts[index]), //_removeProduct(shoppingProvider, products[index]),
               );
             },
           ), // ----------------------------------------------------------------------- //
@@ -215,11 +216,11 @@ class _ListMainPageState extends State<ListMainPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Otro elemento'),
-                  SizedBox(height: 10),
-                  Text('Otro elemento'),
-                  SizedBox(height: 10),
-                  Text('Otro elemento'),
+                  // Text('Otro elemento'),
+                  // SizedBox(height: 10),
+                  // Text('Otro elemento'),
+                  // SizedBox(height: 10),
+                  // Text('Otro elemento'),
                 ],
               ),
             ),
@@ -233,39 +234,24 @@ class _ListMainPageState extends State<ListMainPage> {
     final name = _productNameController.text.trim();
     if (name.isEmpty) return;
 
-    shoppingProvider.addProductToList(widget.listName, name);
+    shoppingProvider.addActiveProductToSelectedList(name); // Lista Actualizada: Active + Frequent
     _productNameController.clear();
   }
 
-  void _addProduct2(ShoppingProvider shoppingProvider) {
-    final name = _productNameController.text.trim();
-    if (name.isEmpty) return;
-
-    shoppingProvider.addActiveProductToSelectedList2(name); // Lista Actualizada: Active + Frequent
-    _productNameController.clear();
-  }
-
-  void _removeProduct(
+  void _removeActiveProduct(
     ShoppingProvider shoppingProvider,
     String productName,
   ) {
-    shoppingProvider.removeProductFromList(widget.listName, productName);
+    shoppingProvider.removeActiveProductFromSelectedList(productName); // Lista Actualizada: Active + Frequent
+    shoppingProvider.addFrequentProductToSelectedList(productName);
   }
 
-  void _removeActiveProduct2(
+  void _removeFrequentProduct(
     ShoppingProvider shoppingProvider,
     String productName,
   ) {
-    shoppingProvider.removeActiveProductFromSelectedList2(productName); // Lista Actualizada: Active + Frequent
-    shoppingProvider.addFrequentProductToSelectedList2(productName);
-  }
-
-  void _removeFrequentProduct2(
-    ShoppingProvider shoppingProvider,
-    String productName,
-  ) {
-    shoppingProvider.removeFrequentProductFromSelectedList2(productName); // Lista Actualizada: Active + Frequent
-    shoppingProvider.addActiveProductToSelectedList2(productName);
+    shoppingProvider.removeFrequentProductFromSelectedList(productName); // Lista Actualizada: Active + Frequent
+    shoppingProvider.addActiveProductToSelectedList(productName);
   }
 
   void _onNavigationTap(int index) {

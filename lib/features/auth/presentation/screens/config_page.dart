@@ -38,10 +38,10 @@ class _ConfigPageState extends State<ConfigPage> {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    SizedBox(height: 245,),
+                    SizedBox(height: 280,),
                     Row(
                       children: [
-                        SizedBox(width: 90,),
+                        SizedBox(width: 120,),
                         Container(
                           width: 130,
                           height: 30,
