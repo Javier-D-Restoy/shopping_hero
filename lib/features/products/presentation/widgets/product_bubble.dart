@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-enum ProductAdd{active, frequent}
+enum ProductAdd { active, frequent }
 
 class ProductBubble extends StatelessWidget {
   const ProductBubble({
     super.key,
     required this.label,
-    this.onTap, required this.productAdd,
+    this.onTap,
+    required this.productAdd,
   });
-  
 
   final String label;
   final ProductAdd productAdd;
@@ -28,8 +28,8 @@ class ProductBubble extends StatelessWidget {
             height: 100,
             decoration: BoxDecoration(
               color: productAdd == ProductAdd.active
-                ? Colors.orange
-                : productAdd == ProductAdd.frequent
+                  ? Colors.orange
+                  : productAdd == ProductAdd.frequent
                   ? Colors.green
                   : Colors.grey,
               borderRadius: BorderRadius.circular(10),
@@ -45,7 +45,8 @@ class ProductBubble extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       foreground: Paint()
                         ..style = PaintingStyle.stroke
-                        ..strokeWidth = 3 // Grosor del borde
+                        ..strokeWidth =
+                            3 // Grosor del borde
                         ..color = Colors.black,
                     ),
                     textAlign: TextAlign.center,
