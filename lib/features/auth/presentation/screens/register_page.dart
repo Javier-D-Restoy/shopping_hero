@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shopping_hero/core/providers/shopping_provider.dart';
+import 'package:shopping_hero/core/providers/session_provider.dart';
+// import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_manager_page.dart';
 
@@ -83,7 +84,7 @@ class RegisterPage extends StatelessWidget {
                             ElevatedButton(
                               onPressed: () async {
                                 if (formKey.currentState!.validate()) {
-                                  await context.read<ShoppingProvider>().continueWithProfile(
+                                  await context.read<SessionProvider>().continueWithProfile(
                                     username: usernameController.text,
                                     password: passwordController.text,
                                   );

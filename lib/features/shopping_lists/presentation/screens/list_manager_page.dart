@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/config_page.dart';
@@ -16,9 +17,10 @@ class ListManager extends StatefulWidget {
 class _ListManagerState extends State<ListManager> {
   @override
   Widget build(BuildContext context) {
+    final sessionProvider = context.watch<SessionProvider>();
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
-    final username = shoppingProvider.username;
+    final username = sessionProvider.username;
     final colors = Theme.of(context).colorScheme;
     final listNames = shoppingProvider.shoppingLists.keys.toList();
 
@@ -28,7 +30,7 @@ class _ListManagerState extends State<ListManager> {
         leading: BackButton(
           onPressed: () {
             if (context.mounted) {
-              context.read<ShoppingProvider>().clearSession();
+              context.read<SessionProvider>().clearSession();
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(

@@ -7,6 +7,7 @@
 
 // import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
 
@@ -14,11 +15,13 @@ import 'package:shopping_hero/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    final sessionProvider = SessionProvider();
     final shoppingProvider = ShoppingProvider();
     final themeProvider = ThemeProvider();
 
     await tester.pumpWidget(
       MyApp(
+        sessionProvider: sessionProvider,
         shoppingProvider: shoppingProvider,
         themeProvider: themeProvider,
       ),

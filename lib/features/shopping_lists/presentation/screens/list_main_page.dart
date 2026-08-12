@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/config_page.dart';
@@ -25,6 +26,7 @@ class _ListMainPageState extends State<ListMainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final sessionProvider = context.watch<SessionProvider>();
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     // final activeProducts = shoppingProvider.productsForList(widget.listName);  <- PARA LISTA ANTIGUA. QUITAR
@@ -183,7 +185,7 @@ class _ListMainPageState extends State<ListMainPage> {
                       if (!isKeyboardOpen)
                         MainBottomNav(
                           currentIndex: _selectedIndex,
-                          showSharedTab: shoppingProvider.isLoggedIn,
+                          showSharedTab: sessionProvider.isLoggedIn,
                           onTap: _onNavigationTap,
                         ),
                     ],
@@ -193,7 +195,7 @@ class _ListMainPageState extends State<ListMainPage> {
                   top: false,
                   child: MainBottomNav(
                     currentIndex: _selectedIndex,
-                    showSharedTab: shoppingProvider.isLoggedIn,
+                    showSharedTab: sessionProvider.isLoggedIn,
                     onTap: _onNavigationTap,
                   ),
                 ),

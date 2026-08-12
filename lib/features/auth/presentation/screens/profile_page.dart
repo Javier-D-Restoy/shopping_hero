@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
 
@@ -8,6 +9,7 @@ class ProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sessionProvider = context.watch<SessionProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final shoppingProvider = context.watch<ShoppingProvider>();
     final usernameController = TextEditingController();
@@ -47,7 +49,7 @@ class ProfilePage extends StatelessWidget {
                 child: TextField(
                   controller: usernameController,
                   onSubmitted: (value) {
-                    shoppingProvider.changeUsername(usernameController.text);
+                    sessionProvider.changeUsername(usernameController.text);
                   },
                 ),
               ),

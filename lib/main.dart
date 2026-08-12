@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
 import 'package:shopping_hero/core/theme/app_theme.dart';
@@ -22,16 +23,17 @@ Future<void> main() async {
 
   // await Hive.initFlutter();
   await Hive.initFlutter(hiveDir.path);
-
+  
+  final sessionProvider = SessionProvider();
   final shoppingProvider = ShoppingProvider();
   final themeProvider = ThemeProvider();
 
-  await Future.wait([shoppingProvider.init(), themeProvider.init()]);
+  await Future.wait([sessionProvider.init(), shoppingProvider.init(), themeProvider.init()]);
 
-  printHivePath(); // SOLO COMO DEBUG | QUITAR CUANDO NO SEA NECESARIO
+  // printHivePath(); // SOLO COMO DEBUG | QUITAR CUANDO NO SEA NECESARIO
 
   runApp(
-    MyApp(shoppingProvider: shoppingProvider, themeProvider: themeProvider),
+    MyApp(sessionProvider: sessionProvider, shoppingProvider: shoppingProvider, themeProvider: themeProvider),
   );
 }
 
@@ -45,10 +47,12 @@ Future<void> printHivePath() async {
 class MyApp extends StatelessWidget {
   const MyApp({
     super.key,
+    required this.sessionProvider,
     required this.shoppingProvider,
     required this.themeProvider,
   });
 
+  final SessionProvider sessionProvider;
   final ShoppingProvider shoppingProvider;
   final ThemeProvider themeProvider;
 
@@ -56,6 +60,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider<SessionProvider>.value(value: sessionProvider),
         ChangeNotifierProvider<ShoppingProvider>.value(value: shoppingProvider),
         ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
       ],

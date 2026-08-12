@@ -8,12 +8,6 @@ class ShoppingProvider extends ChangeNotifier {
       'shopping_lists'; // Hive CE. Box para Shopping Provider
 
   Box? _box;
-  String _username = 'Shopping Hero';
-  String _password = '';
-  bool _isLoading = false;
-  bool _isOffline = true;
-  bool _isLoggedIn = false;
-  String? _errorMessage;
 
   // final Map<String, Map<String, List<String>>> _shoppingLists = {
   //   'Mercadona': {
@@ -37,50 +31,7 @@ class ShoppingProvider extends ChangeNotifier {
 
   String _selectedListName = 'Lista 1';
 
-  String get username => _username;
-  String get password => _password;
-  bool get isLoading => _isLoading;
-  bool get isOffline => _isOffline;
-  bool get isLoggedIn => _isLoggedIn;
-  String? get errorMessage => _errorMessage;
-  String get selectedListName => _selectedListName;
-
   // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE CE ][ ---------------------------------------------- //
-
-  // Future<void> init() async {
-  //   try {
-  //     if (!Hive.isBoxOpen(_boxName)) {
-  //       _box = await Hive.openBox(_boxName);
-  //     }
-  //   } catch (_) {
-  //     _box = null;
-  //   }
-
-  //   final storedLists = _box!.get('shopping_lists');
-  //   if (storedLists is Map) {
-  //     final restoredLists = <String, List<String>>{};
-  //     for (final entry in storedLists.entries) {
-  //       if (entry.key is String && entry.value is List) {
-  //         restoredLists[entry.key as String] = (entry.value as List)
-  //             .map((item) => item.toString())
-  //             .toList();
-  //       }
-  //     }
-  //     if (restoredLists.isNotEmpty) {
-  //       _shoppingLists
-  //         ..clear()
-  //         ..addAll(restoredLists);
-  //     }
-  //   }
-
-  //   final storedSelectedList = _box!.get('selected_list_name');
-  //   if (storedSelectedList is String &&
-  //       _shoppingLists.containsKey(storedSelectedList)) {
-  //     _selectedListName = storedSelectedList;
-  //   } else if (_shoppingLists.isNotEmpty) {
-  //     _selectedListName = _shoppingLists.keys.first;
-  //   }
-  // }
 
   Future<void> init() async {
   try {
@@ -168,8 +119,8 @@ class ShoppingProvider extends ChangeNotifier {
 
   // ------------------------------------------------- ][ Gettes ][  ------------------------------------------------- //
 
-  // Map<String, List<String>> get shoppingLists =>
-  //     Map.unmodifiable(_shoppingLists);
+  String get selectedListName =>
+    _selectedListName;
   
   Map<String, Map<String, List<String>>> get shoppingLists =>  // CONVERSION a Map de String + (Map de String + List de String)
       _shoppingLists; 
@@ -180,13 +131,6 @@ class ShoppingProvider extends ChangeNotifier {
     
     return listMap;
   }
-
-  // List<String> get selectedListProducts =>
-  //     List.unmodifiable(_shoppingLists[_selectedListName] ?? const []);
-
-  // List<String> productsForList(String listName) {
-  //   return List.unmodifiable(_shoppingLists[listName] ?? const []);
-  // }
 
   List<String> activeProductsForList(String listName) =>
       // List.unmodifiable(getListAdd(listName)?['active'] ?? const []); // OBTENER PRODUCTOS ACTIVOS DE UNA LISTA
@@ -394,74 +338,6 @@ class ShoppingProvider extends ChangeNotifier {
           : 'Lista 1';
     }
 
-    notifyListeners();
-    unawaited(saveToStorage());
-  }
-
-  // ------------------------------------------------- ][ Sesion ][  ------------------------------------------------- //
-
-  Future<void> continueWithProfile({
-    required String username,
-    required String password,
-  }) async {
-    if (username.trim().isEmpty || password.trim().isEmpty) {
-      _errorMessage = 'Introduce tu nombre y usuario.';
-      notifyListeners();
-      return;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    _username = username.trim();
-    _password = password.trim();
-    _isOffline = false;
-    _isLoggedIn = true;
-    _isLoading = false;
-    notifyListeners();
-    unawaited(saveToStorage());
-  }
-
-  Future<void> continueOffline({
-    required String username,
-    required String password,
-  }) async {
-    if (username.trim().isEmpty || password.trim().isEmpty) {
-      _errorMessage = 'Introduce tu nombre y usuario para usar modo local.';
-      notifyListeners();
-      return;
-    }
-
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    _username = password.trim();
-    _password = username.trim();
-    _isOffline = true;
-    _isLoggedIn = false;
-    _isLoading = false;
-    notifyListeners();
-    unawaited(saveToStorage());
-  }
-
-  void clearSession() {
-    _username = 'Shopping Hero';
-    _password = '';
-    _isOffline = false;
-    _isLoggedIn = false;
-    _errorMessage = null;
-    notifyListeners();
-    unawaited(saveToStorage());
-  }
-
-  void changeUsername(String newName) {
-    _username = newName;
     notifyListeners();
     unawaited(saveToStorage());
   }
