@@ -4,21 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 class ShoppingProvider extends ChangeNotifier {
-  static const String _boxName =
-      'shopping_lists'; // Hive CE. Box para Shopping Provider
+  // Cajas dinámicas según el entorno
+  static const String _guestBoxName = 'shopping_lists_guest';
+  static const String _onlineCacheBoxName = 'shopping_lists_online_cache';
 
+  String _currentBoxName = _guestBoxName;
   Box? _box;
-
-  // final Map<String, Map<String, List<String>>> _shoppingLists = {
-  //   'Mercadona': {
-  //     'active' : ['Pan', 'Leche', 'Huevos', 'Arroz', 'Frutas', 'Verduras', 'Harina', 'Tomates', 'Refrescos', 'Agua',],
-  //     'frequent' : ['Patatas',],
-  //   },
-  //   'Aldi' : {
-  //     'active' : ['Pasta', 'Aceite', 'Sal', 'Helados', 'Pizza'],
-  //     'frequent' : [],
-  //   }
-  // };
+  bool _isOfflineMode = true;
 
   final Map<String, Map<String, List<String>>> _shoppingLists = {
     'Lista 1': {
@@ -27,84 +19,110 @@ class ShoppingProvider extends ChangeNotifier {
     },
   };
 
-  // final Map<String, Map<String, List<String>>> _shoppingLists = {};
-
   String _selectedListName = 'Lista 1';
+
+  // Getter de conveniencia
+  bool get isOfflineMode => _isOfflineMode;
 
   // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE CE ][ ---------------------------------------------- //
 
-  Future<void> init() async {
-  try {
-    if (!Hive.isBoxOpen(_boxName)) {
-      _box = await Hive.openBox(_boxName);
+  /// Inicializa la box adecuada dependiendo de si el usuario arranca en modo Offline (guest) u Online.
+  Future<void> init({bool isOffline = true}) async {
+    _isOfflineMode = isOffline;
+    _currentBoxName = isOffline ? _guestBoxName : _onlineCacheBoxName;
+
+    try {
+      if (!Hive.isBoxOpen(_currentBoxName)) {
+        _box = await Hive.openBox(_currentBoxName);
+      } else {
+        _box = Hive.box(_currentBoxName);
+      }
+    } catch (_) {
+      _box = null;
     }
-  } catch (_) {
-    _box = null;
-  }
 
-  if (_box == null) return;
+    if (_box == null) return;
 
-  final storedData = _box!.get('shopping_lists');
+    final storedData = _box!.get('shopping_lists');
 
-  if (storedData is Map) {
-    final restoredLists = <String, Map<String, List<String>>>{};
+    if (storedData is Map) {
+      final restoredLists = <String, Map<String, List<String>>>{};
 
-    for (final entry in storedData.entries) {
-      if (entry.key is! String) continue;
-      final key = entry.key as String;
-      final val = entry.value;
+      for (final entry in storedData.entries) {
+        if (entry.key is! String) continue;
+        final key = entry.key as String;
+        final val = entry.value;
 
-      if (val is Map) {
-        // --- NUEVA ESTRUCTURA: Map<String, Map<String, List<String>>> --- //
-        final categoryMap = <String, List<String>>{};
-        for (final catEntry in val.entries) {
-          if (catEntry.key is String && catEntry.value is List) {
-            categoryMap[catEntry.key as String] = (catEntry.value as List)
-                .map((item) => item.toString())
-                .toList();
+        if (val is Map) {
+          final categoryMap = <String, List<String>>{};
+          for (final catEntry in val.entries) {
+            if (catEntry.key is String && catEntry.value is List) {
+              categoryMap[catEntry.key as String] = (catEntry.value as List)
+                  .map((item) => item.toString())
+                  .toList();
+            }
           }
+          restoredLists[key] = categoryMap;
+        } else if (val is List) {
+          final items = val.map((item) => item.toString()).toList();
+          restoredLists[key] = {'General': items};
         }
-        restoredLists[key] = categoryMap;
+      }
 
-      } else if (val is List) {
-        // === MIGRACIÓN / COMPATIBILIDAD CON ESTRUCTURA ANTIGUA: Map<String, List<String>> ===
-        // Convierte la lista previa asignándole una categoría por defecto (ej. "General")
-        final items = val.map((item) => item.toString()).toList();
-        restoredLists[key] = {'General': items};
+      if (restoredLists.isNotEmpty) {
+        _shoppingLists
+          ..clear()
+          ..addAll(restoredLists);
+
+        await _box!.put('shopping_lists', _shoppingLists);
       }
     }
 
-    if (restoredLists.isNotEmpty) {
-      _shoppingLists
-        ..clear()
-        ..addAll(restoredLists);
-
-      // Opcional: guarda de inmediato la migración para sobreescribir la estructura antigua en Hive
-      await _box!.put('shopping_lists', _shoppingLists);
+    final storedSelectedList = _box!.get('selected_list_name');
+    if (storedSelectedList is String &&
+        _shoppingLists.containsKey(storedSelectedList)) {
+      _selectedListName = storedSelectedList;
+    } else if (_shoppingLists.isNotEmpty) {
+      _selectedListName = _shoppingLists.keys.first;
     }
+
+    notifyListeners();
   }
 
-  // Restaurar o inicializar el nombre de la lista seleccionada
-  final storedSelectedList = _box!.get('selected_list_name');
-  if (storedSelectedList is String &&
-      _shoppingLists.containsKey(storedSelectedList)) {
-    _selectedListName = storedSelectedList;
-  } else if (_shoppingLists.isNotEmpty) {
-    _selectedListName = _shoppingLists.keys.first;
+  /// Cambia el entorno de datos entre invitado local y caché online.
+  /// Se ejecuta al iniciar o cerrar sesión en SessionProvider.
+  Future<void> switchUserEnvironment({required bool isOffline}) async {
+    // Si ya estamos en la caja correspondiente, no rehacemos nada
+    if (_isOfflineMode == isOffline && _box != null && _box!.isOpen) return;
+
+    // Si pasamos a Online o cambiamos de cuenta online, vaciamos la caché online previa
+    if (!isOffline && Hive.isBoxOpen(_onlineCacheBoxName)) {
+      final cacheBox = Hive.box(_onlineCacheBoxName);
+      await cacheBox.clear();
+    }
+
+    // Reiniciamos las listas locales en memoria antes de abrir la nueva caja
+    _shoppingLists
+      ..clear()
+      ..addAll({
+        'Lista 1': {'active': [], 'frequent': []}
+      });
+    _selectedListName = 'Lista 1';
+
+    await init(isOffline: isOffline);
+
+    // FUTURO CON FIREBASE:
+    // Si (!isOffline), aquí descargaremos la información fresca del usuario desde Firebase Firestore
+    // y poblaremos la caché local (`_onlineCacheBoxName`).
   }
-}
 
   Future<void> _ensureInitialized() async {
-    if (_box == null) {
-      await init();
+    if (_box == null || !_box!.isOpen) {
+      await init(isOffline: _isOfflineMode);
     }
   }
 
   Future<void> saveToStorage() async {
-    if (_box == null) {
-      return;
-    }
-
     await _ensureInitialized();
     if (_box != null) {
       await _box!.put(
@@ -113,35 +131,51 @@ class ShoppingProvider extends ChangeNotifier {
       );
       await _box!.put('selected_list_name', _selectedListName);
     }
+
+    // FUTURO CON FIREBASE:
+    // Si !_isOfflineMode, intentaremos enviar los cambios pendientes a Firestore.
+    // Si falla por falta de red, la caché local ya tendrá los cambios guardados para sincronizar después.
+  }
+
+  Future<void> resetGuestData() async { // Limpiar caché de las Listas de Compra. El método de la sesión es "resetLocalProfile()"
+    if (Hive.isBoxOpen(_guestBoxName)) {
+      final guestBox = Hive.box(_guestBoxName);
+      await guestBox.clear();
+    }
+
+    // Reseteamos el estado en memoria
+    _shoppingLists
+      ..clear()
+      ..addAll({
+        'Lista 1': {'active': [], 'frequent': []}
+      });
+    _selectedListName = 'Lista 1';
+
+    notifyListeners();
   }
 
   // ---------------------------------------------- ][ GESTION DE LISTAS Y PRODUCTOS ][ ---------------------------------------------- //
 
-  // ------------------------------------------------- ][ Gettes ][  ------------------------------------------------- //
+  // ------------------------------------------------- ][ Getters ][ ------------------------------------------------- //
 
-  String get selectedListName =>
-    _selectedListName;
-  
-  Map<String, Map<String, List<String>>> get shoppingLists =>  // CONVERSION a Map de String + (Map de String + List de String)
-      _shoppingLists; 
+  String get selectedListName => _selectedListName;
 
-  Map<String, List<String>>? getListAdd(String listName) {  // OBTENER PRODUCTOS (ACTIVOS + FRECUENTES) DE UNA LISTA
+  Map<String, Map<String, List<String>>> get shoppingLists => _shoppingLists;
+
+  Map<String, List<String>>? getListAdd(String listName) {
     final listMap = _shoppingLists[listName];
     if (listMap == null) return null;
-    
+
     return listMap;
   }
 
   List<String> activeProductsForList(String listName) =>
-      // List.unmodifiable(getListAdd(listName)?['active'] ?? const []); // OBTENER PRODUCTOS ACTIVOS DE UNA LISTA
       getListAdd(listName)?['active'] ?? <String>[];
 
   List<String> frequentProductsForList(String listName) =>
-      // List.unmodifiable(getListAdd(listName)?['frequent'] ?? const []); // OBTENER PRODUCTOS FREQUENTES DE UNA LISTA
       getListAdd(listName)?['frequent'] ?? <String>[];
 
-
-  // -------------------------------------------- ][ Seleccion/gestion de Listas ][ -------------------------------------------- //      
+  // -------------------------------------------- ][ Selección/gestión de Listas ][ -------------------------------------------- //
 
   void selectList(String listName) {
     if (!_shoppingLists.containsKey(listName)) {
@@ -164,8 +198,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     final String uniqueName = _getUniqueListName(finalName);
-    // _shoppingLists[uniqueName] = <String>[];
-    _shoppingLists[uniqueName] = <String, List<String>>{ // Lista Activos + Frecuentes Actualizada.
+    _shoppingLists[uniqueName] = <String, List<String>>{
       'active': <String>[],
       'frequent': <String>[],
     };
@@ -189,16 +222,16 @@ class ShoppingProvider extends ChangeNotifier {
       return;
     }
 
-    final products =  getListAdd(oldName);
+    final products = getListAdd(oldName);
 
-    if (products == null) { // <-- Lista Activos + Frecuentes.
+    if (products == null) {
       return;
     }
 
-    final reorderedLists = <String, Map<String, List<String>>>{};  // Lista Activos + Frequentes Actualizada
+    final reorderedLists = <String, Map<String, List<String>>>{};
     var inserted = false;
 
-    for (final entry in _shoppingLists.entries) { // Lista Activos + Frequentes Actualizada
+    for (final entry in _shoppingLists.entries) {
       if (entry.key == oldName) {
         reorderedLists[cleanedName] = products;
         inserted = true;
@@ -212,7 +245,7 @@ class ShoppingProvider extends ChangeNotifier {
       reorderedLists[cleanedName] = products;
     }
 
-    _shoppingLists // Lista Activos + Frequentes Actualizada
+    _shoppingLists
       ..clear()
       ..addAll(reorderedLists);
 
@@ -239,11 +272,10 @@ class ShoppingProvider extends ChangeNotifier {
 
   // -------------------------------------------- ][ Añadir/Quitar Productos ][ --------------------------------------------- //
 
-  void _addActiveProductToList(String listName, String productName) {  // Lista Actualizada: Active + Frequent
+  void _addActiveProductToList(String listName, String productName) {
     final cleanedName = productName.trim();
     if (cleanedName.isEmpty) return;
 
-    // Si no existe la tienda/lista, la crea con las categorías por defecto
     if (!_shoppingLists.containsKey(listName)) {
       _shoppingLists[listName] = <String, List<String>>{
         'active': <String>[],
@@ -251,7 +283,6 @@ class ShoppingProvider extends ChangeNotifier {
       };
     }
 
-    // Asegura que la subclave 'active' exista
     _shoppingLists[listName]!['active'] ??= <String>[];
 
     final activeList = _shoppingLists[listName]!['active']!;
@@ -263,7 +294,7 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
-  void _addFrequentProductToList(String listName, String productName) {  // Lista Actualizada: Active + Frequent
+  void _addFrequentProductToList(String listName, String productName) {
     final cleanedName = productName.trim();
     if (cleanedName.isEmpty) return;
 
@@ -274,7 +305,6 @@ class ShoppingProvider extends ChangeNotifier {
       };
     }
 
-    // Asegura que la subclave 'frequent' exista
     _shoppingLists[listName]!['frequent'] ??= <String>[];
 
     final frequentList = _shoppingLists[listName]!['frequent']!;
@@ -286,15 +316,15 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
-  void addActiveProductToSelectedList(String productName) {  // Lista Actualizada: Active + Frequent
+  void addActiveProductToSelectedList(String productName) {
     _addActiveProductToList(_selectedListName, productName);
   }
 
-  void addFrequentProductToSelectedList(String productName) {  // Lista Actualizada: Active + Frequent
+  void addFrequentProductToSelectedList(String productName) {
     _addFrequentProductToList(_selectedListName, productName);
   }
 
-  void _removeActiveProductFromList(String listName, String productName) { // Lista Actualizada: Active + Frequent
+  void _removeActiveProductFromList(String listName, String productName) {
     final cleanedName = productName.trim();
     if (cleanedName.isEmpty || !_shoppingLists.containsKey(listName)) {
       return;
@@ -305,7 +335,7 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
-  void _removeFrequentProductFromList(String listName, String productName) { // Lista Actualizada: Active + Frequent
+  void _removeFrequentProductFromList(String listName, String productName) {
     final cleanedName = productName.trim();
     if (cleanedName.isEmpty || !_shoppingLists.containsKey(listName)) {
       return;
@@ -316,11 +346,11 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
-  void removeActiveProductFromSelectedList(String productName) { // Lista Actualizada: Active + Frequent
+  void removeActiveProductFromSelectedList(String productName) {
     _removeActiveProductFromList(_selectedListName, productName);
   }
 
-  void removeFrequentProductFromSelectedList(String productName) { // Lista Actualizada: Active + Frequent
+  void removeFrequentProductFromSelectedList(String productName) {
     _removeFrequentProductFromList(_selectedListName, productName);
   }
 

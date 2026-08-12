@@ -12,7 +12,7 @@ import 'package:shopping_hero/features/auth/presentation/screens/login_page.dart
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Obtener directorio base e instanciar la subcarpeta "Shopping Hero"
+  // 1. Obtener directorio base e instanciar la subcarpeta
   final Directory appSupportDir = await getApplicationSupportDirectory();
   final Directory hiveDir = Directory(appSupportDir.path);
 
@@ -21,27 +21,28 @@ Future<void> main() async {
     await hiveDir.create(recursive: true);
   }
 
-  // await Hive.initFlutter();
   await Hive.initFlutter(hiveDir.path);
-  
+
   final sessionProvider = SessionProvider();
   final shoppingProvider = ShoppingProvider();
   final themeProvider = ThemeProvider();
 
-  await Future.wait([sessionProvider.init(), shoppingProvider.init(), themeProvider.init()]);
+  // Inicializamos primero el estado de la sesión
+  await sessionProvider.init();
 
-  // printHivePath(); // SOLO COMO DEBUG | QUITAR CUANDO NO SEA NECESARIO
+  // Inicializamos el theme y el shopping provider pasando el estado isOffline actual
+  await Future.wait([
+    themeProvider.init(),
+    shoppingProvider.init(isOffline: sessionProvider.isOffline),
+  ]);
 
   runApp(
-    MyApp(sessionProvider: sessionProvider, shoppingProvider: shoppingProvider, themeProvider: themeProvider),
+    MyApp(
+      sessionProvider: sessionProvider,
+      shoppingProvider: shoppingProvider,
+      themeProvider: themeProvider,
+    ),
   );
-}
-
-// FUNCION PARA SABER DONDE ESTA GUARDANDO LOS DATOS EN LOCAL
-// Por defecto parece que, en Windows, guarda los datos en 'Usuario/Documentos/'
-Future<void> printHivePath() async {
-  final dir = await getApplicationSupportDirectory();
-  print(dir.path);
 }
 
 class MyApp extends StatelessWidget {
@@ -73,7 +74,7 @@ class MyApp extends StatelessWidget {
               selectedColor: 0,
               isDarkMode: themeProvider.isDarkMode,
             ).theme(),
-            home: LoginPage(),
+            home: const LoginPage(),
           );
         },
       ),

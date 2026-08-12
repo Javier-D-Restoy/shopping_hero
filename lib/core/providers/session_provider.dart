@@ -82,12 +82,12 @@ class SessionProvider extends ChangeNotifier {
     _isOffline = false;
     _isLoggedIn = true;
     _isLoading = false;
-    
+
     notifyListeners();
     unawaited(saveToStorage());
   }
 
-  Future<void> continueOffline({
+  Future<void> continueOffline2({
     required String username,
     required String password,
   }) async {
@@ -114,19 +114,78 @@ class SessionProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
+  Future<void> continueOffline({
+    String? username,
+    String? password,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    // Si se pasa un nuevo username y no está vacío, lo actualizamos. 
+    // De lo contrario, conservamos el _username que se leyó de Hive en init().
+    if (username != null && username.trim().isNotEmpty) {
+      _username = username.trim();
+    }
+
+    if (password != null) {
+      _password = password.trim();
+    }
+
+    _isOffline = true;
+    _isLoggedIn = false;
+    _isLoading = false;
+
+    notifyListeners();
+    await saveToStorage(); // Guardamos los cambios en Hive
+  }
+
   Future<void> clearSession() async {
+    await _ensureInitialized();
+
+    if (!_isOffline) {
+      // === SESIÓN ONLINE ===
+      // Limpiamos los datos de la cuenta online en Hive
+      _username = 'Shopping Hero';
+      _password = '';
+      _isLoggedIn = false;
+      _isOffline = true;
+      _errorMessage = null;
+
+      if (_box != null) {
+        await _box!.clear();
+      }
+    } else {
+      // === SESIÓN OFFLINE / LOCAL ===
+      // No borramos la caja de Hive (_box!.clear()) para no perder el nombre guardado.
+      // Solo reseteamos el estado visual/flags si fuera necesario.
+      _isLoggedIn = false;
+      _errorMessage = null;
+      
+      // Mantenemos _username tal y como está guardado en Hive
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> resetLocalProfile() async {  // Limpiar caché local de la sesion - El método del Shopping provider se llama "resetGuestData()"
+    await _ensureInitialized();
+
+    // 1. Restablecemos las variables en memoria a su valor por defecto
     _username = 'Shopping Hero';
     _password = '';
     _isOffline = true;
     _isLoggedIn = false;
     _errorMessage = null;
 
-    notifyListeners();
-
-    await _ensureInitialized();
+    // 2. Limpiamos por completo la caja de la sesión local
     if (_box != null) {
-      await _box!.clear(); // Limpia los datos de sesión en Hive
+      await _box!.clear();
     }
+
+    notifyListeners();
   }
 
   void changeUsername(String newName) {

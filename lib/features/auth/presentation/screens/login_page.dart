@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shopping_hero/core/providers/session_provider.dart';
-// import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shopping_hero/core/providers/session_provider.dart';
+import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/register_page.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_manager_page.dart';
 
@@ -83,9 +83,18 @@ class LoginPage extends StatelessWidget {
                         ElevatedButton(
                           onPressed: () async {
                             if (formKey.currentState!.validate()) {
-                              await context.read<SessionProvider>().continueWithProfile(
+                              final sessionProvider = context.read<SessionProvider>();
+                              final shoppingProvider = context.read<ShoppingProvider>();
+
+                              // 1. Iniciar sesión online en SessionProvider
+                              await sessionProvider.continueWithProfile(
                                 username: usernameController.text,
                                 password: passwordController.text,
+                              );
+
+                              // 2. Alternar la caja de Hive a la caché online
+                              await shoppingProvider.switchUserEnvironment(
+                                isOffline: sessionProvider.isOffline,
                               );
 
                               if (context.mounted) {
@@ -118,10 +127,17 @@ class LoginPage extends StatelessWidget {
                         const SizedBox(height: 30),
                         TextButton(
                           onPressed: () async {
-                            await context.read<SessionProvider>().continueOffline(
-                              username: 'Shopping Hero',
-                              password: '',
+                            final sessionProvider = context.read<SessionProvider>();
+                            final shoppingProvider = context.read<ShoppingProvider>();
+
+                            // 1. Iniciar sesión local/offline en SessionProvider | Mantendrá el _username que ya estaba guardado en Hive
+                            await sessionProvider.continueOffline();
+
+                            // 2. Alternar la caja de Hive a la caja local de invitado
+                            await shoppingProvider.switchUserEnvironment(
+                              isOffline: sessionProvider.isOffline,
                             );
+
                             if (context.mounted) {
                               Navigator.pushReplacement(
                                 context,
