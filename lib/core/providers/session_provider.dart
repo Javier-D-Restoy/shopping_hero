@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SessionProvider extends ChangeNotifier {
   static const String _boxName = 'session_box'; // Box de Hive CE para sesión
   Box? _box;
 
   String _username = 'Shopping Hero';
+  final String _email = '';
   String _password = '';
   bool _isLoading = false;
   bool _isOffline = true;
@@ -15,6 +17,7 @@ class SessionProvider extends ChangeNotifier {
 
   // Getters
   String get username => _username;
+  String get email => _email;
   String get password => _password;
   bool get isLoading => _isLoading;
   bool get isOffline => _isOffline;
@@ -193,5 +196,51 @@ class SessionProvider extends ChangeNotifier {
     _username = newName.trim();
     notifyListeners();
     unawaited(saveToStorage());
+  }
+
+  // ------------------------------------------ ][ SESION - FIREBASE ][ ------------------------------------------ //
+
+  Future<void> saveShoppingList({   // GUARDAR UNA LISTA    ¡¡ MODIFICAR PARA QUE REFLEJE EL MODELO DE LISTA REAL !!
+    required String uid,
+    required String listId,
+    required String name,
+    required List<String> items,
+  }) async {
+    final db = FirebaseFirestore.instance;
+
+    await db
+        .collection('users')
+        .doc(uid)
+        .collection('shoppingLists')
+        .doc(listId)
+        .set({
+          'name': name,
+          'items': items,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+  }
+
+  Future<Map<String, dynamic>?> getShoppingList({   // LEER UNA LISTA
+    required String uid,
+    required String listId,
+  }) async {
+    final db = FirebaseFirestore.instance;
+
+    final doc = await db
+        .collection('users')
+        .doc(uid)
+        .collection('shoppingLists')
+        .doc(listId)
+        .get();
+
+    return doc.exists ? doc.data() : null;
+  }
+
+  Stream<QuerySnapshot> watchLists(String uid) {    // ESCUCHAR CAMBIOS EN TIEMPO REAL
+    return FirebaseFirestore.instance               // Esto es ideal para que la UI se actualice cuando cambian datos desde la nube.
+        .collection('users')
+        .doc(uid)
+        .collection('shoppingLists')
+        .snapshots();
   }
 }

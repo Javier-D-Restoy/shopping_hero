@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:shopping_hero/firebase_options.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -12,11 +14,16 @@ import 'package:shopping_hero/features/auth/presentation/screens/login_page.dart
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Obtener directorio base e instanciar la subcarpeta
+  // Inicializar Firebase en la app  (FIREBASE)  - Esto es obligatorio. Sin esto, Firestore no sabe a qué proyecto conectarse.
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // 1. Obtener directorio base e instanciar la subcarpeta    (HIVE_CE)
   final Directory appSupportDir = await getApplicationSupportDirectory();
   final Directory hiveDir = Directory(appSupportDir.path);
 
-  // 2. Crear la carpeta si no existe previamente
+  // 2. Crear la carpeta si no existe previamente   (HIVE_CE)
   if (!await hiveDir.exists()) {
     await hiveDir.create(recursive: true);
   }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "661919374817",
+    "project_id": "shopping-hero-94c87",
+    "storage_bucket": "shopping-hero-94c87.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:661919374817:android:3d4166775e3a0dbba846a0",
+        "android_client_info": {
+          "package_name": "com.example.shopping_hero"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDHA7nqA3ynNpCfvFwNBFG6xfVPPGsT-CQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
