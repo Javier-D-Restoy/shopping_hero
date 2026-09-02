@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shopping_hero/core/providers/session_provider.dart';
-// import 'package:shopping_hero/core/providers/shopping_provider.dart';
+import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_manager_page.dart';
 
@@ -9,8 +9,9 @@ class RegisterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final usernameController = TextEditingController();
+    final emailController = TextEditingController();
     final passwordController = TextEditingController();
+    final displayNameController = TextEditingController();
     final focusNode = FocusNode();
 
     final formKey = GlobalKey<FormState>();
@@ -48,15 +49,32 @@ class RegisterPage extends StatelessWidget {
                                 child: Column(
                                   children: [
                                     TextFormField(
-                                      controller: usernameController,
-                                      decoration: const InputDecoration(labelText: 'Username'),
-                                      // focusNode: focusNode,
+                                      controller: displayNameController,
+                                      decoration: const InputDecoration(labelText: 'Nombre'),
                                       onTapOutside: (event) {
                                         focusNode.unfocus();
                                       },
                                       validator: (value) {
                                         if (value == null || value.trim().isEmpty) {
-                                          return 'Introduce tu username';
+                                          return 'Introduce tu nombre';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 12),
+                                    TextFormField(
+                                      controller: emailController,
+                                      decoration: const InputDecoration(labelText: 'Email'),
+                                      keyboardType: TextInputType.emailAddress,
+                                      onTapOutside: (event) {
+                                        focusNode.unfocus();
+                                      },
+                                      validator: (value) {
+                                        if (value == null || value.trim().isEmpty) {
+                                          return 'Introduce tu email';
+                                        }
+                                        if (!value.contains('@')) {
+                                          return 'Email inválido';
                                         }
                                         return null;
                                       },
@@ -65,13 +83,16 @@ class RegisterPage extends StatelessWidget {
                                     TextFormField(
                                       controller: passwordController,
                                       decoration: const InputDecoration(labelText: 'Password'),
-                                      // focusNode: focusNode,
+                                      obscureText: true,
                                       onTapOutside: (event) {
                                         focusNode.unfocus();
                                       },
                                       validator: (value) {
                                         if (value == null || value.trim().isEmpty) {
                                           return 'Introduce tu password';
+                                        }
+                                        if (value.length < 6) {
+                                          return 'Mínimo 6 caracteres';
                                         }
                                         return null;
                                       },
@@ -81,25 +102,67 @@ class RegisterPage extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 50),
-                            ElevatedButton(
-                              onPressed: () async {
-                                if (formKey.currentState!.validate()) {
-                                  await context.read<SessionProvider>().continueWithProfile(
-                                    username: usernameController.text,
-                                    password: passwordController.text,
-                                  );
-
-                                  if (context.mounted) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const ListManager(),
+                            Consumer<SessionProvider>(
+                              builder: (context, sessionProvider, _) {
+                                return Column(
+                                  children: [
+                                    if (sessionProvider.errorMessage != null)
+                                      Padding(
+                                        padding: const EdgeInsets.only(bottom: 16),
+                                        child: Text(
+                                          sessionProvider.errorMessage!,
+                                          style: const TextStyle(
+                                              color: Colors.red, fontSize: 12),
+                                          textAlign: TextAlign.center,
+                                        ),
                                       ),
-                                    );
-                                  }
-                                }
+                                    ElevatedButton(
+                                      onPressed: sessionProvider.isLoading
+                                          ? null
+                                          : () async {
+                                              if (formKey.currentState!.validate()) {
+                                                final success = await sessionProvider.register(
+                                                  email: emailController.text,
+                                                  password: passwordController.text,
+                                                  displayName: displayNameController.text,
+                                                );
+
+                                                if (!context.mounted) return;
+
+                                                if (success) {
+                                                  final shoppingProvider =
+                                                      context.read<ShoppingProvider>();
+                                                  await shoppingProvider.setCurrentUser(
+                                                    sessionProvider.uid,
+                                                    isOffline: false,
+                                                  );
+                                                  await shoppingProvider.switchUserEnvironment(
+                                                    isOffline: false,
+                                                  );
+
+                                                  if (!context.mounted) return;
+
+                                                  Navigator.pushReplacement(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) => const ListManager(),
+                                                    ),
+                                                  );
+                                                }
+                                              }
+                                            },
+                                      child: sessionProvider.isLoading
+                                          ? const SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2),
+                                            )
+                                          : const Text('Registrar'),
+                                    ),
+                                  ],
+                                );
                               },
-                              child: const Text('Registrar'),
                             ),
                           ],
                         ),

@@ -1,35 +1,46 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shopping_hero/core/services/auth_service.dart';
+import 'package:shopping_hero/core/services/user_repository.dart';
 
 class SessionProvider extends ChangeNotifier {
-  static const String _boxName = 'session_box'; // Box de Hive CE para sesión
+  static const String _sessionBoxName = 'session_box';
   Box? _box;
 
-  String _username = 'Shopping Hero';
-  final String _email = '';
-  String _password = '';
+  // Firebase & Auth
+  late final AuthService _authService;
+  late final UserRepository _userRepository;
+
+  // Estado de sesión
+  String? _uid;
+  String _email = '';
+  String _displayName = 'Shopping Hero';
   bool _isLoading = false;
   bool _isOffline = true;
   bool _isLoggedIn = false;
   String? _errorMessage;
 
   // Getters
-  String get username => _username;
+  String? get uid => _uid;
   String get email => _email;
-  String get password => _password;
+  String get displayName => _displayName;
   bool get isLoading => _isLoading;
   bool get isOffline => _isOffline;
   bool get isLoggedIn => _isLoggedIn;
   String? get errorMessage => _errorMessage;
 
-  // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE CE ][ ---------------------------------------------- //
+  SessionProvider({AuthService? authService, UserRepository? userRepository}) {
+    _authService = authService ?? AuthService();
+    _userRepository = userRepository ?? UserRepository();
+  }
+
+  // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE ][ ---------------------------------------------- //
 
   Future<void> init() async {
     try {
-      if (!Hive.isBoxOpen(_boxName)) {
-        _box = await Hive.openBox(_boxName);
+      if (!Hive.isBoxOpen(_sessionBoxName)) {
+        _box = await Hive.openBox(_sessionBoxName);
       }
     } catch (_) {
       _box = null;
@@ -37,9 +48,10 @@ class SessionProvider extends ChangeNotifier {
 
     if (_box == null) return;
 
-    // Restaurar datos guardados de la sesión local
-    _username = _box!.get('username', defaultValue: 'Shopping Hero') as String;
-    _password = _box!.get('password', defaultValue: '') as String;
+    // Restaurar datos guardados de sesión local
+    _uid = _box!.get('uid') as String?;
+    _email = _box!.get('email', defaultValue: '') as String;
+    _displayName = _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
     _isOffline = _box!.get('isOffline', defaultValue: true) as bool;
     _isLoggedIn = _box!.get('isLoggedIn', defaultValue: false) as bool;
 
@@ -52,138 +64,180 @@ class SessionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> saveToStorage() async {
+  Future<void> _saveSessionToStorage() async {
     await _ensureInitialized();
     if (_box != null) {
-      await _box!.put('username', _username);
-      await _box!.put('password', _password);
+      await _box!.put('uid', _uid);
+      await _box!.put('email', _email);
+      await _box!.put('displayName', _displayName);
       await _box!.put('isOffline', _isOffline);
       await _box!.put('isLoggedIn', _isLoggedIn);
     }
   }
 
-  // ---------------------------------------------- ][ GESTIÓN DE SESIÓN ][ ---------------------------------------------- //
+  // ---------------------------------------------- ][ GESTIÓN DE AUTENTICACIÓN ][ ---------------------------------------------- //
 
-  Future<void> continueWithProfile({
-    required String username,
+  /// Registra un nuevo usuario con email, contraseña y nombre
+  Future<bool> register({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final user = await _authService.register(
+        email: email,
+        password: password,
+        displayName: displayName,
+      );
+
+      if (user != null) {
+        _uid = user.uid;
+        _email = user.email;
+        _displayName = user.displayName ?? 'Shopping Hero';
+        _isOffline = false;
+        _isLoggedIn = true;
+        _isLoading = false;
+        _errorMessage = null;
+
+        await _saveSessionToStorage();
+        notifyListeners();
+        return true;
+      }
+
+      _isLoading = false;
+      _errorMessage = 'No se pudo crear la cuenta';
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Inicia sesión con email y contraseña
+  Future<bool> login({
+    required String email,
     required String password,
   }) async {
-    if (username.trim().isEmpty || password.trim().isEmpty) {
-      _errorMessage = 'Introduce tu nombre y usuario.';
-      notifyListeners();
-      return;
-    }
-
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      final user = await _authService.login(
+        email: email,
+        password: password,
+      );
 
-    _username = username.trim();
-    _password = password.trim();
-    _isOffline = false;
-    _isLoggedIn = true;
-    _isLoading = false;
+      if (user != null) {
+        _uid = user.uid;
+        _email = user.email;
+        _displayName = user.displayName ?? 'Shopping Hero';
+        _isOffline = false;
+        _isLoggedIn = true;
+        _isLoading = false;
+        _errorMessage = null;
 
-    notifyListeners();
-    unawaited(saveToStorage());
-  }
+        await _saveSessionToStorage();
+        notifyListeners();
+        return true;
+      }
 
-  Future<void> continueOffline2({
-    required String username,
-    required String password,
-  }) async {
-    if (username.trim().isEmpty || password.trim().isEmpty) {
-      _errorMessage = 'Introduce tu nombre y usuario para usar modo local.';
+      _isLoading = false;
+      _errorMessage = 'Login fallido';
       notifyListeners();
-      return;
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
     }
-
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
-
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    // Guardado de credenciales del perfil local
-    _username = username.trim();
-    _password = password.trim();
-    _isOffline = true;
-    _isLoggedIn = false;
-    _isLoading = false;
-
-    notifyListeners();
-    unawaited(saveToStorage());
   }
 
-  Future<void> continueOffline({
-    String? username,
-    String? password,
+  /// Continúa como usuario offline/invitado con un nombre
+  Future<bool> continueOffline({
+    required String displayName,
   }) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
-    await Future.delayed(const Duration(milliseconds: 400));
+    try {
+      if (displayName.trim().isEmpty) {
+        _errorMessage = 'Por favor introduce un nombre';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
 
-    // Si se pasa un nuevo username y no está vacío, lo actualizamos. 
-    // De lo contrario, conservamos el _username que se leyó de Hive en init().
-    if (username != null && username.trim().isNotEmpty) {
-      _username = username.trim();
-    }
-
-    if (password != null) {
-      _password = password.trim();
-    }
-
-    _isOffline = true;
-    _isLoggedIn = false;
-    _isLoading = false;
-
-    notifyListeners();
-    await saveToStorage(); // Guardamos los cambios en Hive
-  }
-
-  Future<void> clearSession() async {
-    await _ensureInitialized();
-
-    if (!_isOffline) {
-      // === SESIÓN ONLINE ===
-      // Limpiamos los datos de la cuenta online en Hive
-      _username = 'Shopping Hero';
-      _password = '';
-      _isLoggedIn = false;
+      _uid = null;
+      _email = '';
+      _displayName = displayName.trim();
       _isOffline = true;
+      _isLoggedIn = false;
+      _isLoading = false;
       _errorMessage = null;
 
+      await _saveSessionToStorage();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Error: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Cierra sesión y limpia datos
+  Future<void> logout() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      if (!_isOffline) {
+        await _authService.logout();
+      }
+
+      _uid = null;
+      _email = '';
+      _displayName = 'Shopping Hero';
+      _isOffline = true;
+      _isLoggedIn = false;
+      _errorMessage = null;
+      _isLoading = false;
+
+      await _ensureInitialized();
       if (_box != null) {
         await _box!.clear();
       }
-    } else {
-      // === SESIÓN OFFLINE / LOCAL ===
-      // No borramos la caja de Hive (_box!.clear()) para no perder el nombre guardado.
-      // Solo reseteamos el estado visual/flags si fuera necesario.
-      _isLoggedIn = false;
-      _errorMessage = null;
-      
-      // Mantenemos _username tal y como está guardado en Hive
-    }
 
-    notifyListeners();
+      notifyListeners();
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Error al cerrar sesión: $e';
+      notifyListeners();
+    }
   }
 
-  Future<void> resetLocalProfile() async {  // Limpiar caché local de la sesion - El método del Shopping provider se llama "resetGuestData()"
+  /// Limpia todos los datos locales del usuario invitado
+  Future<void> resetLocalProfile() async {
     await _ensureInitialized();
 
-    // 1. Restablecemos las variables en memoria a su valor por defecto
-    _username = 'Shopping Hero';
-    _password = '';
+    _uid = null;
+    _email = '';
+    _displayName = 'Shopping Hero';
     _isOffline = true;
     _isLoggedIn = false;
     _errorMessage = null;
 
-    // 2. Limpiamos por completo la caja de la sesión local
     if (_box != null) {
       await _box!.clear();
     }
@@ -191,56 +245,35 @@ class SessionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void changeUsername(String newName) {
-    if (newName.trim().isEmpty) return;
-    _username = newName.trim();
-    notifyListeners();
-    unawaited(saveToStorage());
+  // ---------------------------------------------- ][ INTEGRACIÓN CON FIRESTORE ][ ---------------------------------------------- //
+
+  /// Carga las listas de compra del usuario desde Firestore a Hive (caché online)
+  Future<void> syncShoppingListsFromFirestore() async {
+    if (_uid == null || _isOffline) return;
+
+    try {
+      // Obtener listas desde Firestore
+      await _userRepository.getShoppingLists(_uid!);
+      // Esta sincronización se maneja desde ShoppingProvider
+      // Aquí solo notificamos que los datos están listos
+    } catch (e) {
+      _errorMessage = 'Error sincronizando listas: $e';
+      notifyListeners();
+    }
   }
 
-  // ------------------------------------------ ][ SESION - FIREBASE ][ ------------------------------------------ //
+  /// Guarda las listas de compra del usuario a Firestore
+  Future<void> saveShoppingListsToFirestore(
+    Map<String, Map<String, dynamic>> shoppingLists,
+  ) async {
+    if (_uid == null || _isOffline) return;
 
-  Future<void> saveShoppingList({   // GUARDAR UNA LISTA    ¡¡ MODIFICAR PARA QUE REFLEJE EL MODELO DE LISTA REAL !!
-    required String uid,
-    required String listId,
-    required String name,
-    required List<String> items,
-  }) async {
-    final db = FirebaseFirestore.instance;
-
-    await db
-        .collection('users')
-        .doc(uid)
-        .collection('shoppingLists')
-        .doc(listId)
-        .set({
-          'name': name,
-          'items': items,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-  }
-
-  Future<Map<String, dynamic>?> getShoppingList({   // LEER UNA LISTA
-    required String uid,
-    required String listId,
-  }) async {
-    final db = FirebaseFirestore.instance;
-
-    final doc = await db
-        .collection('users')
-        .doc(uid)
-        .collection('shoppingLists')
-        .doc(listId)
-        .get();
-
-    return doc.exists ? doc.data() : null;
-  }
-
-  Stream<QuerySnapshot> watchLists(String uid) {    // ESCUCHAR CAMBIOS EN TIEMPO REAL
-    return FirebaseFirestore.instance               // Esto es ideal para que la UI se actualice cuando cambian datos desde la nube.
-        .collection('users')
-        .doc(uid)
-        .collection('shoppingLists')
-        .snapshots();
+    try {
+      // Convertir a formato esperado por userRepository
+      // Se maneja desde ShoppingProvider
+    } catch (e) {
+      _errorMessage = 'Error guardando listas: $e';
+      notifyListeners();
+    }
   }
 }

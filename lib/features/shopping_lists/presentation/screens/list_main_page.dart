@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shopping_hero/core/models/product_model.dart';
 import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
@@ -23,6 +24,49 @@ class _ListMainPageState extends State<ListMainPage> {
   final focusNode = FocusNode();
 
   int _selectedIndex = 0;
+
+  String _syncTooltip(ShoppingProvider provider) {
+    switch (provider.syncStatus) {
+      case ShoppingSyncStatus.offline:
+        return 'Modo offline';
+      case ShoppingSyncStatus.syncing:
+        return 'Sincronizando...';
+      case ShoppingSyncStatus.synced:
+        final lastSyncedAt = provider.lastSyncedAt;
+        if (lastSyncedAt == null) return 'Sincronizado';
+        final hour = lastSyncedAt.hour.toString().padLeft(2, '0');
+        final minute = lastSyncedAt.minute.toString().padLeft(2, '0');
+        return 'Sincronizado a las $hour:$minute';
+      case ShoppingSyncStatus.error:
+        return 'Error de sincronización. Toca para reintentar';
+    }
+  }
+
+  IconData _syncIcon(ShoppingProvider provider) {
+    switch (provider.syncStatus) {
+      case ShoppingSyncStatus.offline:
+        return Icons.cloud_off_outlined;
+      case ShoppingSyncStatus.syncing:
+        return Icons.sync;
+      case ShoppingSyncStatus.synced:
+        return Icons.cloud_done_outlined;
+      case ShoppingSyncStatus.error:
+        return Icons.cloud_off_outlined;
+    }
+  }
+
+  Color _syncColor(ShoppingProvider provider) {
+    switch (provider.syncStatus) {
+      case ShoppingSyncStatus.offline:
+        return Colors.grey;
+      case ShoppingSyncStatus.syncing:
+        return Colors.orange;
+      case ShoppingSyncStatus.synced:
+        return Colors.green;
+      case ShoppingSyncStatus.error:
+        return Colors.red;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +100,18 @@ class _ListMainPageState extends State<ListMainPage> {
         ),
         centerTitle: true,
         actions: [
+          Tooltip(
+            message: _syncTooltip(shoppingProvider),
+            child: IconButton(
+              onPressed: shoppingProvider.syncStatus == ShoppingSyncStatus.error
+                  ? () => shoppingProvider.saveToStorage()
+                  : null,
+              icon: Icon(
+                _syncIcon(shoppingProvider),
+                color: _syncColor(shoppingProvider),
+              ),
+            ),
+          ),
           IconButton(
             onPressed: () {
               if (context.mounted) {
@@ -205,8 +261,8 @@ class _ListMainPageState extends State<ListMainPage> {
   }
 
   Widget _buildListContent(
-    List<String> activeProducts,
-    List<String> frequentProducts,
+    List<Product> activeProducts,
+    List<Product> frequentProducts,
     ShoppingProvider shoppingProvider,
     ThemeProvider themeProvider,
   ) {
@@ -225,13 +281,14 @@ class _ListMainPageState extends State<ListMainPage> {
             ),
             itemCount: activeProducts.length,
             itemBuilder: (context, index) {
+              final product = activeProducts[index];
               return ProductBubble(
-                label: activeProducts[index],
+                label: product.name,
                 productAdd: ProductAdd.active,
                 onTap: () => _removeActiveProduct(
                   shoppingProvider,
-                  activeProducts[index],
-                ), //_removeProduct(shoppingProvider, products[index]),
+                  product.id,
+                ),
               );
             },
           ),
@@ -244,7 +301,7 @@ class _ListMainPageState extends State<ListMainPage> {
                   bottom: 10,
                   left: 5,
                   right: 5,
-                ), //symmetric(vertical: 15.0, horizontal: 5.0),
+                ),
                 child: Container(
                   width: 100,
                   height: 35,
@@ -268,7 +325,6 @@ class _ListMainPageState extends State<ListMainPage> {
                       'Productos Frecuentes',
                       style: TextStyle(
                         fontSize: 20,
-                        // fontWeight: FontWeight(600),
                         letterSpacing: 1.0,
                         wordSpacing: 5.0,
                       ),
@@ -287,16 +343,17 @@ class _ListMainPageState extends State<ListMainPage> {
               ),
               itemCount: frequentProducts.length,
               itemBuilder: (context, index) {
+                final product = frequentProducts[index];
                 return ProductBubble(
-                  label: frequentProducts[index],
+                  label: product.name,
                   productAdd: ProductAdd.frequent,
                   onTap: () => _removeFrequentProduct(
                     shoppingProvider,
-                    frequentProducts[index],
-                  ), //_removeProduct(shoppingProvider, products[index]),
+                    product.id,
+                  ),
                 );
               },
-            ), // ----------------------------------------------------------------------- //
+            ),
           const SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
@@ -329,22 +386,42 @@ class _ListMainPageState extends State<ListMainPage> {
 
   void _removeActiveProduct(
     ShoppingProvider shoppingProvider,
-    String productName,
+    String productId,
   ) {
-    shoppingProvider.removeActiveProductFromSelectedList(
-      productName,
-    ); // Lista Actualizada: Active + Frequent
-    shoppingProvider.addFrequentProductToSelectedList(productName);
+    shoppingProvider.removeActiveProductFromSelectedList(productId);
+    // Luego agregamos a frecuentes con el nombre del producto
+    final product = shoppingProvider
+        .activeProductsForList(shoppingProvider.selectedListName)
+        .firstWhere((p) => p.id == productId, orElse: () => Product(
+      id: productId,
+      name: 'Producto',
+      lastAdded: DateTime.now(),
+    ));
+    shoppingProvider.addFrequentProductToSelectedList(
+      product.name,
+      price: product.price,
+      imageUrl: product.imageUrl,
+    );
   }
 
   void _removeFrequentProduct(
     ShoppingProvider shoppingProvider,
-    String productName,
+    String productId,
   ) {
-    shoppingProvider.removeFrequentProductFromSelectedList(
-      productName,
-    ); // Lista Actualizada: Active + Frequent
-    shoppingProvider.addActiveProductToSelectedList(productName);
+    shoppingProvider.removeFrequentProductFromSelectedList(productId);
+    // Luego agregamos a activos con el nombre del producto
+    final product = shoppingProvider
+        .frequentProductsForList(shoppingProvider.selectedListName)
+        .firstWhere((p) => p.id == productId, orElse: () => Product(
+      id: productId,
+      name: 'Producto',
+      lastAdded: DateTime.now(),
+    ));
+    shoppingProvider.addActiveProductToSelectedList(
+      product.name,
+      price: product.price,
+      imageUrl: product.imageUrl,
+    );
   }
 
   void _onNavigationTap(int index) {

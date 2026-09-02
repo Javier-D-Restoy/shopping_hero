@@ -20,7 +20,7 @@ class _ListManagerState extends State<ListManager> {
     final sessionProvider = context.watch<SessionProvider>();
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
-    final username = sessionProvider.username;
+    final displayName = sessionProvider.displayName;
     final colors = Theme.of(context).colorScheme;
     final listNames = shoppingProvider.shoppingLists.keys.toList();
 
@@ -28,20 +28,22 @@ class _ListManagerState extends State<ListManager> {
       appBar: AppBar(
         toolbarHeight: 40,
         leading: BackButton(
-          onPressed: () {
+          onPressed: () async {
             if (context.mounted) {
-              context.read<SessionProvider>().clearSession();
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LoginPage(),
-                ),
-              );
+              await context.read<SessionProvider>().logout();
+              if (context.mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginPage(),
+                  ),
+                );
+              }
             }
           },
         ),
         title: Text(
-          'Listas de $username',
+          'Listas de $displayName',
           style: const TextStyle(fontSize: 18),
         ),
         centerTitle: true,

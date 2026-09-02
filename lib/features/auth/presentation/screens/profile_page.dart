@@ -59,9 +59,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding: const EdgeInsets.symmetric(horizontal: 5.0),
                 child: TextField(
                   controller: usernameController,
-                  onSubmitted: (value) {
-                    sessionProvider.changeUsername(usernameController.text);
-                  },
+                  enabled: false,
+                  decoration: InputDecoration(
+                    hintText: sessionProvider.displayName,
+                  ),
                 ),
               ),
             ),

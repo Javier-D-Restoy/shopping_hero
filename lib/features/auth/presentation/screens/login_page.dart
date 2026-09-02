@@ -10,7 +10,7 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final usernameController = TextEditingController();
+    final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final focusNode = FocusNode();
 
@@ -47,15 +47,18 @@ class LoginPage extends StatelessWidget {
                             child: Column(
                               children: [
                                 TextFormField(
-                                  controller: usernameController,
-                                  decoration: const InputDecoration(labelText: 'Username'),
-                                  // focusNode: focusNode,
+                                  controller: emailController,
+                                  decoration: const InputDecoration(labelText: 'Email'),
+                                  keyboardType: TextInputType.emailAddress,
                                   onTapOutside: (event) {
                                     focusNode.unfocus();
                                   },
                                   validator: (value) {
                                     if (value == null || value.trim().isEmpty) {
-                                      return 'Introduce tu username';
+                                      return 'Introduce tu email';
+                                    }
+                                    if (!value.contains('@')) {
+                                      return 'Email inválido';
                                     }
                                     return null;
                                   },
@@ -64,7 +67,7 @@ class LoginPage extends StatelessWidget {
                                 TextFormField(
                                   controller: passwordController,
                                   decoration: const InputDecoration(labelText: 'Password'),
-                                  // focusNode: focusNode,
+                                  obscureText: true,
                                   onTapOutside: (event) {
                                     focusNode.unfocus();
                                   },
@@ -80,34 +83,64 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        ElevatedButton(
-                          onPressed: () async {
-                            if (formKey.currentState!.validate()) {
-                              final sessionProvider = context.read<SessionProvider>();
-                              final shoppingProvider = context.read<ShoppingProvider>();
-
-                              // 1. Iniciar sesión online en SessionProvider
-                              await sessionProvider.continueWithProfile(
-                                username: usernameController.text,
-                                password: passwordController.text,
-                              );
-
-                              // 2. Alternar la caja de Hive a la caché online
-                              await shoppingProvider.switchUserEnvironment(
-                                isOffline: sessionProvider.isOffline,
-                              );
-
-                              if (context.mounted) {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const ListManager(),
+                        Consumer<SessionProvider>(
+                          builder: (context, sessionProvider, _) {
+                            return Column(
+                              children: [
+                                if (sessionProvider.errorMessage != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: Text(
+                                      sessionProvider.errorMessage!,
+                                      style: const TextStyle(color: Colors.red, fontSize: 12),
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
-                                );
-                              }
-                            }
+                                ElevatedButton(
+                                  onPressed: sessionProvider.isLoading
+                                      ? null
+                                      : () async {
+                                          if (formKey.currentState!.validate()) {
+                                            final success = await sessionProvider.login(
+                                              email: emailController.text,
+                                              password: passwordController.text,
+                                            );
+
+                                            if (!context.mounted) return;
+
+                                            if (success) {
+                                              final shoppingProvider =
+                                                  context.read<ShoppingProvider>();
+                                              await shoppingProvider.setCurrentUser(
+                                                sessionProvider.uid,
+                                                isOffline: false,
+                                              );
+                                              await shoppingProvider.switchUserEnvironment(
+                                                isOffline: false,
+                                              );
+
+                                              if (!context.mounted) return;
+
+                                              Navigator.pushReplacement(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => const ListManager(),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                  child: sessionProvider.isLoading
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        )
+                                      : const Text('Login'),
+                                ),
+                              ],
+                            );
                           },
-                          child: const Text('Login'),
                         ),
                         const SizedBox(height: 4),
                         TextButton(
@@ -115,7 +148,7 @@ class LoginPage extends StatelessWidget {
                             if (context.mounted) {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => RegisterPage()),
+                                MaterialPageRoute(builder: (context) => const RegisterPage()),
                               );
                             }
                           },
@@ -125,27 +158,39 @@ class LoginPage extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 30),
-                        TextButton(
-                          onPressed: () async {
-                            final sessionProvider = context.read<SessionProvider>();
-                            final shoppingProvider = context.read<ShoppingProvider>();
+                        Consumer<SessionProvider>(
+                          builder: (context, sessionProvider, _) {
+                            return TextButton(
+                              onPressed: sessionProvider.isLoading
+                                  ? null
+                                  : () async {
+                                      final success = await sessionProvider.continueOffline(
+                                        displayName: 'Usuario Offline',
+                                      );
 
-                            // 1. Iniciar sesión local/offline en SessionProvider | Mantendrá el _username que ya estaba guardado en Hive
-                            await sessionProvider.continueOffline();
+                                      if (!context.mounted) return;
 
-                            // 2. Alternar la caja de Hive a la caja local de invitado
-                            await shoppingProvider.switchUserEnvironment(
-                              isOffline: sessionProvider.isOffline,
+                                      if (success) {
+                                        final shoppingProvider =
+                                            context.read<ShoppingProvider>();
+                                        await shoppingProvider.clearCurrentUser();
+                                        await shoppingProvider.switchUserEnvironment(
+                                          isOffline: true,
+                                        );
+
+                                        if (!context.mounted) return;
+
+                                        Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const ListManager(),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              child: const Text('Modo Offline'),
                             );
-
-                            if (context.mounted) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => const ListManager()),
-                              );
-                            }
                           },
-                          child: const Text('Modo Offline'),
                         ),
                       ],
                     ),

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shopping_hero/core/models/product_model.dart';
 import 'package:shopping_hero/core/models/user_model.dart';
 
 // --------------------------------------------------- ][ ACCESO A FIRESTORE ][ --------------------------------------------------- //
@@ -7,8 +8,8 @@ import 'package:shopping_hero/core/models/user_model.dart';
 //  - crear el perfil del usuario
 //  - leerlo
 //  - actualizarlo
-//  - guardar listas
-//  - recuperar listas
+//  - guardar listas con productos
+//  - recuperar listas con productos
 //  - eliminar listas
 
 class UserRepository {
@@ -74,50 +75,166 @@ class UserRepository {
 
   Future<void> saveShoppingLists({
     required String uid,
-    required Map<String, Map<String, List<String>>> shoppingLists,
+    required Map<String, Map<String, List<Product>>> shoppingLists,
+    Map<String, DateTime>? listUpdatedAt,
+    Map<String, String>? listIds,
+    Map<String, DateTime>? deletedLists,
   }) async {
     final collection = _userDoc(uid).collection('shoppingLists');
     final batch = _firestore.batch();
 
-    final currentDocs = await collection.get();
-    for (final doc in currentDocs.docs) {
-      batch.delete(doc.reference);
+    final sanitizedLists = <String, Map<String, List<Product>>>{};
+    for (final entry in shoppingLists.entries) {
+      final activeProducts = entry.value['active'] ?? <Product>[];
+      final frequentProducts = entry.value['frequent'] ?? <Product>[];
+
+      if (activeProducts.isEmpty && frequentProducts.isEmpty) {
+        continue;
+      }
+
+      sanitizedLists[entry.key] = {
+        'active': List<Product>.from(activeProducts),
+        'frequent': List<Product>.from(frequentProducts),
+      };
     }
 
-    for (final entry in shoppingLists.entries) {
+    final currentDocs = await collection.get();
+    for (final doc in currentDocs.docs) {
+      final data = doc.data();
+      final docName = (data['name'] ?? doc.id).toString();
+      final docIdValue = (data['listId'] ?? '').toString();
+      final shouldKeep = sanitizedLists.containsKey(docName) ||
+          (listIds != null && listIds.values.contains(docIdValue));
+      if (!shouldKeep) {
+        batch.delete(doc.reference);
+      }
+    }
+
+    if (deletedLists != null && deletedLists.isNotEmpty) {
+      final tombstonesRef = _userDoc(uid).collection('shoppingListDeletes');
+      for (final entry in deletedLists.entries) {
+        await tombstonesRef.doc(entry.key).set({
+          'deletedAt': Timestamp.fromDate(entry.value),
+        }, SetOptions(merge: true));
+      }
+    }
+
+    for (final entry in sanitizedLists.entries) {
       final listName = entry.key;
       final items = entry.value;
       final docId = _buildDocId(listName);
+      final stableId = listIds?[listName] ?? docId;
+
+      final activeProducts = (items['active'] ?? <Product>[])
+          .map((p) => p.toMap())
+          .toList();
+      final frequentProducts = (items['frequent'] ?? <Product>[])
+          .map((p) => p.toMap())
+          .toList();
+
+      final timestamp = listUpdatedAt?[listName] ?? DateTime.now();
 
       batch.set(
         collection.doc(docId),
         {
           'name': listName,
-          'active': items['active'] ?? <String>[],
-          'frequent': items['frequent'] ?? <String>[],
-          'updatedAt': FieldValue.serverTimestamp(),
+          'listId': stableId,
+          'active': activeProducts,
+          'frequent': frequentProducts,
+          'updatedAt': Timestamp.fromDate(timestamp),
         },
         SetOptions(merge: true),
       );
     }
 
-    await batch.commit();
+    if (currentDocs.docs.isNotEmpty || sanitizedLists.isNotEmpty) {
+      await batch.commit();
+    }
   }
 
-  Future<Map<String, Map<String, List<String>>>> getShoppingLists(String uid) async {
+  Future<Map<String, DateTime>> getShoppingListTimestamps(String uid) async {
+    final snapshot = await _userDoc(uid).collection('shoppingLists').get();
+    final result = <String, DateTime>{};
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final listName = (data['name'] ?? doc.id).toString();
+      final timestamp = data['updatedAt'];
+      if (timestamp is Timestamp) {
+        result[listName] = timestamp.toDate();
+      }
+    }
+
+    return result;
+  }
+
+  Future<Map<String, String>> getShoppingListIds(String uid) async {
+    final snapshot = await _userDoc(uid).collection('shoppingLists').get();
+    final result = <String, String>{};
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final listName = (data['name'] ?? doc.id).toString();
+      final listId = (data['listId'] ?? doc.id).toString();
+      result[listName] = listId;
+    }
+
+    return result;
+  }
+
+  Future<Map<String, DateTime>> getDeletedShoppingListTimestamps(String uid) async {
+    final snapshot = await _userDoc(uid).collection('shoppingListDeletes').get();
+    final result = <String, DateTime>{};
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final deletedAt = data['deletedAt'];
+      if (deletedAt is Timestamp) {
+        result[doc.id] = deletedAt.toDate();
+      }
+    }
+
+    return result;
+  }
+
+  Future<Map<String, Map<String, List<Product>>>> getShoppingLists(
+    String uid,
+  ) async {
     final snapshot = await _userDoc(uid).collection('shoppingLists').get();
 
-    final result = <String, Map<String, List<String>>>{};
+    final result = <String, Map<String, List<Product>>>{};
 
     for (final doc in snapshot.docs) {
       final data = doc.data();
 
       final listName = (data['name'] ?? doc.id).toString();
+      
       final active = (data['active'] as List<dynamic>? ?? <dynamic>[])
-          .map((item) => item.toString())
+          .asMap()
+          .entries
+          .map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            if (item is Map<String, dynamic>) {
+              return Product.fromMap('${listName}_active_$index', item);
+            }
+            return null;
+          })
+          .whereType<Product>()
           .toList();
+
       final frequent = (data['frequent'] as List<dynamic>? ?? <dynamic>[])
-          .map((item) => item.toString())
+          .asMap()
+          .entries
+          .map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            if (item is Map<String, dynamic>) {
+              return Product.fromMap('${listName}_frequent_$index', item);
+            }
+            return null;
+          })
+          .whereType<Product>()
           .toList();
 
       result[listName] = {
@@ -132,22 +249,29 @@ class UserRepository {
   Future<void> addOrUpdateShoppingList({
     required String uid,
     required String listName,
-    required Map<String, List<String>> items,
+    required Map<String, List<Product>> items,
   }) async {
     final docId = _buildDocId(listName);
+
+    final activeProducts = (items['active'] ?? <Product>[])
+        .map((p) => p.toMap())
+        .toList();
+    final frequentProducts = (items['frequent'] ?? <Product>[])
+        .map((p) => p.toMap())
+        .toList();
 
     await _userDoc(uid)
         .collection('shoppingLists')
         .doc(docId)
         .set(
-      {
-        'name': listName,
-        'active': items['active'] ?? <String>[],
-        'frequent': items['frequent'] ?? <String>[],
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-      SetOptions(merge: true),
-    );
+          {
+            'name': listName,
+            'active': activeProducts,
+            'frequent': frequentProducts,
+            'updatedAt': FieldValue.serverTimestamp(),
+          },
+          SetOptions(merge: true),
+        );
   }
 
   Future<void> deleteShoppingList({

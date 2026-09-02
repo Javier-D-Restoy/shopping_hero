@@ -36,12 +36,20 @@ Future<void> main() async {
 
   // Inicializamos primero el estado de la sesión
   await sessionProvider.init();
+  await shoppingProvider.setCurrentUser(
+    sessionProvider.uid,
+    isOffline: sessionProvider.isOffline,
+  );
 
   // Inicializamos el theme y el shopping provider pasando el estado isOffline actual
   await Future.wait([
     themeProvider.init(),
     shoppingProvider.init(isOffline: sessionProvider.isOffline),
   ]);
+
+  if (!sessionProvider.isOffline && sessionProvider.uid != null) {
+    await shoppingProvider.switchUserEnvironment(isOffline: false);
+  }
 
   runApp(
     MyApp(
