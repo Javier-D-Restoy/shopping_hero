@@ -4,6 +4,84 @@ import 'package:shopping_hero/core/providers/shopping_provider.dart';
 
 void main() {
   group('ShoppingProvider merge strategy', () {
+    test('does not restore an active product after it moved to frequent locally', () {
+      final local = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': <Product>[],
+          'frequent': [
+            Product(
+              id: 'product-1',
+              name: 'Pan',
+              frequency: 2,
+              lastAdded: DateTime(2024, 1, 2),
+            ),
+          ],
+        },
+      };
+      final cloud = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': [
+            Product(
+              id: 'product-1',
+              name: 'Pan',
+              frequency: 2,
+              lastAdded: DateTime(2024, 1, 2),
+            ),
+          ],
+          'frequent': <Product>[],
+        },
+      };
+
+      final merged = ShoppingProvider.mergeShoppingListsForSync(
+        local,
+        cloud,
+        localUpdatedAt: {'Lista 1': DateTime(2024, 1, 3)},
+        cloudUpdatedAt: {'Lista 1': DateTime(2024, 1, 2)},
+      );
+
+      expect(merged['Lista 1']!['active'], isEmpty);
+      expect(merged['Lista 1']!['frequent']!.single.name, 'Pan');
+    });
+
+    test('does not keep the old name when a product is renamed locally', () {
+      final local = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': [
+            Product(
+              id: 'product-1',
+              name: 'Huevos Camperos',
+              frequency: 1,
+              lastAdded: DateTime(2024, 1, 3),
+            ),
+          ],
+          'frequent': <Product>[],
+        },
+      };
+      final cloud = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': [
+            Product(
+              id: 'product-1',
+              name: 'Huevos',
+              frequency: 1,
+              lastAdded: DateTime(2024, 1, 2),
+            ),
+          ],
+          'frequent': <Product>[],
+        },
+      };
+
+      final merged = ShoppingProvider.mergeShoppingListsForSync(
+        local,
+        cloud,
+        localUpdatedAt: {'Lista 1': DateTime(2024, 1, 3)},
+        cloudUpdatedAt: {'Lista 1': DateTime(2024, 1, 2)},
+      );
+
+      expect(merged['Lista 1']!['active'], hasLength(1));
+      expect(merged['Lista 1']!['active']!.single.name, 'Huevos Camperos');
+    });
+
     test('prefers the most recently updated list when both local and cloud versions exist', () {
       final local = <String, Map<String, List<Product>>>{
         'Lista 1': {

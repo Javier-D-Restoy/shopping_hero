@@ -4,6 +4,7 @@ class Product {
   final String id;
   final String name;
   final int frequency;
+  final int amount;
   final double? price;
   final String? imageUrl;
   final DateTime lastAdded;
@@ -12,6 +13,7 @@ class Product {
     required this.id,
     required this.name,
     this.frequency = 1,
+    this.amount = 1,
     this.price,
     this.imageUrl,
     required this.lastAdded,
@@ -21,6 +23,7 @@ class Product {
     String? id,
     String? name,
     int? frequency,
+    int? amount,
     double? price,
     String? imageUrl,
     DateTime? lastAdded,
@@ -29,6 +32,7 @@ class Product {
       id: id ?? this.id,
       name: name ?? this.name,
       frequency: frequency ?? this.frequency,
+      amount: amount ?? this.amount,
       price: price ?? this.price,
       imageUrl: imageUrl ?? this.imageUrl,
       lastAdded: lastAdded ?? this.lastAdded,
@@ -37,11 +41,13 @@ class Product {
 
   factory Product.fromMap(String id, Map<String, dynamic> map) {
     final lastAddedValue = map['lastAdded'];
+    final storedId = (map['id'] ?? id).toString();
 
     return Product(
-      id: id,
+      id: storedId,
       name: (map['name'] ?? '').toString(),
       frequency: (map['frequency'] ?? 1) as int,
+      amount: (map['amount'] ?? 1) as int,
       price: map['price'] != null ? (map['price'] as num).toDouble() : null,
       imageUrl: map['imageUrl']?.toString(),
       lastAdded: lastAddedValue is Timestamp
@@ -55,8 +61,10 @@ class Product {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'name': name,
       'frequency': frequency,
+      'amount': amount,
       'price': price,
       'imageUrl': imageUrl,
       'lastAdded': Timestamp.fromDate(lastAdded),
@@ -68,6 +76,7 @@ class Product {
       'id': id,
       'name': name,
       'frequency': frequency,
+      'amount': amount,
       'price': price,
       'imageUrl': imageUrl,
       'lastAdded': lastAdded.toIso8601String(),
@@ -79,6 +88,7 @@ class Product {
       id: (map['id'] ?? '').toString(),
       name: (map['name'] ?? '').toString(),
       frequency: (map['frequency'] ?? 1) as int,
+      amount: (map['amount'] ?? 1) as int,
       price: map['price'] != null ? (map['price'] as num).toDouble() : null,
       imageUrl: map['imageUrl']?.toString(),
       lastAdded: map['lastAdded'] is DateTime
@@ -100,5 +110,5 @@ class Product {
 
   @override
   String toString() =>
-      'Product(id: $id, name: $name, frequency: $frequency, price: $price)';
+      'Product(id: $id, name: $name, frequency: $frequency, $amount, price: $price)';
 }

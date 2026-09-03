@@ -27,10 +27,10 @@ class ShoppingProvider extends ChangeNotifier {
   DateTime? _lastSyncedAt;
 
   final Map<String, Map<String, List<Product>>> _shoppingLists = {
-    'Lista 1': {
-      'active': <Product>[],
-      'frequent': <Product>[],
-    },
+    // 'Lista 1': {
+    //   'active': <Product>[],
+    //   'frequent': <Product>[],
+    // },
   };
 
   String _selectedListName = 'Lista 1';
@@ -75,6 +75,38 @@ class ShoppingProvider extends ChangeNotifier {
     final merged = byName.values.toList();
     merged.sort((a, b) => b.lastAdded.compareTo(a.lastAdded));
     return merged;
+  }
+
+  static Map<String, List<Product>> _mergeListCategories(
+    Map<String, List<Product>> winnerList,
+    Map<String, List<Product>> otherList,
+  ) {
+    final winnerActive = winnerList['active'] ?? <Product>[];
+    final winnerFrequent = winnerList['frequent'] ?? <Product>[];
+    final winnerActiveNames = winnerActive
+        .map((product) => product.name.trim().toLowerCase())
+        .toSet();
+    final winnerFrequentNames = winnerFrequent
+        .map((product) => product.name.trim().toLowerCase())
+        .toSet();
+    final winnerActiveIds = winnerActive.map((product) => product.id).toSet();
+    final winnerFrequentIds = winnerFrequent.map((product) => product.id).toSet();
+
+    final otherActive = (otherList['active'] ?? <Product>[])
+      .where((product) =>
+        !winnerFrequentNames.contains(product.name.trim().toLowerCase()) &&
+        !winnerActiveIds.contains(product.id))
+        .toList();
+    final otherFrequent = (otherList['frequent'] ?? <Product>[])
+      .where((product) =>
+        !winnerActiveNames.contains(product.name.trim().toLowerCase()) &&
+        !winnerFrequentIds.contains(product.id))
+        .toList();
+
+    return {
+      'active': _mergeProductLists(winnerActive, otherActive),
+      'frequent': _mergeProductLists(winnerFrequent, otherFrequent),
+    };
   }
 
   static Map<String, Map<String, List<Product>>> mergeShoppingListsForSync(
@@ -131,14 +163,9 @@ class ShoppingProvider extends ChangeNotifier {
       final winnerList = cloudTs.isAfter(localTs) ? cloudList : localList;
       final otherList = identical(winnerList, localList) ? cloudList : localList;
 
-      final mergedActive = _mergeProductLists(
-        winnerList['active'] ?? <Product>[],
-        otherList['active'] ?? <Product>[],
-      );
-      final mergedFrequent = _mergeProductLists(
-        winnerList['frequent'] ?? <Product>[],
-        otherList['frequent'] ?? <Product>[],
-      );
+      final mergedCategories = _mergeListCategories(winnerList, otherList);
+      final mergedActive = mergedCategories['active']!;
+      final mergedFrequent = mergedCategories['frequent']!;
 
       final preferredName = cloudTs.isAfter(localTs)
           ? (cloudEntry?.key ?? id)
@@ -440,7 +467,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> saveToStorage() async {
+  Future<void> saveToStorage({bool mergeCloud = true}) async {
     await _ensureInitialized();
 
     if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
@@ -448,7 +475,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     try {
-      if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
+      if (mergeCloud && !_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
       final cloudLists = await _userRepository.getShoppingLists(_currentUid!);
       final cloudTs = await _userRepository.getShoppingListTimestamps(_currentUid!);
       final cloudListIds = await _userRepository.getShoppingListIds(_currentUid!);
@@ -546,8 +573,12 @@ class ShoppingProvider extends ChangeNotifier {
     return listMap;
   }
 
-  List<Product> activeProductsForList(String listName) =>
-      getListAdd(listName)?['active'] ?? <Product>[];
+  List<Product> activeProductsForList(String listName) {
+    final products = getListAdd(listName)?['active'] ?? <Product>[];
+    final sorted = List<Product>.from(products);
+    sorted.sort((a, b) => b.lastAdded.compareTo(a.lastAdded));
+    return sorted;
+  }
 
   List<Product> frequentProductsForList(String listName) {
     final products = getListAdd(listName)?['frequent'] ?? <Product>[];
@@ -786,6 +817,105 @@ class ShoppingProvider extends ChangeNotifier {
 
   void removeActiveProductFromSelectedList(String productId) {
     _removeActiveProductFromList(_selectedListName, productId);
+  }
+
+  void moveActiveProductToFrequent(String listName, String productId) {
+    final list = _shoppingLists[listName];
+    if (list == null) return;
+
+    final activeList = list['active'];
+    final frequentList = list['frequent'] ??= <Product>[];
+    if (activeList == null) return;
+
+    final activeIndex = activeList.indexWhere((product) => product.id == productId);
+    if (activeIndex < 0) return;
+
+    final product = activeList.removeAt(activeIndex);
+    frequentList.removeWhere((frequentProduct) => frequentProduct.id == product.id);
+    frequentList.add(product);
+    _touchList(listName);
+    notifyListeners();
+    unawaited(saveToStorage());
+  }
+
+  void moveActiveProductToFrequentSelectedList(String productId) {
+    moveActiveProductToFrequent(_selectedListName, productId);
+  }
+
+  void moveFrequentProductToActive(String listName, String productId) {
+    final list = _shoppingLists[listName];
+    if (list == null) return;
+
+    final frequentList = list['frequent'];
+    final activeList = list['active'] ??= <Product>[];
+    if (frequentList == null) return;
+
+    final frequentIndex = frequentList.indexWhere((product) => product.id == productId);
+    if (frequentIndex < 0) return;
+
+    final product = frequentList.removeAt(frequentIndex);
+    activeList.removeWhere((activeProduct) => activeProduct.id == product.id);
+    activeList.add(product.copyWith(frequency: product.frequency + 1));
+    _touchList(listName);
+    notifyListeners();
+    unawaited(saveToStorage());
+  }
+
+  void moveFrequentProductToActiveSelectedList(String productId) {
+    moveFrequentProductToActive(_selectedListName, productId);
+  }
+
+  void updateProduct(
+    String listName,
+    String productId, {
+    required String name,
+    required int frequency,
+    required int amount,
+    double? price,
+    String? imageUrl,
+  }) {
+    final list = _shoppingLists[listName];
+    if (list == null) return;
+
+    for (final category in ['active', 'frequent']) {
+      final products = list[category];
+      if (products == null) continue;
+
+      final index = products.indexWhere((product) => product.id == productId);
+      if (index < 0) continue;
+
+      products[index] = products[index].copyWith(
+        name: name,
+        frequency: frequency,
+        amount: amount,
+        price: price,
+        imageUrl: imageUrl,
+      );
+      _touchList(listName);
+      notifyListeners();
+      unawaited(saveToStorage());
+      return;
+    }
+  }
+
+  void deleteProduct(String listName, String productId) {
+    final list = _shoppingLists[listName];
+    if (list == null) return;
+
+    var removed = false;
+    for (final category in ['active', 'frequent']) {
+      final products = list[category];
+      if (products == null) continue;
+      final previousLength = products.length;
+      products.removeWhere((product) => product.id == productId);
+      removed = products.length < previousLength || removed;
+    }
+
+    if (!removed) return;
+
+    _touchList(listName);
+    notifyListeners();
+    unawaited(saveToStorage(mergeCloud: false));
   }
 
   void removeFrequentProductFromSelectedList(String productId) {

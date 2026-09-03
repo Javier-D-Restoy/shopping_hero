@@ -24,6 +24,16 @@ class _ListMainPageState extends State<ListMainPage> {
   final focusNode = FocusNode();
 
   int _selectedIndex = 0;
+  final Map<String, ProductAdd> _productLocations = {};
+  bool _initialProductsRegistered = false;
+
+  bool _shouldAnimateProduct(Product product, ProductAdd location) {
+    final previousLocation = _productLocations[product.id];
+    _productLocations[product.id] = location;
+
+    if (!_initialProductsRegistered) return false;
+    return previousLocation == null || previousLocation != location;
+  }
 
   String _syncTooltip(ShoppingProvider provider) {
     switch (provider.syncStatus) {
@@ -266,6 +276,16 @@ class _ListMainPageState extends State<ListMainPage> {
     ShoppingProvider shoppingProvider,
     ThemeProvider themeProvider,
   ) {
+    if (!_initialProductsRegistered) {
+      for (final product in activeProducts) {
+        _productLocations[product.id] = ProductAdd.active;
+      }
+      for (final product in frequentProducts) {
+        _productLocations[product.id] = ProductAdd.frequent;
+      }
+      _initialProductsRegistered = true;
+    }
+
     return Padding(
       padding: const EdgeInsets.only(left: 12, right: 12),
       child: CustomScrollView(
@@ -283,8 +303,12 @@ class _ListMainPageState extends State<ListMainPage> {
             itemBuilder: (context, index) {
               final product = activeProducts[index];
               return ProductBubble(
+                key: ValueKey('${product.id}-active'),
                 label: product.name,
+                amount: product.amount,
                 productAdd: ProductAdd.active,
+                animateOnEntry: _shouldAnimateProduct(product, ProductAdd.active),
+                onLongPress: () => _showProductEditor(shoppingProvider, product),
                 onTap: () => _removeActiveProduct(
                   shoppingProvider,
                   product.id,
@@ -345,8 +369,12 @@ class _ListMainPageState extends State<ListMainPage> {
               itemBuilder: (context, index) {
                 final product = frequentProducts[index];
                 return ProductBubble(
+                  key: ValueKey('${product.id}-frequent'),
                   label: product.name,
+                  amount: product.amount,
                   productAdd: ProductAdd.frequent,
+                  animateOnEntry: _shouldAnimateProduct(product, ProductAdd.frequent),
+                  onLongPress: () => _showProductEditor(shoppingProvider, product),
                   onTap: () => _removeFrequentProduct(
                     shoppingProvider,
                     product.id,
@@ -388,40 +416,181 @@ class _ListMainPageState extends State<ListMainPage> {
     ShoppingProvider shoppingProvider,
     String productId,
   ) {
-    shoppingProvider.removeActiveProductFromSelectedList(productId);
-    // Luego agregamos a frecuentes con el nombre del producto
-    final product = shoppingProvider
-        .activeProductsForList(shoppingProvider.selectedListName)
-        .firstWhere((p) => p.id == productId, orElse: () => Product(
-      id: productId,
-      name: 'Producto',
-      lastAdded: DateTime.now(),
-    ));
-    shoppingProvider.addFrequentProductToSelectedList(
-      product.name,
-      price: product.price,
-      imageUrl: product.imageUrl,
-    );
+    shoppingProvider.moveActiveProductToFrequentSelectedList(productId);
   }
 
   void _removeFrequentProduct(
     ShoppingProvider shoppingProvider,
     String productId,
   ) {
-    shoppingProvider.removeFrequentProductFromSelectedList(productId);
-    // Luego agregamos a activos con el nombre del producto
-    final product = shoppingProvider
-        .frequentProductsForList(shoppingProvider.selectedListName)
-        .firstWhere((p) => p.id == productId, orElse: () => Product(
-      id: productId,
-      name: 'Producto',
-      lastAdded: DateTime.now(),
-    ));
-    shoppingProvider.addActiveProductToSelectedList(
-      product.name,
-      price: product.price,
-      imageUrl: product.imageUrl,
+    shoppingProvider.moveFrequentProductToActiveSelectedList(productId);
+  }
+
+  Future<void> _showProductEditor(
+    ShoppingProvider shoppingProvider,
+    Product product,
+  ) async {
+    final nameController = TextEditingController(text: product.name);
+    final frequencyController = TextEditingController(
+      text: product.frequency.toString(),
     );
+    final priceController = TextEditingController(
+      text: product.price?.toString() ?? '',
+    );
+    final amountController = TextEditingController(
+      text: product.amount.toString(),
+    );
+    final imageUrlController = TextEditingController(text: product.imageUrl ?? '');
+
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        builder: (context) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 20,
+              right: 20,
+              top: 20,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Editar producto',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    maxLength: 35,
+                    autofocus: true,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: frequencyController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Frecuencia',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: amountController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Cantidad',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextField(
+                          controller: priceController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: const InputDecoration(
+                            labelText: 'Precio',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: imageUrlController,
+                    keyboardType: TextInputType.url,
+                    decoration: const InputDecoration(
+                      labelText: 'URL de imagen',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            final name = nameController.text.trim();
+                            final frequency = int.tryParse(frequencyController.text.trim());
+                            final amount = int.tryParse(amountController.text.trim());
+                            final priceText = priceController.text.trim().replaceAll(',', '.');
+                            final price = priceText.isEmpty ? null : double.tryParse(priceText);
+
+                            if (name.isEmpty || frequency == null || frequency < 0 ||
+                                amount == null || amount < 0 ||
+                                (priceText.isNotEmpty && price == null)) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Revisa los datos del producto')),
+                              );
+                              return;
+                            }
+
+                            shoppingProvider.updateProduct(
+                              shoppingProvider.selectedListName,
+                              product.id,
+                              name: name,
+                              frequency: frequency,
+                              amount: amount,
+                              price: price,
+                              imageUrl: imageUrlController.text.trim().isEmpty
+                                  ? null
+                                  : imageUrlController.text.trim(),
+                            );
+                            Navigator.of(context).pop();
+                          },
+                          icon: const Icon(Icons.save_outlined),
+                          label: const Text('Guardar'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            shoppingProvider.deleteProduct(
+                              shoppingProvider.selectedListName,
+                              product.id,
+                            );
+                            Navigator.of(context).pop();
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                          ),
+                          icon: const Icon(Icons.delete_outline),
+                          label: const Text('Borrar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    } finally {
+      nameController.dispose();
+      frequencyController.dispose();
+      priceController.dispose();
+      imageUrlController.dispose();
+    }
   }
 
   void _onNavigationTap(int index) {
