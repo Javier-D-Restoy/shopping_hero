@@ -209,12 +209,14 @@ class _ListMainPageState extends State<ListMainPage> {
                             Expanded(
                               child: TextFormField(
                                 controller: _productNameController,
+                                maxLength: 24,
                                 onTapOutside: (event) {
                                   focusNode.unfocus();
                                 },
                                 focusNode: focusNode,
                                 decoration: const InputDecoration(
                                   hintText: 'Me hace falta...',
+                                  counterText: '',
                                   border: OutlineInputBorder(),
                                   contentPadding: EdgeInsets.symmetric(
                                     horizontal: 12,
@@ -467,11 +469,12 @@ class _ListMainPageState extends State<ListMainPage> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameController,
-                    maxLength: 35,
+                    maxLength: 24,
                     autofocus: true,
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(
                       labelText: 'Nombre',
+                      counterText: '',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -480,10 +483,13 @@ class _ListMainPageState extends State<ListMainPage> {
                     children: [
                       Expanded(
                         child: TextField(
+                          textAlign: TextAlign.center,
                           controller: frequencyController,
+                          maxLength: 6,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
                             labelText: 'Frecuencia',
+                            counterText: '',
                             border: OutlineInputBorder(),
                           ),
                         ),
@@ -491,10 +497,13 @@ class _ListMainPageState extends State<ListMainPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
+                          textAlign: TextAlign.center,
                           controller: amountController,
+                          maxLength: 3,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
                             labelText: 'Cantidad',
+                            counterText: '',
                             border: OutlineInputBorder(),
                           ),
                         ),
@@ -502,10 +511,14 @@ class _ListMainPageState extends State<ListMainPage> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: TextField(
+                          textAlign: TextAlign.center,
                           controller: priceController,
+                          maxLength: 7,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: const InputDecoration(
                             labelText: 'Precio',
+                            alignLabelWithHint: false,
+                            counterText: '',
                             border: OutlineInputBorder(),
                           ),
                         ),

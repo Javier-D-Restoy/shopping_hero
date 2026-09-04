@@ -11,7 +11,7 @@ class ProductBubble extends StatefulWidget {
     required this.amount,
     this.onTap,
     this.onLongPress,
-    this.longPressDuration = const Duration(seconds: 1),
+    this.longPressDuration = const Duration(milliseconds: 400),
     required this.productAdd,
     this.animateOnEntry = false,
   });
@@ -83,31 +83,34 @@ class _ProductBubbleState extends State<ProductBubble> {
               borderRadius: BorderRadius.circular(10),
               boxShadow: [BoxShadow(color: Colors.black, spreadRadius: 1)],
             ),
-            child: Center(
-              child: Stack(
-                children: [
-                  Text(
-                    widget.amount > 1 ? "(${widget.amount}) ${widget.label}"
-                    : widget.label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      foreground: Paint()
-                        ..style = PaintingStyle.stroke
-                        ..strokeWidth = 3
-                        ..color = Colors.black,
+            child: Padding(
+              padding: const EdgeInsets.all(5.0),
+              child: Center(
+                child: Stack(
+                  children: [
+                    Text(
+                      widget.amount > 1 ? "${widget.label}\n(${widget.amount})"
+                      : widget.label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        foreground: Paint()
+                          ..style = PaintingStyle.stroke
+                          ..strokeWidth = 3
+                          ..color = Colors.black,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    widget.amount > 1 ? "(${widget.amount}) ${widget.label}"
-                    : widget.label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    Text(
+                      widget.amount > 1 ? "${widget.label}\n(${widget.amount})"
+                      : widget.label,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

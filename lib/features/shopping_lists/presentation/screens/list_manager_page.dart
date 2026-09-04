@@ -79,6 +79,7 @@ class _ListManagerState extends State<ListManager> {
                         colors: colors,
                         listName: listName,
                         productCount: shoppingProvider.activeProductsForList(listName).length, //shoppingProvider.productsForList(listName).length,
+                        canManageList: shoppingProvider.canManageList(listName),
                         onRename: (newName) {
                           shoppingProvider.renameList(listName, newName);
                         },

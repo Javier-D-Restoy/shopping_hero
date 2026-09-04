@@ -9,12 +9,14 @@ class ListBubble extends StatefulWidget {
     required this.colors,
     required this.listName,
     required this.productCount,
+    required this.canManageList,
     required this.onRename,
   });
 
   final ColorScheme colors;
   final String listName;
   final int productCount;
+  final bool canManageList;
   final ValueChanged<String> onRename;
 
   @override
@@ -213,16 +215,18 @@ class _ListBubbleState extends State<ListBubble> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    onPressed: _showDeleteConfirmationDialog,
-                    icon: const Icon(Icons.delete_outline, color: Colors.white),
-                    tooltip: 'Eliminar lista',
-                  ),
-                  IconButton(
-                    onPressed: _showRenameDialog,
-                    icon: const Icon(Icons.edit, color: Colors.white),
-                    tooltip: 'Renombrar lista',
-                  ),
+                  if (widget.canManageList) ...[
+                    IconButton(
+                      onPressed: _showDeleteConfirmationDialog,
+                      icon: const Icon(Icons.delete_outline, color: Colors.white),
+                      tooltip: 'Eliminar lista',
+                    ),
+                    IconButton(
+                      onPressed: _showRenameDialog,
+                      icon: const Icon(Icons.edit, color: Colors.white),
+                      tooltip: 'Renombrar lista',
+                    ),
+                  ],
                 ],
               ),
             ),

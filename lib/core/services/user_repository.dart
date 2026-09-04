@@ -24,6 +24,9 @@ class UserRepository {
   DocumentReference<Map<String, dynamic>> _userDoc(String uid) =>
       _usersCollection.doc(uid);
 
+    CollectionReference<Map<String, dynamic>> get _sharedListsCollection =>
+      _firestore.collection('sharedShoppingLists');
+
   Future<void> createUserProfile({
     required String uid,
     required String email,
@@ -50,6 +53,81 @@ class UserRepository {
     }
 
     return UserModel.fromMap(uid, snapshot.data()!);
+  }
+
+  Future<String> shareShoppingList({
+    required String ownerUid,
+    required String listName,
+    required String recipientEmail,
+  }) async {
+    final recipientSnapshot = await _usersCollection
+      .where('email', isEqualTo: recipientEmail.trim())
+        .limit(1)
+        .get();
+
+    if (recipientSnapshot.docs.isEmpty) {
+      throw Exception('No existe un usuario con ese email');
+    }
+
+    final listSnapshot = await _userDoc(ownerUid)
+        .collection('shoppingLists')
+        .where('name', isEqualTo: listName)
+        .limit(1)
+        .get();
+
+    if (listSnapshot.docs.isEmpty) {
+      throw Exception('No se encontró la lista seleccionada');
+    }
+
+    final listData = listSnapshot.docs.first.data();
+    final listId = (listData['listId'] ?? listSnapshot.docs.first.id).toString();
+    final recipientUid = recipientSnapshot.docs.first.id;
+    final members = <String>{ownerUid, recipientUid};
+
+    await _sharedListsCollection.doc(listId).set({
+      ...listData,
+      'listId': listId,
+      'ownerUid': ownerUid,
+      'memberUids': members.toList(),
+      'updatedAt': listData['updatedAt'] ?? Timestamp.now(),
+    }, SetOptions(merge: true));
+
+    await listSnapshot.docs.first.reference.delete();
+    return listId;
+  }
+
+  Future<Map<String, Map<String, dynamic>>> getSharedShoppingLists(
+    String uid,
+  ) async {
+    final snapshot = await _sharedListsCollection
+        .where('memberUids', arrayContains: uid)
+        .get();
+    return {
+      for (final doc in snapshot.docs)
+        doc.id: {
+          ...doc.data(),
+          'listId': doc.id,
+        },
+    };
+  }
+
+  Future<void> saveSharedShoppingList({
+    required String listId,
+    required String name,
+    required List<Product> active,
+    required List<Product> frequent,
+    required DateTime updatedAt,
+  }) async {
+    await _sharedListsCollection.doc(listId).set({
+      'name': name,
+      'active': active.map((product) => product.toMap()).toList(),
+      'frequent': frequent.map((product) => product.toMap()).toList(),
+      'updatedAt': Timestamp.fromDate(updatedAt),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> deleteSharedShoppingList(String listId) async {
+    await _sharedListsCollection.doc(listId).delete();
   }
 
   Future<void> updateUserProfile({
