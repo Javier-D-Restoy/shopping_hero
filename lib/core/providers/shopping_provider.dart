@@ -10,7 +10,7 @@ enum ShoppingSyncStatus { offline, syncing, synced, error }
 
 class ShoppingProvider extends ChangeNotifier {
   ShoppingProvider({UserRepository? userRepository})
-      : _userRepository = userRepository ?? UserRepository();
+    : _userRepository = userRepository ?? UserRepository();
 
   // Cajas dinámicas según el entorno
   static const String _guestBoxName = 'shopping_lists_guest';
@@ -44,7 +44,9 @@ class ShoppingProvider extends ChangeNotifier {
 
   Future<void> leaveSharedList(String listName) async {
     if (_currentUid == null) {
-      throw Exception('Necesitas iniciar sesión para desvincularte de la lista');
+      throw Exception(
+        'Necesitas iniciar sesión para desvincularte de la lista',
+      );
     }
 
     final cleanedName = listName.trim();
@@ -107,7 +109,10 @@ class ShoppingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  static List<Product> _mergeProductLists(List<Product> local, List<Product> cloud) {
+  static List<Product> _mergeProductLists(
+    List<Product> local,
+    List<Product> cloud,
+  ) {
     final byName = <String, Product>{};
 
     for (final product in [...local, ...cloud]) {
@@ -122,7 +127,8 @@ class ShoppingProvider extends ChangeNotifier {
       final existingTimestamp = existing.lastAdded;
       final candidateTimestamp = product.lastAdded;
 
-      final shouldReplace = candidateTimestamp.isAfter(existingTimestamp) ||
+      final shouldReplace =
+          candidateTimestamp.isAfter(existingTimestamp) ||
           (candidateTimestamp.isAtSameMomentAs(existingTimestamp) &&
               product.frequency > existing.frequency);
 
@@ -149,17 +155,25 @@ class ShoppingProvider extends ChangeNotifier {
         .map((product) => product.name.trim().toLowerCase())
         .toSet();
     final winnerActiveIds = winnerActive.map((product) => product.id).toSet();
-    final winnerFrequentIds = winnerFrequent.map((product) => product.id).toSet();
+    final winnerFrequentIds = winnerFrequent
+        .map((product) => product.id)
+        .toSet();
 
     final otherActive = (otherList['active'] ?? <Product>[])
-      .where((product) =>
-        !winnerFrequentNames.contains(product.name.trim().toLowerCase()) &&
-        !winnerActiveIds.contains(product.id))
+        .where(
+          (product) =>
+              !winnerFrequentNames.contains(
+                product.name.trim().toLowerCase(),
+              ) &&
+              !winnerActiveIds.contains(product.id),
+        )
         .toList();
     final otherFrequent = (otherList['frequent'] ?? <Product>[])
-      .where((product) =>
-        !winnerActiveNames.contains(product.name.trim().toLowerCase()) &&
-        !winnerFrequentIds.contains(product.id))
+        .where(
+          (product) =>
+              !winnerActiveNames.contains(product.name.trim().toLowerCase()) &&
+              !winnerFrequentIds.contains(product.id),
+        )
         .toList();
 
     return {
@@ -208,19 +222,29 @@ class ShoppingProvider extends ChangeNotifier {
       seenIds.add(id);
       final localEntry = localById[id];
       final cloudEntry = cloudById[id];
-      final localList = localEntry?.value ?? {'active': <Product>[], 'frequent': <Product>[]};
-      final cloudList = cloudEntry?.value ?? {'active': <Product>[], 'frequent': <Product>[]};
+      final localList =
+          localEntry?.value ?? {'active': <Product>[], 'frequent': <Product>[]};
+      final cloudList =
+          cloudEntry?.value ?? {'active': <Product>[], 'frequent': <Product>[]};
 
-      final localTs = localUpdatedAt?[localEntry?.key ?? id] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final cloudTs = cloudUpdatedAt?[cloudEntry?.key ?? id] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final localTs =
+          localUpdatedAt?[localEntry?.key ?? id] ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final cloudTs =
+          cloudUpdatedAt?[cloudEntry?.key ?? id] ??
+          DateTime.fromMillisecondsSinceEpoch(0);
       final tombstoneTs = tombstones[id];
 
-      if (tombstoneTs != null && tombstoneTs.isAfter(localTs) && tombstoneTs.isAfter(cloudTs)) {
+      if (tombstoneTs != null &&
+          tombstoneTs.isAfter(localTs) &&
+          tombstoneTs.isAfter(cloudTs)) {
         continue;
       }
 
       final winnerList = cloudTs.isAfter(localTs) ? cloudList : localList;
-      final otherList = identical(winnerList, localList) ? cloudList : localList;
+      final otherList = identical(winnerList, localList)
+          ? cloudList
+          : localList;
 
       final mergedCategories = _mergeListCategories(winnerList, otherList);
       final mergedActive = mergedCategories['active']!;
@@ -246,21 +270,26 @@ class ShoppingProvider extends ChangeNotifier {
     for (final listName in fallbackLocalNames) {
       final listId = resolveListId(listName, localListIds);
       final tombstoneTs = tombstones[listId];
-      final localList = local[listName] ?? {'active': <Product>[], 'frequent': <Product>[]};
-      final localTs = localUpdatedAt?[listName] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final localList =
+          local[listName] ?? {'active': <Product>[], 'frequent': <Product>[]};
+      final localTs =
+          localUpdatedAt?[listName] ?? DateTime.fromMillisecondsSinceEpoch(0);
 
       if (tombstoneTs != null && tombstoneTs.isAfter(localTs)) {
         continue;
       }
 
-      final mergedActive = _mergeProductLists(localList['active'] ?? <Product>[], <Product>[]);
-      final mergedFrequent = _mergeProductLists(localList['frequent'] ?? <Product>[], <Product>[]);
+      final mergedActive = _mergeProductLists(
+        localList['active'] ?? <Product>[],
+        <Product>[],
+      );
+      final mergedFrequent = _mergeProductLists(
+        localList['frequent'] ?? <Product>[],
+        <Product>[],
+      );
 
       if (mergedActive.isNotEmpty || mergedFrequent.isNotEmpty) {
-        result[listName] = {
-          'active': mergedActive,
-          'frequent': mergedFrequent,
-        };
+        result[listName] = {'active': mergedActive, 'frequent': mergedFrequent};
       }
     }
 
@@ -272,21 +301,26 @@ class ShoppingProvider extends ChangeNotifier {
     for (final listName in fallbackCloudNames) {
       final listId = resolveListId(listName, cloudListIds);
       final tombstoneTs = tombstones[listId];
-      final cloudList = cloud[listName] ?? {'active': <Product>[], 'frequent': <Product>[]};
-      final cloudTs = cloudUpdatedAt?[listName] ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final cloudList =
+          cloud[listName] ?? {'active': <Product>[], 'frequent': <Product>[]};
+      final cloudTs =
+          cloudUpdatedAt?[listName] ?? DateTime.fromMillisecondsSinceEpoch(0);
 
       if (tombstoneTs != null && tombstoneTs.isAfter(cloudTs)) {
         continue;
       }
 
-      final mergedActive = _mergeProductLists(cloudList['active'] ?? <Product>[], <Product>[]);
-      final mergedFrequent = _mergeProductLists(cloudList['frequent'] ?? <Product>[], <Product>[]);
+      final mergedActive = _mergeProductLists(
+        cloudList['active'] ?? <Product>[],
+        <Product>[],
+      );
+      final mergedFrequent = _mergeProductLists(
+        cloudList['frequent'] ?? <Product>[],
+        <Product>[],
+      );
 
       if (mergedActive.isNotEmpty || mergedFrequent.isNotEmpty) {
-        result[listName] = {
-          'active': mergedActive,
-          'frequent': mergedFrequent,
-        };
+        result[listName] = {'active': mergedActive, 'frequent': mergedFrequent};
       }
     }
 
@@ -345,7 +379,8 @@ class ShoppingProvider extends ChangeNotifier {
     if (storedDeletedLists is Map) {
       for (final entry in storedDeletedLists.entries) {
         if (entry.key is String && entry.value is int) {
-          _deletedLists[entry.key as String] = DateTime.fromMillisecondsSinceEpoch(entry.value as int);
+          _deletedLists[entry.key as String] =
+              DateTime.fromMillisecondsSinceEpoch(entry.value as int);
         }
       }
     }
@@ -384,17 +419,32 @@ class ShoppingProvider extends ChangeNotifier {
           ..clear()
           ..addAll(restoredLists);
 
-        await _box!.put('shopping_lists', _shoppingLists);
+        final dataToSave = <String, Map<String, List<Map<String, dynamic>>>>{};
+        for (final entry in _shoppingLists.entries) {
+          dataToSave[entry.key] = {
+            for (final catEntry in entry.value.entries)
+              catEntry.key: catEntry.value.map((p) => p.toMapHive()).toList(),
+          };
+        }
+
+        await _box!.put('shopping_lists', dataToSave);
       }
 
       if (_listIds.isEmpty) {
         for (final listName in _shoppingLists.keys) {
-          _listIds[listName] = _listIds[listName] ?? 'list_${DateTime.now().millisecondsSinceEpoch}_${listName.hashCode}';
+          _listIds[listName] =
+              _listIds[listName] ??
+              'list_${DateTime.now().millisecondsSinceEpoch}_${listName.hashCode}';
         }
       }
 
       await _box!.put('shopping_list_ids', _listIds);
-      await _box!.put('deleted_lists', _deletedLists.map((key, value) => MapEntry(key, value.millisecondsSinceEpoch)));
+      await _box!.put(
+        'deleted_lists',
+        _deletedLists.map(
+          (key, value) => MapEntry(key, value.millisecondsSinceEpoch),
+        ),
+      );
     }
 
     final storedSelectedList = _box!.get('selected_list_name');
@@ -413,7 +463,9 @@ class ShoppingProvider extends ChangeNotifier {
   Future<void> setCurrentUser(String? uid, {required bool isOffline}) async {
     _currentUid = uid;
     _isOfflineMode = isOffline;
-    _setSyncStatus(isOffline ? ShoppingSyncStatus.offline : ShoppingSyncStatus.syncing);
+    _setSyncStatus(
+      isOffline ? ShoppingSyncStatus.offline : ShoppingSyncStatus.syncing,
+    );
 
     if (!isOffline && uid == null) {
       _currentUid = null;
@@ -520,7 +572,9 @@ class ShoppingProvider extends ChangeNotifier {
   /// Se ejecuta al iniciar o cerrar sesión en SessionProvider.
   Future<void> switchUserEnvironment({required bool isOffline}) async {
     _isOfflineMode = isOffline;
-    _setSyncStatus(isOffline ? ShoppingSyncStatus.offline : ShoppingSyncStatus.syncing);
+    _setSyncStatus(
+      isOffline ? ShoppingSyncStatus.offline : ShoppingSyncStatus.syncing,
+    );
     _currentBoxName = isOffline ? _guestBoxName : _onlineCacheBoxName;
 
     if (!isOffline && Hive.isBoxOpen(_onlineCacheBoxName)) {
@@ -556,12 +610,20 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     try {
-      if (mergeCloud && !_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
+      if (mergeCloud &&
+          !_isOfflineMode &&
+          _currentUid != null &&
+          _currentUid!.isNotEmpty) {
         // 1. Obtener y fusionar listas personales
         final cloudLists = await _userRepository.getShoppingLists(_currentUid!);
-        final cloudTs = await _userRepository.getShoppingListTimestamps(_currentUid!);
-        final cloudListIds = await _userRepository.getShoppingListIds(_currentUid!);
-        final deletedLists = await _userRepository.getDeletedShoppingListTimestamps(_currentUid!);
+        final cloudTs = await _userRepository.getShoppingListTimestamps(
+          _currentUid!,
+        );
+        final cloudListIds = await _userRepository.getShoppingListIds(
+          _currentUid!,
+        );
+        final deletedLists = await _userRepository
+            .getDeletedShoppingListTimestamps(_currentUid!);
 
         final mergedPersonal = mergeShoppingListsForSync(
           _shoppingLists,
@@ -582,7 +644,9 @@ class ShoppingProvider extends ChangeNotifier {
         }
 
         // 2. Obtener y fusionar listas compartidas
-        final sharedLists = await _userRepository.getSharedShoppingLists(_currentUid!);
+        final sharedLists = await _userRepository.getSharedShoppingLists(
+          _currentUid!,
+        );
         for (final sharedEntry in sharedLists.entries) {
           final data = sharedEntry.value;
           final name = (data['name'] ?? sharedEntry.key).toString();
@@ -598,8 +662,11 @@ class ShoppingProvider extends ChangeNotifier {
               ? (data['updatedAt'] as Timestamp).toDate()
               : DateTime.fromMillisecondsSinceEpoch(0);
 
-          final localList = _shoppingLists[name] ?? {'active': <Product>[], 'frequent': <Product>[]};
-          final localTs = _listUpdatedAt[name] ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final localList =
+              _shoppingLists[name] ??
+              {'active': <Product>[], 'frequent': <Product>[]};
+          final localTs =
+              _listUpdatedAt[name] ?? DateTime.fromMillisecondsSinceEpoch(0);
 
           final winnerList = cloudUpdatedAt.isAfter(localTs)
               ? {'active': cloudActive, 'frequent': cloudFrequent}
@@ -610,7 +677,9 @@ class ShoppingProvider extends ChangeNotifier {
 
           final mergedCategories = _mergeListCategories(winnerList, otherList);
           _shoppingLists[name] = mergedCategories;
-          _listUpdatedAt[name] = cloudUpdatedAt.isAfter(localTs) ? cloudUpdatedAt : localTs;
+          _listUpdatedAt[name] = cloudUpdatedAt.isAfter(localTs)
+              ? cloudUpdatedAt
+              : localTs;
         }
       }
 
@@ -627,8 +696,9 @@ class ShoppingProvider extends ChangeNotifier {
             final categoryName = catEntry.key;
             final products = catEntry.value;
 
-            dataToSave[listName]![categoryName] =
-                products.map((p) => p.toMapHive()).toList();
+            dataToSave[listName]![categoryName] = products
+                .map((p) => p.toMapHive())
+                .toList();
           }
         }
 
@@ -640,14 +710,22 @@ class ShoppingProvider extends ChangeNotifier {
 
       if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
         for (final entry in _shoppingLists.entries) {
-          _listUpdatedAt[entry.key] = _listUpdatedAt[entry.key] ?? DateTime.now();
+          _listUpdatedAt[entry.key] =
+              _listUpdatedAt[entry.key] ?? DateTime.now();
           if (!isSharedList(entry.key)) {
-            _listIds[entry.key] = _listIds[entry.key] ?? 'list_${DateTime.now().millisecondsSinceEpoch}_${entry.key.hashCode}';
+            _listIds[entry.key] =
+                _listIds[entry.key] ??
+                'list_${DateTime.now().millisecondsSinceEpoch}_${entry.key.hashCode}';
           }
         }
 
         await _box!.put('shopping_list_ids', _listIds);
-        await _box!.put('deleted_lists', _deletedLists.map((key, value) => MapEntry(key, value.millisecondsSinceEpoch)));
+        await _box!.put(
+          'deleted_lists',
+          _deletedLists.map(
+            (key, value) => MapEntry(key, value.millisecondsSinceEpoch),
+          ),
+        );
         await _saveListsToFirestore(_currentUid!);
         _setSyncStatus(ShoppingSyncStatus.synced, syncedAt: DateTime.now());
       } else if (_isOfflineMode) {
@@ -660,7 +738,8 @@ class ShoppingProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> resetGuestData() async { // Limpiar caché de las Listas de Compra. El método de la sesión es "resetLocalProfile()"
+  Future<void> resetGuestData() async {
+    // Limpiar caché de las Listas de Compra. El método de la sesión es "resetLocalProfile()"
     if (Hive.isBoxOpen(_guestBoxName)) {
       final guestBox = Hive.box(_guestBoxName);
       await guestBox.clear();
@@ -732,7 +811,9 @@ class ShoppingProvider extends ChangeNotifier {
       'active': <Product>[],
       'frequent': <Product>[],
     };
-    _listIds[uniqueName] = _listIds[uniqueName] ?? 'list_${DateTime.now().millisecondsSinceEpoch}_${uniqueName.hashCode}';
+    _listIds[uniqueName] =
+        _listIds[uniqueName] ??
+        'list_${DateTime.now().millisecondsSinceEpoch}_${uniqueName.hashCode}';
     _touchList(uniqueName);
 
     _selectedListName = uniqueName;
@@ -813,8 +894,12 @@ class ShoppingProvider extends ChangeNotifier {
 
   // -------------------------------------------- ][ Añadir/Quitar Productos ][ --------------------------------------------- //
 
-  void _addActiveProductToList(String listName, String productName,
-      {double? price, String? imageUrl}) {
+  void _addActiveProductToList(
+    String listName,
+    String productName, {
+    double? price,
+    String? imageUrl,
+  }) {
     final cleanedName = productName.trim();
     if (cleanedName.isEmpty) return;
 
@@ -829,8 +914,9 @@ class ShoppingProvider extends ChangeNotifier {
     _touchList(listName);
 
     final activeList = _shoppingLists[listName]!['active']!;
-    final existingIndex =
-        activeList.indexWhere((p) => p.name.toLowerCase() == cleanedName.toLowerCase());
+    final existingIndex = activeList.indexWhere(
+      (p) => p.name.toLowerCase() == cleanedName.toLowerCase(),
+    );
 
     if (existingIndex >= 0) {
       // Si ya existe, incrementar frecuencia
@@ -856,8 +942,12 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
-  void _addFrequentProductToList(String listName, String productName,
-      {double? price, String? imageUrl}) {
+  void _addFrequentProductToList(
+    String listName,
+    String productName, {
+    double? price,
+    String? imageUrl,
+  }) {
     final cleanedName = productName.trim();
     if (cleanedName.isEmpty) return;
 
@@ -872,8 +962,9 @@ class ShoppingProvider extends ChangeNotifier {
     _touchList(listName);
 
     final frequentList = _shoppingLists[listName]!['frequent']!;
-    final existingIndex =
-        frequentList.indexWhere((p) => p.name.toLowerCase() == cleanedName.toLowerCase());
+    final existingIndex = frequentList.indexWhere(
+      (p) => p.name.toLowerCase() == cleanedName.toLowerCase(),
+    );
 
     if (existingIndex >= 0) {
       // Si ya existe, incrementar frecuencia
@@ -899,16 +990,30 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
-  void addActiveProductToSelectedList(String productName,
-      {double? price, String? imageUrl}) {
-    _addActiveProductToList(_selectedListName, productName,
-        price: price, imageUrl: imageUrl);
+  void addActiveProductToSelectedList(
+    String productName, {
+    double? price,
+    String? imageUrl,
+  }) {
+    _addActiveProductToList(
+      _selectedListName,
+      productName,
+      price: price,
+      imageUrl: imageUrl,
+    );
   }
 
-  void addFrequentProductToSelectedList(String productName,
-      {double? price, String? imageUrl}) {
-    _addFrequentProductToList(_selectedListName, productName,
-        price: price, imageUrl: imageUrl);
+  void addFrequentProductToSelectedList(
+    String productName, {
+    double? price,
+    String? imageUrl,
+  }) {
+    _addFrequentProductToList(
+      _selectedListName,
+      productName,
+      price: price,
+      imageUrl: imageUrl,
+    );
   }
 
   void _removeActiveProductFromList(String listName, String productId) {
@@ -927,7 +1032,9 @@ class ShoppingProvider extends ChangeNotifier {
       return;
     }
 
-    _shoppingLists[listName]!['frequent']!.removeWhere((p) => p.id == productId);
+    _shoppingLists[listName]!['frequent']!.removeWhere(
+      (p) => p.id == productId,
+    );
     _touchList(listName);
     notifyListeners();
     unawaited(saveToStorage());
@@ -945,11 +1052,15 @@ class ShoppingProvider extends ChangeNotifier {
     final frequentList = list['frequent'] ??= <Product>[];
     if (activeList == null) return;
 
-    final activeIndex = activeList.indexWhere((product) => product.id == productId);
+    final activeIndex = activeList.indexWhere(
+      (product) => product.id == productId,
+    );
     if (activeIndex < 0) return;
 
     final product = activeList.removeAt(activeIndex);
-    frequentList.removeWhere((frequentProduct) => frequentProduct.id == product.id);
+    frequentList.removeWhere(
+      (frequentProduct) => frequentProduct.id == product.id,
+    );
     frequentList.add(product);
     _touchList(listName);
     notifyListeners();
@@ -968,7 +1079,9 @@ class ShoppingProvider extends ChangeNotifier {
     final activeList = list['active'] ??= <Product>[];
     if (frequentList == null) return;
 
-    final frequentIndex = frequentList.indexWhere((product) => product.id == productId);
+    final frequentIndex = frequentList.indexWhere(
+      (product) => product.id == productId,
+    );
     if (frequentIndex < 0) return;
 
     final product = frequentList.removeAt(frequentIndex);

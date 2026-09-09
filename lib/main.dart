@@ -15,9 +15,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Inicializar Firebase en la app  (FIREBASE)  - Esto es obligatorio. Sin esto, Firestore no sabe a qué proyecto conectarse.
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // 1. Obtener directorio base e instanciar la subcarpeta    (HIVE_CE)
   final Directory appSupportDir = await getApplicationSupportDirectory();
@@ -40,7 +38,6 @@ Future<void> main() async {
     sessionProvider.uid,
     isOffline: sessionProvider.isOffline,
   );
-
   // Inicializamos el theme y el shopping provider pasando el estado isOffline actual
   await Future.wait([
     themeProvider.init(),
