@@ -62,12 +62,14 @@ class UserRepository {
   }) async {
     final recipientSnapshot = await _usersCollection
       .where('email', isEqualTo: recipientEmail.trim())
-        .limit(1)
-        .get();
+      .limit(1)
+      .get();
 
     if (recipientSnapshot.docs.isEmpty) {
       throw Exception('No existe un usuario con ese email');
     }
+
+    final recipientUid = recipientSnapshot.docs.first.id;
 
     final listSnapshot = await _userDoc(ownerUid)
         .collection('shoppingLists')
@@ -75,24 +77,52 @@ class UserRepository {
         .limit(1)
         .get();
 
-    if (listSnapshot.docs.isEmpty) {
-      throw Exception('No se encontró la lista seleccionada');
+    String listId;
+    Map<String, dynamic> listData = {};
+
+    if (listSnapshot.docs.isNotEmpty) {
+      listData = listSnapshot.docs.first.data();
+      listId = (listData['listId'] ?? listSnapshot.docs.first.id).toString();
+    } else {
+      final sharedListSnapshot = await _sharedListsCollection
+          .where('ownerUid', isEqualTo: ownerUid)
+          .where('name', isEqualTo: listName)
+          .limit(1)
+          .get();
+
+      if (sharedListSnapshot.docs.isEmpty) {
+        throw Exception('No se encontró la lista seleccionada');
+      }
+
+      final existingDoc = sharedListSnapshot.docs.first;
+      listData = existingDoc.data();
+      listId = (listData['listId'] ?? existingDoc.id).toString();
     }
 
-    final listData = listSnapshot.docs.first.data();
-    final listId = (listData['listId'] ?? listSnapshot.docs.first.id).toString();
-    final recipientUid = recipientSnapshot.docs.first.id;
-    final members = <String>{ownerUid, recipientUid};
+    final existingMembers = <String>{
+      ...(listData['memberUids'] is List ? List<String>.from(listData['memberUids'] as List) : const <String>[]),
+      ownerUid,
+    };
+
+    if (existingMembers.contains(recipientUid)) {
+      throw Exception('Este usuario ya tiene acceso a la lista');
+    }
+
+    final finalMembers = <String>{...existingMembers, recipientUid}.toList();
 
     await _sharedListsCollection.doc(listId).set({
       ...listData,
       'listId': listId,
       'ownerUid': ownerUid,
-      'memberUids': members.toList(),
+      'name': listName,
+      'memberUids': finalMembers,
       'updatedAt': listData['updatedAt'] ?? Timestamp.now(),
     }, SetOptions(merge: true));
 
-    await listSnapshot.docs.first.reference.delete();
+    if (listSnapshot.docs.isNotEmpty) {
+      await listSnapshot.docs.first.reference.delete();
+    }
+
     return listId;
   }
 
@@ -128,6 +158,33 @@ class UserRepository {
 
   Future<void> deleteSharedShoppingList(String listId) async {
     await _sharedListsCollection.doc(listId).delete();
+  }
+
+  Future<void> removeMemberFromSharedList({
+    required String listId,
+    required String uid,
+  }) async {
+    final docRef = _sharedListsCollection.doc(listId);
+    final snapshot = await docRef.get();
+
+    if (!snapshot.exists || snapshot.data() == null) {
+      return;
+    }
+
+    final memberUids = (snapshot.data()!['memberUids'] as List<dynamic>? ?? const [])
+        .whereType<String>()
+        .where((memberUid) => memberUid.trim().isNotEmpty && memberUid != uid)
+        .toList();
+
+    if (memberUids.isEmpty) {
+      await docRef.delete();
+      return;
+    }
+
+    await docRef.update({
+      'memberUids': memberUids,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<void> updateUserProfile({

@@ -154,7 +154,7 @@ class _ListMainPageState extends State<ListMainPage> {
           if (_selectedIndex == 2)
             Positioned.fill(
               child: Image.asset(
-                'assets/images/background/Background_Image_4.png',
+                'assets/images/background/Background_Sharing_Image_1.jpg',
                 fit: BoxFit.cover,
               ),
             ),

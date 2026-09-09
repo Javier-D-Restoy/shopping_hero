@@ -92,6 +92,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                       widget.amount > 1 ? "${widget.label}\n(${widget.amount})"
                       : widget.label,
                       style: TextStyle(
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         foreground: Paint()
                           ..style = PaintingStyle.stroke
@@ -104,6 +105,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                       widget.amount > 1 ? "${widget.label}\n(${widget.amount})"
                       : widget.label,
                       style: TextStyle(
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),

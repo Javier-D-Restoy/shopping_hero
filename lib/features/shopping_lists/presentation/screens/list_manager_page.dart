@@ -74,17 +74,41 @@ class _ListManagerState extends State<ListManager> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ...listNames.map((listName) {
-                      return ListBubble(
-                        colors: colors,
-                        listName: listName,
-                        productCount: shoppingProvider.activeProductsForList(listName).length, //shoppingProvider.productsForList(listName).length,
-                        canManageList: shoppingProvider.canManageList(listName),
-                        onRename: (newName) {
-                          shoppingProvider.renameList(listName, newName);
-                        },
-                      );
-                    }),
+                    if (listNames.isEmpty) ...[
+                      Container(
+                        margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: (themeProvider.isDarkMode ? Colors.black : Colors.white)
+                              .withValues(alpha: 0.75),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          'No tienes ninguna lista de la compra.\nPulsa el botón de abajo para crear tu primera lista.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      ...listNames.map((listName) {
+                        return ListBubble(
+                          colors: colors,
+                          listName: listName,
+                          productCount: shoppingProvider.activeProductsForList(listName).length,
+                          canManageList: shoppingProvider.canManageList(listName),
+                          isSharedList: shoppingProvider.isSharedList(listName),
+                          onRename: (newName) {
+                            shoppingProvider.renameList(listName, newName);
+                          },
+                          onLeaveShared: () async {
+                            await shoppingProvider.leaveSharedList(listName);
+                          },
+                        );
+                      }),
+                    ],
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
                       onPressed: () {

@@ -79,6 +79,7 @@ flutter:
     - assets/images/background/Background_Image_6.png
     - assets/images/background/Background_Config_Image_1.jpg
     - assets/images/background/Background_Profile_Image_1.png
+    - assets/images/background/Background_Sharing_Image_1.jpg
     - assets/images/background/Background_Dark_Image_1.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see

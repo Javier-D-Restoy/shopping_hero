@@ -1,7 +1,19 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_main_page.dart';
+
+class _ListMemberAvatar {
+  const _ListMemberAvatar({
+    required this.uid,
+    required this.displayName,
+  });
+
+  final String uid;
+  final String displayName;
+}
 
 class ListBubble extends StatefulWidget {
   const ListBubble({
@@ -10,14 +22,18 @@ class ListBubble extends StatefulWidget {
     required this.listName,
     required this.productCount,
     required this.canManageList,
+    required this.isSharedList,
     required this.onRename,
+    required this.onLeaveShared,
   });
 
   final ColorScheme colors;
   final String listName;
   final int productCount;
   final bool canManageList;
+  final bool isSharedList;
   final ValueChanged<String> onRename;
+  final Future<void> Function() onLeaveShared;
 
   @override
   State<ListBubble> createState() => _ListBubbleState();
@@ -26,11 +42,96 @@ class ListBubble extends StatefulWidget {
 class _ListBubbleState extends State<ListBubble> {
   bool _isHovered = false;
   final TextEditingController _renameController = TextEditingController();
+  List<_ListMemberAvatar> _sharedMembers = const [];
+  bool _isLoadingMembers = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSharedMembers());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadSharedMembers();
+  }
 
   @override
   void dispose() {
     _renameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSharedMembers() async {
+    if (!widget.isSharedList) {
+      if (mounted) setState(() => _sharedMembers = const []);
+      return;
+    }
+
+    final shoppingProvider = context.read<ShoppingProvider>();
+    final currentUid = context.read<SessionProvider>().uid;
+    final sharedListId = shoppingProvider.sharedListIdFor(widget.listName);
+
+    if (sharedListId == null) {
+      if (mounted) setState(() => _sharedMembers = const []);
+      return;
+    }
+
+    try {
+      if (mounted) setState(() => _isLoadingMembers = true);
+
+      final doc = await FirebaseFirestore.instance
+          .collection('sharedShoppingLists')
+          .doc(sharedListId)
+          .get();
+
+      final memberUids = (doc.data()?['memberUids'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .where((uid) => uid.isNotEmpty && uid != currentUid)
+          .toSet()
+          .toList();
+
+      if (memberUids.isEmpty) {
+        if (mounted) setState(() => _sharedMembers = const []);
+        return;
+      }
+
+      final loadedMembers = <_ListMemberAvatar>[];
+      for (var i = 0; i < memberUids.length; i += 10) {
+        final chunk = memberUids.sublist(
+          i,
+          i + 10 < memberUids.length ? i + 10 : memberUids.length,
+        );
+
+        final snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        for (final userDoc in snapshot.docs) {
+          final data = userDoc.data();
+          loadedMembers.add(
+            _ListMemberAvatar(
+              uid: userDoc.id,
+              displayName: (data['displayName'] ?? 'Usuario').toString(),
+            ),
+          );
+        }
+      }
+
+      if (mounted) {
+        setState(() => _sharedMembers = loadedMembers);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _sharedMembers = const []);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingMembers = false);
+      }
+    }
   }
 
   void _showRenameDialog() {
@@ -97,9 +198,39 @@ class _ListBubbleState extends State<ListBubble> {
     }
   }
 
+  Future<void> _showLeaveSharedListDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Desvincularte de la lista'),
+          content: Text(
+            '¿Quieres dejar de tener acceso a la lista "${widget.listName}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Sí, quitarme'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      await widget.onLeaveShared();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final shoppingProvider = context.read<ShoppingProvider>();
+    final visibleMembers = _sharedMembers.take(4).toList();
+    final extraMembersCount = _sharedMembers.length > 4 ? _sharedMembers.length - 4 : 0;
 
     return Padding(
       padding: const EdgeInsets.all(8.0),
@@ -184,23 +315,67 @@ class _ListBubbleState extends State<ListBubble> {
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            const Padding(
-                              padding: EdgeInsets.all(3.0),
-                              child: CircleAvatar(radius: 15, child: Icon(Icons.face)),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.all(3.0),
-                              child: CircleAvatar(radius: 15, child: Icon(Icons.face_2)),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.all(3.0),
-                              child: CircleAvatar(radius: 15, child: Icon(Icons.face_3)),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.all(3.0),
-                              child: CircleAvatar(radius: 15, child: Icon(Icons.face_4)),
-                            ),
+                            if (widget.isSharedList) ...[
+                              if (_isLoadingMembers)
+                                const Padding(
+                                  padding: EdgeInsets.all(3.0),
+                                  child: CircleAvatar(
+                                    radius: 15,
+                                    backgroundColor: Colors.white24,
+                                    child: SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else ...[
+                                ...visibleMembers.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final member = entry.value;
+                                  final initials = member.displayName.trim().isNotEmpty
+                                      ? member.displayName.trim().split(RegExp(r'\s+')).take(2).map((part) => part[0].toUpperCase()).join()
+                                      : 'U';
+
+                                  return Padding(
+                                    padding: EdgeInsets.only(left: index == 0 ? 0 : 3.0, right: 3.0),
+                                    child: CircleAvatar(
+                                      radius: 15,
+                                      backgroundColor: Colors.white.withValues(alpha: 0.18),
+                                      child: Text(
+                                        initials,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                                if (extraMembersCount > 0)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 3.0),
+                                    child: CircleAvatar(
+                                      radius: 15,
+                                      backgroundColor: Colors.white.withValues(alpha: 0.25),
+                                      child: Text(
+                                        '+$extraMembersCount',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ] else ...[
+                              const SizedBox(width: 4),
+                            ],
                           ],
                         ),
                       ],
@@ -225,6 +400,12 @@ class _ListBubbleState extends State<ListBubble> {
                       onPressed: _showRenameDialog,
                       icon: const Icon(Icons.edit, color: Colors.white),
                       tooltip: 'Renombrar lista',
+                    ),
+                  ] else if (widget.isSharedList) ...[
+                    IconButton(
+                      onPressed: _showLeaveSharedListDialog,
+                      icon: const Icon(Icons.person_remove_alt_1, color: Colors.white),
+                      tooltip: 'Desvincularme de la lista',
                     ),
                   ],
                 ],
