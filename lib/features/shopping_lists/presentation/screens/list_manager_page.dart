@@ -21,8 +21,17 @@ class _ListManagerState extends State<ListManager> {
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final displayName = sessionProvider.displayName;
-    final colors = Theme.of(context).colorScheme;
+    final isDark = themeProvider.isDarkMode;
     final listNames = shoppingProvider.shoppingLists.keys.toList();
+
+    final primary = isDark ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
+    final border = isDark ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
+    final textStrong = isDark ? Colors.white : const Color(0xFF234B2A);
+    final textMuted = isDark ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
+    final cardShadow = isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.08);
+    final gradientColors = isDark
+        ? [const Color(0xFF1D2D1F).withValues(alpha: 0.50), const Color(0xFF243928).withValues(alpha: 0.50)]
+        : [const Color(0xFFF6F8E8).withValues(alpha: 0.50), const Color(0xFFE7F4E1).withValues(alpha: 0.50)];
 
     return Scaffold(
       appBar: AppBar(
@@ -44,7 +53,7 @@ class _ListManagerState extends State<ListManager> {
         ),
         title: Text(
           'Listas de $displayName',
-          style: const TextStyle(fontSize: 18),
+          style: TextStyle(fontSize: 18, color: textStrong),
         ),
         centerTitle: true,
         actions: [
@@ -76,26 +85,51 @@ class _ListManagerState extends State<ListManager> {
                   children: [
                     if (listNames.isEmpty) ...[
                       Container(
-                        margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        width: double.infinity,
+                        margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 4),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: (themeProvider.isDarkMode ? Colors.black : Colors.white)
-                              .withValues(alpha: 0.75),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          'No tienes ninguna lista de la compra.\nPulsa el botón de abajo para crear tu primera lista.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: themeProvider.isDarkMode ? Colors.white : Colors.black87,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: gradientColors,
                           ),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: border, width: 1.6),
+                          boxShadow: [
+                            BoxShadow(
+                              color: cardShadow,
+                              blurRadius: 12,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: primary,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.list_alt_rounded, color: Colors.white, size: 22),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No tienes ninguna lista de la compra.\nPulsa el botón de abajo para crear tu primera lista.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: textMuted,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ] else ...[
                       ...listNames.map((listName) {
                         return ListBubble(
-                          colors: colors,
+                          isDark: isDark,
                           listName: listName,
                           productCount: shoppingProvider.activeProductsForList(listName).length,
                           canManageList: shoppingProvider.canManageList(listName),
@@ -110,12 +144,23 @@ class _ListManagerState extends State<ListManager> {
                       }),
                     ],
                     const SizedBox(height: 12),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        shoppingProvider.createList();
-                      },
-                      icon: const Icon(Icons.add),
-                      label: const Text('Crear lista'),
+                    SizedBox(
+                      width: 320,
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          shoppingProvider.createList();
+                        },
+                        style: FilledButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Crear lista'),
+                      ),
                     ),
                   ],
                 ),

@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/models/product_model.dart';
@@ -101,12 +102,16 @@ class _ListMainPageState extends State<ListMainPage> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         toolbarHeight: 40,
-        title: Text(
+        title: AutoSizeText(
           _selectedIndex == 0
               ? widget.listName
               : _selectedIndex == 1
               ? 'Perfil'
               : 'Compartido',
+          maxLines: 1,
+          minFontSize: 10,
+          stepGranularity: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         centerTitle: true,
         actions: [
