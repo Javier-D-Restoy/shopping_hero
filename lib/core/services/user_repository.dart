@@ -208,6 +208,47 @@ class UserRepository {
     }
   }
 
+  /// Borra el perfil, las listas propias/compartidas y desvincula al usuario de las listas de otros.
+  Future<void> deleteUserAccountData(String uid) async {
+    final batch = _firestore.batch();
+
+    final sharedSnapshot = await _sharedListsCollection
+        .where('memberUids', arrayContains: uid)
+        .get();
+
+    for (final doc in sharedSnapshot.docs) {
+      final data = doc.data();
+      final ownerUid = (data['ownerUid'] ?? '').toString();
+
+      if (ownerUid == uid) {
+        batch.delete(doc.reference);
+      } else {
+        final memberUids = (data['memberUids'] as List<dynamic>? ?? const [])
+            .whereType<String>()
+            .where((memberUid) => memberUid.trim().isNotEmpty && memberUid != uid)
+            .toList();
+        batch.update(doc.reference, {
+          'memberUids': memberUids,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+    }
+
+    final personalListsSnapshot = await _userDoc(uid).collection('shoppingLists').get();
+    for (final doc in personalListsSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    final tombstonesSnapshot = await _userDoc(uid).collection('shoppingListDeletes').get();
+    for (final doc in tombstonesSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    batch.delete(_userDoc(uid));
+
+    await batch.commit();
+  }
+
   Future<void> saveShoppingLists({
     required String uid,
     required Map<String, Map<String, List<Product>>> shoppingLists,
@@ -218,14 +259,11 @@ class UserRepository {
     final collection = _userDoc(uid).collection('shoppingLists');
     final batch = _firestore.batch();
 
+    // Se guardan también las listas vacías: deben existir en Firestore desde el momento en que se crean.
     final sanitizedLists = <String, Map<String, List<Product>>>{};
     for (final entry in shoppingLists.entries) {
       final activeProducts = entry.value['active'] ?? <Product>[];
       final frequentProducts = entry.value['frequent'] ?? <Product>[];
-
-      if (activeProducts.isEmpty && frequentProducts.isEmpty) {
-        continue;
-      }
 
       sanitizedLists[entry.key] = {
         'active': List<Product>.from(activeProducts),
@@ -234,13 +272,13 @@ class UserRepository {
     }
 
     final currentDocs = await collection.get();
+    // El ID de documento debe ser el listId estable, no el nombre: si no, renombrar crea un documento duplicado.
+    final stableIdsToKeep = <String>{
+      for (final listName in sanitizedLists.keys)
+        listIds?[listName] ?? _buildDocId(listName),
+    };
     for (final doc in currentDocs.docs) {
-      final data = doc.data();
-      final docName = (data['name'] ?? doc.id).toString();
-      final docIdValue = (data['listId'] ?? '').toString();
-      final shouldKeep = sanitizedLists.containsKey(docName) ||
-          (listIds != null && listIds.values.contains(docIdValue));
-      if (!shouldKeep) {
+      if (!stableIdsToKeep.contains(doc.id)) {
         batch.delete(doc.reference);
       }
     }
@@ -257,8 +295,7 @@ class UserRepository {
     for (final entry in sanitizedLists.entries) {
       final listName = entry.key;
       final items = entry.value;
-      final docId = _buildDocId(listName);
-      final stableId = listIds?[listName] ?? docId;
+      final stableId = listIds?[listName] ?? _buildDocId(listName);
 
       final activeProducts = (items['active'] ?? <Product>[])
           .map((p) => p.toMap())
@@ -270,7 +307,7 @@ class UserRepository {
       final timestamp = listUpdatedAt?[listName] ?? DateTime.now();
 
       batch.set(
-        collection.doc(docId),
+        collection.doc(stableId),
         {
           'name': listName,
           'listId': stableId,

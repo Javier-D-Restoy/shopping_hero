@@ -153,7 +153,7 @@ class LoginPage extends StatelessWidget {
                             }
                           },
                           child: const Text(
-                            'Aún no tienes cuenta, Pisha?',
+                            'Aún no tienes cuenta?  Registrate',
                             style: TextStyle(fontSize: 13),
                           ),
                         ),

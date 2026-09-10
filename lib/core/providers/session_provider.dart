@@ -245,6 +245,77 @@ class SessionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Cambia el nombre visible del usuario, persistiéndolo en Firestore si hay sesión online.
+  Future<bool> updateDisplayName(String newDisplayName) async {
+    final trimmed = newDisplayName.trim();
+
+    if (trimmed.isEmpty) {
+      _errorMessage = 'El nombre no puede estar vacío';
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      if (!_isOffline && _uid != null) {
+        await _userRepository.updateUserProfile(uid: _uid!, displayName: trimmed);
+      }
+
+      _displayName = trimmed;
+      _errorMessage = null;
+      await _saveSessionToStorage();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = 'No se pudo actualizar el nombre: $e';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// Borra la cuenta por completo: datos en Firestore, desvinculación de listas compartidas,
+  /// registro en Firebase Authentication y sesión/caché local en Hive.
+  Future<bool> deleteAccount() async {
+    if (_isOffline || _uid == null) {
+      _errorMessage = 'No hay ninguna cuenta online activa';
+      notifyListeners();
+      return false;
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final uid = _uid!;
+
+      // Firestore exige request.auth.uid == uid: si se borrase Authentication antes,
+      // el token dejaría de ser válido y el borrado en Firestore fallaría con permission-denied
+      // dejando los datos huérfanos sin forma de volver a autenticarse para limpiarlos.
+      await _userRepository.deleteUserAccountData(uid);
+      await _authService.deleteAccount();
+
+      _uid = null;
+      _email = '';
+      _displayName = 'Shopping Hero';
+      _isOffline = true;
+      _isLoggedIn = false;
+      _errorMessage = null;
+      _isLoading = false;
+
+      await _ensureInitialized();
+      if (_box != null) {
+        await _box!.clear();
+      }
+
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      notifyListeners();
+      return false;
+    }
+  }
+
   // ---------------------------------------------- ][ INTEGRACIÓN CON FIRESTORE ][ ---------------------------------------------- //
 
   /// Carga las listas de compra del usuario desde Firestore a Hive (caché online)

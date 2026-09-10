@@ -358,7 +358,7 @@ class _SharingPageState extends State<SharingPage> {
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Text(
-                'Todavía no hay otros usuarios con acceso a esta lista.',
+                'No hay otros usuarios con acceso a esta lista.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: textStrong,
                 ),

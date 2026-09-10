@@ -166,7 +166,7 @@ void main() {
       expect(merged['Lista 1']!['active']!.length, 2);
     });
 
-    test('ignores empty lists so no useless Firestore documents are created', () {
+    test('keeps empty lists so they exist in Firestore as soon as they are created', () {
       final local = <String, Map<String, List<Product>>>{
         'Lista vacía': {
           'active': <Product>[],
@@ -183,7 +183,7 @@ void main() {
 
       final merged = ShoppingProvider.mergeShoppingListsForSync(local, cloud);
 
-      expect(merged.containsKey('Lista vacía'), isFalse);
+      expect(merged.containsKey('Lista vacía'), isTrue);
     });
 
     test('keeps the same list identity when it is renamed on another device', () {

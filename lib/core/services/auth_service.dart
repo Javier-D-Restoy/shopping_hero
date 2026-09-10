@@ -130,6 +130,23 @@ class AuthService {
     }
   }
 
+  /// Elimina la cuenta actual de Firebase Authentication
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('No hay ninguna sesión activa');
+    }
+
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw Exception('Por seguridad, vuelve a iniciar sesión antes de eliminar la cuenta');
+      }
+      throw Exception('No se pudo eliminar la cuenta: ${e.message}');
+    }
+  }
+
   /// Obtiene el perfil del usuario actualmente autenticado
   Future<UserModel?> getCurrentUserProfile() async {
     try {

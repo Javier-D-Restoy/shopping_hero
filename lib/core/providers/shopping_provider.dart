@@ -254,12 +254,11 @@ class ShoppingProvider extends ChangeNotifier {
           ? (cloudEntry?.key ?? id)
           : (localEntry?.key ?? id);
 
-      if (mergedActive.isNotEmpty || mergedFrequent.isNotEmpty) {
-        result[preferredName] = {
-          'active': mergedActive,
-          'frequent': mergedFrequent,
-        };
-      }
+      // Se conserva la lista aunque esté vacía, para que exista en ambos repositorios desde su creación.
+      result[preferredName] = {
+        'active': mergedActive,
+        'frequent': mergedFrequent,
+      };
     }
 
     final fallbackLocalNames = local.keys.where((name) {
@@ -288,9 +287,7 @@ class ShoppingProvider extends ChangeNotifier {
         <Product>[],
       );
 
-      if (mergedActive.isNotEmpty || mergedFrequent.isNotEmpty) {
-        result[listName] = {'active': mergedActive, 'frequent': mergedFrequent};
-      }
+      result[listName] = {'active': mergedActive, 'frequent': mergedFrequent};
     }
 
     final fallbackCloudNames = cloud.keys.where((name) {
@@ -319,9 +316,7 @@ class ShoppingProvider extends ChangeNotifier {
         <Product>[],
       );
 
-      if (mergedActive.isNotEmpty || mergedFrequent.isNotEmpty) {
-        result[listName] = {'active': mergedActive, 'frequent': mergedFrequent};
-      }
+      result[listName] = {'active': mergedActive, 'frequent': mergedFrequent};
     }
 
     return result;
@@ -477,6 +472,7 @@ class ShoppingProvider extends ChangeNotifier {
     _setSyncStatus(ShoppingSyncStatus.offline);
   }
 
+  // Se conservan también las listas vacías: deben sincronizarse en cuanto se crean, no solo al añadir productos.
   Map<String, Map<String, List<Product>>> _sanitizeForCloud(
     Map<String, Map<String, List<Product>>> source,
   ) {
@@ -485,10 +481,6 @@ class ShoppingProvider extends ChangeNotifier {
     for (final entry in source.entries) {
       final active = entry.value['active'] ?? <Product>[];
       final frequent = entry.value['frequent'] ?? <Product>[];
-
-      if (active.isEmpty && frequent.isEmpty) {
-        continue;
-      }
 
       result[entry.key] = {
         'active': List<Product>.from(active),
@@ -622,8 +614,16 @@ class ShoppingProvider extends ChangeNotifier {
         final cloudListIds = await _userRepository.getShoppingListIds(
           _currentUid!,
         );
-        final deletedLists = await _userRepository
+        final cloudDeletedLists = await _userRepository
             .getDeletedShoppingListTimestamps(_currentUid!);
+        // Los tombstones locales aún no subidos deben prevalecer para no resucitar una lista recién borrada.
+        final deletedLists = <String, DateTime>{...cloudDeletedLists};
+        for (final entry in _deletedLists.entries) {
+          final existing = deletedLists[entry.key];
+          if (existing == null || entry.value.isAfter(existing)) {
+            deletedLists[entry.key] = entry.value;
+          }
+        }
 
         final mergedPersonal = mergeShoppingListsForSync(
           _shoppingLists,
@@ -750,6 +750,26 @@ class ShoppingProvider extends ChangeNotifier {
     _listIds.clear();
     _deletedLists.clear();
     _selectedListName = '';
+
+    notifyListeners();
+  }
+
+  /// Borra las listas locales (memoria + Hive) sin tocar los datos de sesión del usuario.
+  Future<void> clearLocalShoppingCache() async {
+    _shoppingLists.clear();
+    _sharedListIds.clear();
+    _sharedListOwners.clear();
+    _listIds.clear();
+    _listUpdatedAt.clear();
+    _deletedLists.clear();
+    _selectedListName = '';
+
+    if (Hive.isBoxOpen(_guestBoxName)) {
+      await Hive.box(_guestBoxName).clear();
+    }
+    if (Hive.isBoxOpen(_onlineCacheBoxName)) {
+      await Hive.box(_onlineCacheBoxName).clear();
+    }
 
     notifyListeners();
   }
