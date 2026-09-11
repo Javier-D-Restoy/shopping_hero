@@ -9,6 +9,7 @@ import 'package:shopping_hero/features/auth/presentation/screens/config_page.dar
 import 'package:shopping_hero/features/auth/presentation/screens/profile_page.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/sharing_page.dart';
 import 'package:shopping_hero/features/products/presentation/widgets/product_bubble.dart';
+import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_manager_page.dart';
 import 'package:shopping_hero/shared/widgets/main_bottom_nav.dart';
 
 class ListMainPage extends StatefulWidget {
@@ -102,6 +103,20 @@ class _ListMainPageState extends State<ListMainPage> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         toolbarHeight: 40,
+        leading: BackButton(
+          onPressed: () async {
+            if (context.mounted) {
+              if (context.mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ListManager(),
+                  ),
+                );
+              }
+            }
+          },
+        ),
         title: AutoSizeText(
           _selectedIndex == 0
               ? widget.listName

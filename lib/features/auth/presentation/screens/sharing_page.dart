@@ -219,7 +219,12 @@ class _SharingPageState extends State<SharingPage> {
                   color: primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.share_rounded, color: Colors.white, size: 22),
+                child: Icon(Icons.share_rounded, color: isDark? Colors.black : Colors.white, size: 22,
+                  shadows: [
+                    Shadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 8, offset: Offset(0,0)),
+                    Shadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 4, offset: Offset(0,0))
+                  ],
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -268,7 +273,7 @@ class _SharingPageState extends State<SharingPage> {
                 onPressed: _isSharing ? null : _shareList,
                 style: FilledButton.styleFrom(
                   backgroundColor: primary,
-                  foregroundColor: Colors.white,
+                  foregroundColor: isDark? Colors.black : Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -280,8 +285,20 @@ class _SharingPageState extends State<SharingPage> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Icon(Icons.person_add_alt_1_rounded),
-                label: Text(_isSharing ? 'Compartiendo...' : 'Compartir lista'),
+                    : Icon(Icons.person_add_alt_1_rounded,
+                        shadows: [
+                          Shadow(color: Colors.black.withValues(alpha: 0.9), blurRadius: 8, offset: Offset(0,0)),
+                          Shadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 4, offset: Offset(0,0))
+                        ],
+                      ),
+                label: Text(_isSharing ? 'Compartiendo...' : 'Compartir lista',
+                  style: TextStyle(
+                    shadows: [
+                          Shadow(color: Colors.black.withValues(alpha: 0.9), blurRadius: 8, offset: Offset(0,0)),
+                          Shadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 4, offset: Offset(0,0))
+                    ],
+                  ),
+                ),
               ),
             ),
           ] else ...[
@@ -326,7 +343,12 @@ class _SharingPageState extends State<SharingPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.people_alt_rounded, color: primary),
+              Icon(Icons.people_alt_rounded, color: primary,
+                shadows: [
+                  Shadow(color: Colors.black.withValues(alpha: 0.9), blurRadius: 8, offset: Offset(0,0)),
+                  Shadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 4, offset: Offset(0,0))
+                ],
+              ),
               const SizedBox(width: 8),
               Text(
                 'Usuarios con acceso',
@@ -377,7 +399,7 @@ class _SharingPageState extends State<SharingPage> {
                 child: Row(
                   children: [
                     CircleAvatar(
-                      backgroundColor: primarySoft,
+                      backgroundColor: primary,
                       child: Text(
                         member.displayName.isNotEmpty ? member.displayName[0].toUpperCase() : 'U',
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),

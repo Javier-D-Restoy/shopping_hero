@@ -74,8 +74,8 @@ class _ProfilePageState extends State<ProfilePage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? [const Color(0xFF1D2D1F).withValues(alpha: 0.50), const Color(0xFF243928).withValues(alpha: 0.50)]
-              : [const Color(0xFFF6F8E8).withValues(alpha: 0.50), const Color(0xFFE7F4E1).withValues(alpha: 0.50)],
+              ? [const Color(0xFF1D2D1F).withValues(alpha: 0.80), const Color(0xFF243928).withValues(alpha: 0.80)]
+              : [const Color(0xFFF6F8E8).withValues(alpha: 0.80), const Color(0xFFE7F4E1).withValues(alpha: 0.80)],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: border, width: 1.6),
@@ -98,7 +98,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.person_rounded, color: Colors.white, size: 22),
+                child: Icon(Icons.person_rounded, color: isDark? Colors.black : Colors.white, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -150,7 +150,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: _isSaving ? null : _saveUsername,
               style: FilledButton.styleFrom(
                 backgroundColor: primary,
-                foregroundColor: Colors.white,
+                foregroundColor: isDark? Colors.black : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -174,7 +174,7 @@ class _ProfilePageState extends State<ProfilePage> {
       margin: const EdgeInsets.only(top: 18),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: surface.withValues(alpha: 0.50),
+        color: surface.withValues(alpha: 0.80),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: border, width: 1.2),
         boxShadow: [
@@ -213,7 +213,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: _showResetCacheDialog,
               style: FilledButton.styleFrom(
                 backgroundColor: dangerColor,
-                foregroundColor: Colors.white,
+                foregroundColor: isDark? Colors.black : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -231,7 +231,7 @@ class _ProfilePageState extends State<ProfilePage> {
       margin: const EdgeInsets.only(top: 18),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: surface.withValues(alpha: 0.50),
+        color: surface.withValues(alpha: 0.80),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: dangerColor, width: 1.2),
         boxShadow: [
@@ -270,7 +270,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: _isDeletingAccount ? null : _showDeleteAccountDialog,
               style: FilledButton.styleFrom(
                 backgroundColor: dangerColor,
-                foregroundColor: Colors.white,
+                foregroundColor: isDark? Colors.black : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),

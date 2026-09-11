@@ -647,20 +647,42 @@ class ShoppingProvider extends ChangeNotifier {
         final sharedLists = await _userRepository.getSharedShoppingLists(
           _currentUid!,
         );
+        // Nombre local vigente por listId: evita duplicar la lista bajo el nombre antiguo
+        // cuando hay un renombrado local que aún no se ha subido a Firestore.
+        final localNameByListId = <String, String>{
+          for (final entry in _sharedListIds.entries) entry.value: entry.key,
+        };
         for (final sharedEntry in sharedLists.entries) {
           final data = sharedEntry.value;
-          final name = (data['name'] ?? sharedEntry.key).toString();
+          final listId = sharedEntry.key;
+          final cloudName = (data['name'] ?? listId).toString();
           final ownerUid = (data['ownerUid'] ?? '').toString();
-
-          _sharedListIds[name] = sharedEntry.key;
-          _sharedListOwners[name] = ownerUid;
-
-          final cloudActive = _productsFromFirestore(name, data['active']);
-          final cloudFrequent = _productsFromFirestore(name, data['frequent']);
 
           final cloudUpdatedAt = (data['updatedAt'] is Timestamp)
               ? (data['updatedAt'] as Timestamp).toDate()
               : DateTime.fromMillisecondsSinceEpoch(0);
+
+          final localName = localNameByListId[listId];
+          final localNameTs = localName != null
+              ? (_listUpdatedAt[localName] ?? DateTime.fromMillisecondsSinceEpoch(0))
+              : DateTime.fromMillisecondsSinceEpoch(0);
+
+          final name = (localName != null && localNameTs.isAfter(cloudUpdatedAt))
+              ? localName
+              : cloudName;
+
+          if (localName != null && localName != name) {
+            _shoppingLists.remove(localName);
+            _sharedListIds.remove(localName);
+            _sharedListOwners.remove(localName);
+            _listUpdatedAt.remove(localName);
+          }
+
+          _sharedListIds[name] = listId;
+          _sharedListOwners[name] = ownerUid;
+
+          final cloudActive = _productsFromFirestore(name, data['active']);
+          final cloudFrequent = _productsFromFirestore(name, data['frequent']);
 
           final localList =
               _shoppingLists[name] ??
@@ -842,7 +864,8 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   void renameList(String oldName, String newName) {
-    if (isSharedList(oldName)) return;
+    // Solo el propietario puede renombrar una lista compartida; los demás no tienen permiso.
+    if (!canManageList(oldName)) return;
     final cleanedName = newName.trim();
     if (cleanedName.isEmpty || !_shoppingLists.containsKey(oldName)) {
       return;
@@ -890,6 +913,16 @@ class ShoppingProvider extends ChangeNotifier {
     final currentId = _listIds.remove(oldName);
     if (currentId != null) {
       _listIds[cleanedName] = currentId;
+    }
+
+    final currentSharedId = _sharedListIds.remove(oldName);
+    if (currentSharedId != null) {
+      _sharedListIds[cleanedName] = currentSharedId;
+    }
+
+    final currentOwner = _sharedListOwners.remove(oldName);
+    if (currentOwner != null) {
+      _sharedListOwners[cleanedName] = currentOwner;
     }
 
     _touchList(cleanedName);

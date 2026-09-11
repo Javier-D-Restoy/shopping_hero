@@ -144,10 +144,12 @@ class _ListBubbleState extends State<ListBubble> {
         return AlertDialog(
           title: const Text('Renombrar lista'),
           content: TextField(
+            maxLength: 25,
             controller: _renameController,
             autofocus: true,
             decoration: const InputDecoration(
               hintText: 'Nuevo nombre de la lista',
+              counterText: '',
             ),
           ),
           actions: [
@@ -304,7 +306,7 @@ class _ListBubbleState extends State<ListBubble> {
                                 color: primary,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.list_alt_rounded, color: Colors.white, size: 16),
+                              child: Icon(Icons.list_alt_rounded, color: isDark? Colors.black : Colors.white, size: 16),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -339,10 +341,14 @@ class _ListBubbleState extends State<ListBubble> {
                                 color: primary,
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              child: Text(
+                              child: AutoSizeText(
                                 '${widget.productCount} Productos',
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                maxLines: 1,
+                                minFontSize: 10,
+                                stepGranularity: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isDark? Colors.black : Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -381,8 +387,8 @@ class _ListBubbleState extends State<ListBubble> {
                                       backgroundColor: primarySoft,
                                       child: Text(
                                         initials,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: isDark? Colors.black : Colors.white,
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
                                         ),
@@ -398,8 +404,8 @@ class _ListBubbleState extends State<ListBubble> {
                                       backgroundColor: primary,
                                       child: Text(
                                         '+$extraMembersCount',
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: isDark? Colors.black : Colors.white,
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
                                         ),

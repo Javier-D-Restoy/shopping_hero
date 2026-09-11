@@ -152,7 +152,7 @@ class _ListManagerState extends State<ListManager> {
                         },
                         style: FilledButton.styleFrom(
                           backgroundColor: primary,
-                          foregroundColor: Colors.white,
+                          foregroundColor: isDark? Colors.black : Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
