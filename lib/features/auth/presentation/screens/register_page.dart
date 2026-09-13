@@ -12,6 +12,7 @@ class RegisterPage extends StatelessWidget {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final displayNameController = TextEditingController();
+    final isObscureNotifier = ValueNotifier<bool>(true);
     final focusNode = FocusNode();
 
     final formKey = GlobalKey<FormState>();
@@ -25,7 +26,9 @@ class RegisterPage extends StatelessWidget {
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 480),
@@ -50,12 +53,15 @@ class RegisterPage extends StatelessWidget {
                                   children: [
                                     TextFormField(
                                       controller: displayNameController,
-                                      decoration: const InputDecoration(labelText: 'Nombre'),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Nombre',
+                                      ),
                                       onTapOutside: (event) {
                                         focusNode.unfocus();
                                       },
                                       validator: (value) {
-                                        if (value == null || value.trim().isEmpty) {
+                                        if (value == null ||
+                                            value.trim().isEmpty) {
                                           return 'Introduce tu nombre';
                                         }
                                         return null;
@@ -64,13 +70,16 @@ class RegisterPage extends StatelessWidget {
                                     const SizedBox(height: 12),
                                     TextFormField(
                                       controller: emailController,
-                                      decoration: const InputDecoration(labelText: 'Email'),
+                                      decoration: const InputDecoration(
+                                        labelText: 'Email',
+                                      ),
                                       keyboardType: TextInputType.emailAddress,
                                       onTapOutside: (event) {
                                         focusNode.unfocus();
                                       },
                                       validator: (value) {
-                                        if (value == null || value.trim().isEmpty) {
+                                        if (value == null ||
+                                            value.trim().isEmpty) {
                                           return 'Introduce tu email';
                                         }
                                         if (!value.contains('@')) {
@@ -80,21 +89,40 @@ class RegisterPage extends StatelessWidget {
                                       },
                                     ),
                                     const SizedBox(height: 12),
-                                    TextFormField(
-                                      controller: passwordController,
-                                      decoration: const InputDecoration(labelText: 'Password'),
-                                      obscureText: true,
-                                      onTapOutside: (event) {
-                                        focusNode.unfocus();
-                                      },
-                                      validator: (value) {
-                                        if (value == null || value.trim().isEmpty) {
-                                          return 'Introduce tu password';
-                                        }
-                                        if (value.length < 6) {
-                                          return 'Mínimo 6 caracteres';
-                                        }
-                                        return null;
+                                    ValueListenableBuilder<bool>(
+                                      valueListenable: isObscureNotifier,
+                                      builder: (context, isObscure, _) {
+                                        return TextFormField(
+                                          controller: passwordController,
+                                          obscureText: isObscure,
+                                          decoration: InputDecoration(
+                                            labelText: 'Password',
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                isObscure
+                                                    ? Icons.visibility_off
+                                                    : Icons.visibility,
+                                              ),
+                                              onPressed: () {
+                                                isObscureNotifier.value =
+                                                    !isObscure;
+                                              },
+                                            ),
+                                          ),
+                                          onTapOutside: (event) {
+                                            focusNode.unfocus();
+                                          },
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.trim().isEmpty) {
+                                              return 'Introduce tu password';
+                                            }
+                                            if (value.length < 6) {
+                                              return 'Mínimo 6 caracteres';
+                                            }
+                                            return null;
+                                          },
+                                        );
                                       },
                                     ),
                                   ],
@@ -108,11 +136,15 @@ class RegisterPage extends StatelessWidget {
                                   children: [
                                     if (sessionProvider.errorMessage != null)
                                       Padding(
-                                        padding: const EdgeInsets.only(bottom: 16),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 16,
+                                        ),
                                         child: Text(
                                           sessionProvider.errorMessage!,
                                           style: const TextStyle(
-                                              color: Colors.red, fontSize: 12),
+                                            color: Colors.red,
+                                            fontSize: 12,
+                                          ),
                                           textAlign: TextAlign.center,
                                         ),
                                       ),
@@ -120,32 +152,45 @@ class RegisterPage extends StatelessWidget {
                                       onPressed: sessionProvider.isLoading
                                           ? null
                                           : () async {
-                                              if (formKey.currentState!.validate()) {
-                                                final success = await sessionProvider.register(
-                                                  email: emailController.text,
-                                                  password: passwordController.text,
-                                                  displayName: displayNameController.text,
-                                                );
+                                              if (formKey.currentState!
+                                                  .validate()) {
+                                                final success =
+                                                    await sessionProvider.register(
+                                                      email:
+                                                          emailController.text,
+                                                      password:
+                                                          passwordController
+                                                              .text,
+                                                      displayName:
+                                                          displayNameController
+                                                              .text,
+                                                    );
 
                                                 if (!context.mounted) return;
 
                                                 if (success) {
                                                   final shoppingProvider =
-                                                      context.read<ShoppingProvider>();
-                                                  await shoppingProvider.setCurrentUser(
-                                                    sessionProvider.uid,
-                                                    isOffline: false,
-                                                  );
-                                                  await shoppingProvider.switchUserEnvironment(
-                                                    isOffline: false,
-                                                  );
+                                                      context
+                                                          .read<
+                                                            ShoppingProvider
+                                                          >();
+                                                  await shoppingProvider
+                                                      .setCurrentUser(
+                                                        sessionProvider.uid,
+                                                        isOffline: false,
+                                                      );
+                                                  await shoppingProvider
+                                                      .switchUserEnvironment(
+                                                        isOffline: false,
+                                                      );
 
                                                   if (!context.mounted) return;
 
                                                   Navigator.pushReplacement(
                                                     context,
                                                     MaterialPageRoute(
-                                                      builder: (context) => const ListManager(),
+                                                      builder: (context) =>
+                                                          const ListManager(),
                                                     ),
                                                   );
                                                 }
@@ -156,7 +201,8 @@ class RegisterPage extends StatelessWidget {
                                               height: 20,
                                               width: 20,
                                               child: CircularProgressIndicator(
-                                                  strokeWidth: 2),
+                                                strokeWidth: 2,
+                                              ),
                                             )
                                           : const Text('Registrar'),
                                     ),

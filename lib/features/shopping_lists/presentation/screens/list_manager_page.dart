@@ -24,15 +24,6 @@ class _ListManagerState extends State<ListManager> {
     final isDark = themeProvider.isDarkMode;
     final listNames = shoppingProvider.shoppingLists.keys.toList();
 
-    final primary = isDark ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
-    final border = isDark ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
-    final textStrong = isDark ? Colors.white : const Color(0xFF234B2A);
-    final textMuted = isDark ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
-    final cardShadow = isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.08);
-    final gradientColors = isDark
-        ? [const Color(0xFF1D2D1F).withValues(alpha: 0.50), const Color(0xFF243928).withValues(alpha: 0.50)]
-        : [const Color(0xFFF6F8E8).withValues(alpha: 0.50), const Color(0xFFE7F4E1).withValues(alpha: 0.50)];
-
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 40,
@@ -43,9 +34,7 @@ class _ListManagerState extends State<ListManager> {
               if (context.mounted) {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginPage(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
                 );
               }
             }
@@ -53,12 +42,12 @@ class _ListManagerState extends State<ListManager> {
         ),
         title: Text(
           'Listas de $displayName',
-          style: TextStyle(fontSize: 18, color: textStrong),
+          style: TextStyle(fontSize: 18, color: themeProvider.textStrongColor),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: (){
+            onPressed: () {
               if (context.mounted) {
                 Navigator.push(
                   context,
@@ -66,15 +55,18 @@ class _ListManagerState extends State<ListManager> {
                 );
               }
             },
-            icon: Icon(Icons.settings)),
+            icon: const Icon(Icons.settings),
+          ),
         ],
       ),
       body: Stack(
         children: [
-          Positioned.fill(child: Image.asset(
-            themeProvider.isDarkMode ? 'assets/images/background/Background_Dark_Image_1.jpg'
-            : 'assets/images/background/Background_Image_1.jpg',
-            fit: BoxFit.cover,)),
+          Positioned.fill(
+            child: Image.asset(
+              themeProvider.backgroundImagePath,
+              fit: BoxFit.cover,
+            ),
+          ),
           SafeArea(
             child: ListView(
               padding: const EdgeInsets.all(12),
@@ -86,19 +78,25 @@ class _ListManagerState extends State<ListManager> {
                     if (listNames.isEmpty) ...[
                       Container(
                         width: double.infinity,
-                        margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 4),
+                        margin: const EdgeInsets.symmetric(
+                          vertical: 24,
+                          horizontal: 4,
+                        ),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: gradientColors,
+                            colors: themeProvider.gradientColors,
                           ),
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: border, width: 1.6),
+                          border: Border.all(
+                            color: themeProvider.borderColor,
+                            width: 1.6,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: cardShadow,
+                              color: themeProvider.cardShadowColor,
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -109,10 +107,14 @@ class _ListManagerState extends State<ListManager> {
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: primary,
+                                color: themeProvider.primaryColor,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Icon(Icons.list_alt_rounded, color: Colors.white, size: 22),
+                              child: const Icon(
+                                Icons.list_alt_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -120,7 +122,7 @@ class _ListManagerState extends State<ListManager> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 15,
-                                color: textMuted,
+                                color: themeProvider.textMutedColor,
                               ),
                             ),
                           ],
@@ -131,8 +133,12 @@ class _ListManagerState extends State<ListManager> {
                         return ListBubble(
                           isDark: isDark,
                           listName: listName,
-                          productCount: shoppingProvider.activeProductsForList(listName).length,
-                          canManageList: shoppingProvider.canManageList(listName),
+                          productCount: shoppingProvider
+                              .activeProductsForList(listName)
+                              .length,
+                          canManageList: shoppingProvider.canManageList(
+                            listName,
+                          ),
                           isSharedList: shoppingProvider.isSharedList(listName),
                           onRename: (newName) {
                             shoppingProvider.renameList(listName, newName);
@@ -151,8 +157,8 @@ class _ListManagerState extends State<ListManager> {
                           shoppingProvider.createList();
                         },
                         style: FilledButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: isDark? Colors.black : Colors.white,
+                          backgroundColor: themeProvider.primaryColor,
+                          foregroundColor: isDark ? Colors.black : Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -168,7 +174,7 @@ class _ListManagerState extends State<ListManager> {
             ),
           ),
         ],
-      )
+      ),
     );
   }
 }

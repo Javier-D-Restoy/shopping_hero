@@ -70,12 +70,16 @@ class _SharingPageState extends State<SharingPage> {
         setState(() => _isLoadingMembers = true);
       }
 
-      final doc = await _firestore.collection('sharedShoppingLists').doc(sharedListId).get();
-      final memberUids = (doc.data()?['memberUids'] as List<dynamic>? ?? const [])
-          .whereType<String>()
-          .where((uid) => uid.isNotEmpty && uid != currentUid)
-          .toSet()
-          .toList();
+      final doc = await _firestore
+          .collection('sharedShoppingLists')
+          .doc(sharedListId)
+          .get();
+      final memberUids =
+          (doc.data()?['memberUids'] as List<dynamic>? ?? const [])
+              .whereType<String>()
+              .where((uid) => uid.isNotEmpty && uid != currentUid)
+              .toSet()
+              .toList();
 
       if (memberUids.isEmpty) {
         if (mounted) {
@@ -141,7 +145,9 @@ class _SharingPageState extends State<SharingPage> {
     } catch (error) {
       if (!mounted) return;
       messenger?.showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSharing = false);
@@ -166,7 +172,9 @@ class _SharingPageState extends State<SharingPage> {
     } catch (error) {
       if (!mounted) return;
       messenger?.showSnackBar(
-        SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+        ),
       );
     }
   }
@@ -180,13 +188,18 @@ class _SharingPageState extends State<SharingPage> {
     final isOwner = shoppingProvider.canManageList(listName);
 
     final surface = isDark ? const Color(0xFF1F2A1E) : Colors.white;
-    final surfaceSoft = isDark ? const Color(0xFF2C3A2D) : const Color(0xFFF4F8EE);
+    final surfaceSoft = isDark
+        ? const Color(0xFF2C3A2D)
+        : const Color(0xFFF4F8EE);
     final primary = isDark ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
-    final primarySoft = isDark ? const Color(0xFF7DBB74) : const Color(0xFFBFE0B0);
     final border = isDark ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
     final textStrong = isDark ? Colors.white : const Color(0xFF234B2A);
-    final textMuted = isDark ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
-    final cardShadow = isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.08);
+    final textMuted = isDark
+        ? const Color(0xFFD9E9D2)
+        : const Color(0xFF55755E);
+    final cardShadow = isDark
+        ? Colors.black.withValues(alpha: 0.35)
+        : Colors.black.withValues(alpha: 0.08);
 
     final shareCard = Container(
       padding: const EdgeInsets.all(20),
@@ -195,8 +208,14 @@ class _SharingPageState extends State<SharingPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? [const Color(0xFF1D2D1F).withValues(alpha: 0.50), const Color(0xFF243928).withValues(alpha: 0.50)]
-              : [const Color(0xFFF6F8E8).withValues(alpha: 0.50), const Color(0xFFE7F4E1).withValues(alpha: 0.50)],
+              ? [
+                  const Color(0xFF1D2D1F).withValues(alpha: 0.50),
+                  const Color(0xFF243928).withValues(alpha: 0.50),
+                ]
+              : [
+                  const Color(0xFFF6F8E8).withValues(alpha: 0.50),
+                  const Color(0xFFE7F4E1).withValues(alpha: 0.50),
+                ],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: border, width: 1.6),
@@ -219,10 +238,21 @@ class _SharingPageState extends State<SharingPage> {
                   color: primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.share_rounded, color: isDark? Colors.black : Colors.white, size: 22,
+                child: Icon(
+                  Icons.share_rounded,
+                  color: isDark ? Colors.black : Colors.white,
+                  size: 22,
                   shadows: [
-                    Shadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 8, offset: Offset(0,0)),
-                    Shadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 4, offset: Offset(0,0))
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.7),
+                      blurRadius: 8,
+                      offset: Offset(0, 0),
+                    ),
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 4,
+                      offset: Offset(0, 0),
+                    ),
                   ],
                 ),
               ),
@@ -273,7 +303,7 @@ class _SharingPageState extends State<SharingPage> {
                 onPressed: _isSharing ? null : _shareList,
                 style: FilledButton.styleFrom(
                   backgroundColor: primary,
-                  foregroundColor: isDark? Colors.black : Colors.white,
+                  foregroundColor: isDark ? Colors.black : Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -283,19 +313,40 @@ class _SharingPageState extends State<SharingPage> {
                     ? const SizedBox(
                         width: 18,
                         height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
-                    : Icon(Icons.person_add_alt_1_rounded,
+                    : Icon(
+                        Icons.person_add_alt_1_rounded,
                         shadows: [
-                          Shadow(color: Colors.black.withValues(alpha: 0.9), blurRadius: 8, offset: Offset(0,0)),
-                          Shadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 4, offset: Offset(0,0))
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.9),
+                            blurRadius: 8,
+                            offset: Offset(0, 0),
+                          ),
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            blurRadius: 4,
+                            offset: Offset(0, 0),
+                          ),
                         ],
                       ),
-                label: Text(_isSharing ? 'Compartiendo...' : 'Compartir lista',
+                label: Text(
+                  _isSharing ? 'Compartiendo...' : 'Compartir lista',
                   style: TextStyle(
                     shadows: [
-                          Shadow(color: Colors.black.withValues(alpha: 0.9), blurRadius: 8, offset: Offset(0,0)),
-                          Shadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 4, offset: Offset(0,0))
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.9),
+                        blurRadius: 8,
+                        offset: Offset(0, 0),
+                      ),
+                      Shadow(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        blurRadius: 4,
+                        offset: Offset(0, 0),
+                      ),
                     ],
                   ),
                 ),
@@ -343,10 +394,20 @@ class _SharingPageState extends State<SharingPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.people_alt_rounded, color: primary,
+              Icon(
+                Icons.people_alt_rounded,
+                color: primary,
                 shadows: [
-                  Shadow(color: Colors.black.withValues(alpha: 0.9), blurRadius: 8, offset: Offset(0,0)),
-                  Shadow(color: Colors.black.withValues(alpha: 0.7), blurRadius: 4, offset: Offset(0,0))
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.9),
+                    blurRadius: 8,
+                    offset: Offset(0, 0),
+                  ),
+                  Shadow(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    blurRadius: 4,
+                    offset: Offset(0, 0),
+                  ),
                 ],
               ),
               const SizedBox(width: 8),
@@ -381,16 +442,19 @@ class _SharingPageState extends State<SharingPage> {
               ),
               child: Text(
                 'No hay otros usuarios con acceso a esta lista.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: textStrong,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: textStrong),
               ),
             )
           else
             ..._sharedMembers.map(
               (member) => Container(
                 margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: surfaceSoft.withValues(alpha: 0.90),
                   borderRadius: BorderRadius.circular(14),
@@ -401,8 +465,13 @@ class _SharingPageState extends State<SharingPage> {
                     CircleAvatar(
                       backgroundColor: primary,
                       child: Text(
-                        member.displayName.isNotEmpty ? member.displayName[0].toUpperCase() : 'U',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        member.displayName.isNotEmpty
+                            ? member.displayName[0].toUpperCase()
+                            : 'U',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -412,17 +481,18 @@ class _SharingPageState extends State<SharingPage> {
                         children: [
                           Text(
                             member.displayName,
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: textStrong,
-                            ),
+                            style: Theme.of(context).textTheme.bodyLarge
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: textStrong,
+                                ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             member.email,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: textMuted,
-                            ),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodySmall?.copyWith(color: textMuted),
                           ),
                         ],
                       ),
@@ -437,10 +507,7 @@ class _SharingPageState extends State<SharingPage> {
 
     return ListView(
       padding: const EdgeInsets.all(20),
-      children: [
-        shareCard,
-        membersCard,
-      ],
+      children: [shareCard, membersCard],
     );
   }
 }

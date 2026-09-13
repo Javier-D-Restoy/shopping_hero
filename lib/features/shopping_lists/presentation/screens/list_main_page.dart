@@ -109,9 +109,7 @@ class _ListMainPageState extends State<ListMainPage> {
               if (context.mounted) {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const ListManager(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const ListManager()),
                 );
               }
             }
@@ -229,6 +227,8 @@ class _ListMainPageState extends State<ListMainPage> {
                             Expanded(
                               child: TextFormField(
                                 controller: _productNameController,
+                                textCapitalization:
+                                    TextCapitalization.sentences,
                                 maxLength: 24,
                                 onTapOutside: (event) {
                                   focusNode.unfocus();
@@ -329,12 +329,13 @@ class _ListMainPageState extends State<ListMainPage> {
                 label: product.name,
                 amount: product.amount,
                 productAdd: ProductAdd.active,
-                animateOnEntry: _shouldAnimateProduct(product, ProductAdd.active),
-                onLongPress: () => _showProductEditor(shoppingProvider, product),
-                onTap: () => _removeActiveProduct(
-                  shoppingProvider,
-                  product.id,
+                animateOnEntry: _shouldAnimateProduct(
+                  product,
+                  ProductAdd.active,
                 ),
+                onLongPress: () =>
+                    _showProductEditor(shoppingProvider, product),
+                onTap: () => _removeActiveProduct(shoppingProvider, product.id),
               );
             },
           ),
@@ -395,12 +396,14 @@ class _ListMainPageState extends State<ListMainPage> {
                   label: product.name,
                   amount: product.amount,
                   productAdd: ProductAdd.frequent,
-                  animateOnEntry: _shouldAnimateProduct(product, ProductAdd.frequent),
-                  onLongPress: () => _showProductEditor(shoppingProvider, product),
-                  onTap: () => _removeFrequentProduct(
-                    shoppingProvider,
-                    product.id,
+                  animateOnEntry: _shouldAnimateProduct(
+                    product,
+                    ProductAdd.frequent,
                   ),
+                  onLongPress: () =>
+                      _showProductEditor(shoppingProvider, product),
+                  onTap: () =>
+                      _removeFrequentProduct(shoppingProvider, product.id),
                 );
               },
             ),
@@ -428,7 +431,8 @@ class _ListMainPageState extends State<ListMainPage> {
     final name = _productNameController.text.trim();
     if (name.isEmpty) return;
 
-    shoppingProvider.addActiveProductToSelectedList(
+    shoppingProvider.addActiveProductToList(
+      widget.listName,
       name,
     ); // Lista Actualizada: Active + Frequent
     _productNameController.clear();
@@ -438,14 +442,14 @@ class _ListMainPageState extends State<ListMainPage> {
     ShoppingProvider shoppingProvider,
     String productId,
   ) {
-    shoppingProvider.moveActiveProductToFrequentSelectedList(productId);
+    shoppingProvider.moveActiveProductToFrequent(widget.listName, productId);
   }
 
   void _removeFrequentProduct(
     ShoppingProvider shoppingProvider,
     String productId,
   ) {
-    shoppingProvider.moveFrequentProductToActiveSelectedList(productId);
+    shoppingProvider.moveFrequentProductToActive(widget.listName, productId);
   }
 
   Future<void> _showProductEditor(
@@ -462,7 +466,9 @@ class _ListMainPageState extends State<ListMainPage> {
     final amountController = TextEditingController(
       text: product.amount.toString(),
     );
-    final imageUrlController = TextEditingController(text: product.imageUrl ?? '');
+    final imageUrlController = TextEditingController(
+      text: product.imageUrl ?? '',
+    );
 
     try {
       await showModalBottomSheet<void>(
@@ -534,7 +540,9 @@ class _ListMainPageState extends State<ListMainPage> {
                           textAlign: TextAlign.center,
                           controller: priceController,
                           maxLength: 7,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
                           decoration: const InputDecoration(
                             labelText: 'Precio',
                             alignLabelWithHint: false,
@@ -561,22 +569,37 @@ class _ListMainPageState extends State<ListMainPage> {
                         child: FilledButton.icon(
                           onPressed: () {
                             final name = nameController.text.trim();
-                            final frequency = int.tryParse(frequencyController.text.trim());
-                            final amount = int.tryParse(amountController.text.trim());
-                            final priceText = priceController.text.trim().replaceAll(',', '.');
-                            final price = priceText.isEmpty ? null : double.tryParse(priceText);
+                            final frequency = int.tryParse(
+                              frequencyController.text.trim(),
+                            );
+                            final amount = int.tryParse(
+                              amountController.text.trim(),
+                            );
+                            final priceText = priceController.text
+                                .trim()
+                                .replaceAll(',', '.');
+                            final price = priceText.isEmpty
+                                ? null
+                                : double.tryParse(priceText);
 
-                            if (name.isEmpty || frequency == null || frequency < 0 ||
-                                amount == null || amount < 0 ||
+                            if (name.isEmpty ||
+                                frequency == null ||
+                                frequency < 0 ||
+                                amount == null ||
+                                amount < 0 ||
                                 (priceText.isNotEmpty && price == null)) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Revisa los datos del producto')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Revisa los datos del producto',
+                                  ),
+                                ),
                               );
                               return;
                             }
 
                             shoppingProvider.updateProduct(
-                              shoppingProvider.selectedListName,
+                              widget.listName,
                               product.id,
                               name: name,
                               frequency: frequency,
@@ -597,7 +620,7 @@ class _ListMainPageState extends State<ListMainPage> {
                         child: FilledButton.icon(
                           onPressed: () {
                             shoppingProvider.deleteProduct(
-                              shoppingProvider.selectedListName,
+                              widget.listName,
                               product.id,
                             );
                             Navigator.of(context).pop();

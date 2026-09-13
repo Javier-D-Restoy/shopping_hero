@@ -241,23 +241,24 @@ class ShoppingProvider extends ChangeNotifier {
         continue;
       }
 
-      final winnerList = cloudTs.isAfter(localTs) ? cloudList : localList;
-      final otherList = identical(winnerList, localList)
-          ? cloudList
-          : localList;
+      final Map<String, List<Product>> chosenList;
+      final String preferredName;
 
-      final mergedCategories = _mergeListCategories(winnerList, otherList);
-      final mergedActive = mergedCategories['active']!;
-      final mergedFrequent = mergedCategories['frequent']!;
-
-      final preferredName = cloudTs.isAfter(localTs)
-          ? (cloudEntry?.key ?? id)
-          : (localEntry?.key ?? id);
+      if (cloudTs.isAfter(localTs)) {
+        chosenList = cloudList;
+        preferredName = cloudEntry?.key ?? id;
+      } else if (localTs.isAfter(cloudTs)) {
+        chosenList = localList;
+        preferredName = localEntry?.key ?? id;
+      } else {
+        chosenList = _mergeListCategories(localList, cloudList);
+        preferredName = cloudEntry?.key ?? (localEntry?.key ?? id);
+      }
 
       // Se conserva la lista aunque esté vacía, para que exista en ambos repositorios desde su creación.
       result[preferredName] = {
-        'active': mergedActive,
-        'frequent': mergedFrequent,
+        'active': List<Product>.from(chosenList['active'] ?? <Product>[]),
+        'frequent': List<Product>.from(chosenList['frequent'] ?? <Product>[]),
       };
     }
 
@@ -664,10 +665,12 @@ class ShoppingProvider extends ChangeNotifier {
 
           final localName = localNameByListId[listId];
           final localNameTs = localName != null
-              ? (_listUpdatedAt[localName] ?? DateTime.fromMillisecondsSinceEpoch(0))
+              ? (_listUpdatedAt[localName] ??
+                    DateTime.fromMillisecondsSinceEpoch(0))
               : DateTime.fromMillisecondsSinceEpoch(0);
 
-          final name = (localName != null && localNameTs.isAfter(cloudUpdatedAt))
+          final name =
+              (localName != null && localNameTs.isAfter(cloudUpdatedAt))
               ? localName
               : cloudName;
 
@@ -690,15 +693,19 @@ class ShoppingProvider extends ChangeNotifier {
           final localTs =
               _listUpdatedAt[name] ?? DateTime.fromMillisecondsSinceEpoch(0);
 
-          final winnerList = cloudUpdatedAt.isAfter(localTs)
-              ? {'active': cloudActive, 'frequent': cloudFrequent}
-              : localList;
-          final otherList = identical(winnerList, localList)
-              ? {'active': cloudActive, 'frequent': cloudFrequent}
-              : localList;
+          final Map<String, List<Product>> chosenList;
+          if (cloudUpdatedAt.isAfter(localTs)) {
+            chosenList = {'active': cloudActive, 'frequent': cloudFrequent};
+          } else if (localTs.isAfter(cloudUpdatedAt)) {
+            chosenList = localList;
+          } else {
+            chosenList = _mergeListCategories(localList, {
+              'active': cloudActive,
+              'frequent': cloudFrequent,
+            });
+          }
 
-          final mergedCategories = _mergeListCategories(winnerList, otherList);
-          _shoppingLists[name] = mergedCategories;
+          _shoppingLists[name] = chosenList;
           _listUpdatedAt[name] = cloudUpdatedAt.isAfter(localTs)
               ? cloudUpdatedAt
               : localTs;
@@ -947,7 +954,7 @@ class ShoppingProvider extends ChangeNotifier {
 
   // -------------------------------------------- ][ Añadir/Quitar Productos ][ --------------------------------------------- //
 
-  void _addActiveProductToList(
+  void addActiveProductToList(
     String listName,
     String productName, {
     double? price,
@@ -995,7 +1002,7 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(saveToStorage());
   }
 
-  void _addFrequentProductToList(
+  void addFrequentProductToList(
     String listName,
     String productName, {
     double? price,
@@ -1048,7 +1055,7 @@ class ShoppingProvider extends ChangeNotifier {
     double? price,
     String? imageUrl,
   }) {
-    _addActiveProductToList(
+    addActiveProductToList(
       _selectedListName,
       productName,
       price: price,
@@ -1061,7 +1068,7 @@ class ShoppingProvider extends ChangeNotifier {
     double? price,
     String? imageUrl,
   }) {
-    _addFrequentProductToList(
+    addFrequentProductToList(
       _selectedListName,
       productName,
       price: price,
@@ -1199,7 +1206,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _touchList(listName);
     notifyListeners();
-    unawaited(saveToStorage(mergeCloud: false));
+    unawaited(saveToStorage());
   }
 
   void removeFrequentProductFromSelectedList(String productId) {
