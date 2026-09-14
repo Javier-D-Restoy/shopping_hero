@@ -25,7 +25,14 @@ class ShoppingProvider extends ChangeNotifier {
   final Map<String, String> _listIds = {};
   final Map<String, String> _sharedListIds = {};
   final Map<String, String> _sharedListOwners = {};
+  final Map<String, Map<String, DateTime>> _deletedSharedProducts = {};
   final Map<String, DateTime> _deletedLists = {};
+  final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>>
+      _sharedListSubscriptions = {};
+  DateTime? _lastAutomaticSharedSync;
+  Timer? _automaticSharedSyncTimer;
+  bool _automaticSharedSyncInProgress = false;
+  final Map<String, Map<String, dynamic>> _pendingSharedSnapshots = {};
   ShoppingSyncStatus _syncStatus = ShoppingSyncStatus.offline;
   DateTime? _lastSyncedAt;
 
@@ -41,6 +48,16 @@ class ShoppingProvider extends ChangeNotifier {
   String? sharedListIdFor(String listName) => _sharedListIds[listName];
   bool canManageList(String listName) =>
       !isSharedList(listName) || _sharedListOwners[listName] == _currentUid;
+
+  @override
+  void dispose() {
+    _automaticSharedSyncTimer?.cancel();
+    for (final subscription in _sharedListSubscriptions.values) {
+      unawaited(subscription.cancel());
+    }
+    _sharedListSubscriptions.clear();
+    super.dispose();
+  }
 
   Future<void> leaveSharedList(String listName) async {
     if (_currentUid == null) {
@@ -68,6 +85,7 @@ class ShoppingProvider extends ChangeNotifier {
     _shoppingLists.remove(cleanedName);
     _sharedListIds.remove(cleanedName);
     _sharedListOwners.remove(cleanedName);
+    _deletedSharedProducts.remove(sharedListId);
     _listUpdatedAt.remove(cleanedName);
     _listIds.remove(cleanedName);
 
@@ -99,6 +117,7 @@ class ShoppingProvider extends ChangeNotifier {
     _touchList(listName);
     notifyListeners();
     await saveToStorage(mergeCloud: false);
+    await _syncSharedListListeners();
   }
 
   void _setSyncStatus(ShoppingSyncStatus status, {DateTime? syncedAt}) {
@@ -347,6 +366,7 @@ class ShoppingProvider extends ChangeNotifier {
     final storedDeletedLists = _box!.get('deleted_lists');
     final storedSharedListIds = _box!.get('shared_list_ids');
     final storedSharedListOwners = _box!.get('shared_list_owners');
+    final storedDeletedSharedProducts = _box!.get('deleted_shared_products');
 
     if (storedSharedListIds is Map) {
       for (final entry in storedSharedListIds.entries) {
@@ -361,6 +381,26 @@ class ShoppingProvider extends ChangeNotifier {
         if (entry.key is String && entry.value is String) {
           _sharedListOwners[entry.key as String] = entry.value as String;
         }
+      }
+    }
+
+    if (storedDeletedSharedProducts is Map) {
+      for (final entry in storedDeletedSharedProducts.entries) {
+        if (entry.key is! String || entry.value is! Map) continue;
+        final deletedProducts = <String, DateTime>{};
+        for (final productEntry in (entry.value as Map).entries) {
+          final value = productEntry.value;
+          DateTime? deletedAt;
+          if (value is int) {
+            deletedAt = DateTime.fromMillisecondsSinceEpoch(value);
+          } else if (value is Timestamp) {
+            deletedAt = value.toDate();
+          }
+          if (productEntry.key is String && deletedAt != null) {
+            deletedProducts[productEntry.key as String] = deletedAt;
+          }
+        }
+        _deletedSharedProducts[entry.key as String] = deletedProducts;
       }
     }
 
@@ -469,6 +509,8 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   Future<void> clearCurrentUser() async {
+    await _cancelSharedListListeners();
+    _pendingSharedSnapshots.clear();
     _currentUid = null;
     _setSyncStatus(ShoppingSyncStatus.offline);
   }
@@ -516,6 +558,7 @@ class ShoppingProvider extends ChangeNotifier {
         active: list['active'] ?? <Product>[],
         frequent: list['frequent'] ?? <Product>[],
         updatedAt: _listUpdatedAt[entry.key] ?? DateTime.now(),
+        deletedProductTimestamps: _deletedSharedProducts[entry.value],
       );
     }
   }
@@ -540,10 +583,181 @@ class ShoppingProvider extends ChangeNotifier {
         _selectedListName = '';
       }
 
+      await _syncSharedListListeners();
       notifyListeners();
     } catch (_) {
       _setSyncStatus(ShoppingSyncStatus.error);
     }
+  }
+
+  Future<void> refreshFromCloud() async {
+    if (_isOfflineMode || _currentUid == null || _currentUid!.isEmpty) {
+      return;
+    }
+
+    await _loadListsFromFirestore(_currentUid!);
+  }
+
+  Future<void> _syncSharedListListeners() async {
+    if (_isOfflineMode || _currentUid == null) {
+      await _cancelSharedListListeners();
+      return;
+    }
+
+    final activeIds = _sharedListIds.values.toSet();
+    for (final entry in _sharedListSubscriptions.entries.toList()) {
+      if (!activeIds.contains(entry.key)) {
+        await entry.value.cancel();
+        _sharedListSubscriptions.remove(entry.key);
+      }
+    }
+
+    for (final listId in activeIds) {
+      if (_sharedListSubscriptions.containsKey(listId)) continue;
+
+      try {
+        final subscription = FirebaseFirestore.instance
+            .collection('sharedShoppingLists')
+            .doc(listId)
+            .snapshots()
+            .listen(_onSharedListSnapshot);
+        _sharedListSubscriptions[listId] = subscription;
+      } catch (_) {
+        // El listener se reintentará en el siguiente refresco o cambio de entorno.
+      }
+    }
+  }
+
+  Future<void> _cancelSharedListListeners() async {
+    _automaticSharedSyncTimer?.cancel();
+    _automaticSharedSyncTimer = null;
+    for (final subscription in _sharedListSubscriptions.values) {
+      await subscription.cancel();
+    }
+    _sharedListSubscriptions.clear();
+  }
+
+  void _onSharedListSnapshot(
+    DocumentSnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    if (!snapshot.exists || snapshot.data() == null || _isOfflineMode) return;
+
+    _pendingSharedSnapshots[snapshot.id] = snapshot.data()!;
+
+    final now = DateTime.now();
+    final lastSync = _lastAutomaticSharedSync;
+    if (lastSync != null && now.difference(lastSync) < const Duration(seconds: 5)) {
+      _automaticSharedSyncTimer ??= Timer(
+        const Duration(seconds: 5),
+        _runAutomaticSharedSync,
+      );
+      return;
+    }
+
+    unawaited(_runAutomaticSharedSync());
+  }
+
+  Future<void> _runAutomaticSharedSync() async {
+    _automaticSharedSyncTimer = null;
+    if (_automaticSharedSyncInProgress || _isOfflineMode) return;
+
+    final now = DateTime.now();
+    final lastSync = _lastAutomaticSharedSync;
+    if (lastSync != null && now.difference(lastSync) < const Duration(seconds: 5)) {
+      _automaticSharedSyncTimer = Timer(
+        const Duration(seconds: 5),
+        _runAutomaticSharedSync,
+      );
+      return;
+    }
+
+    _automaticSharedSyncInProgress = true;
+    _lastAutomaticSharedSync = now;
+    try {
+      final snapshots = Map<String, Map<String, dynamic>>.from(
+        _pendingSharedSnapshots,
+      );
+      _pendingSharedSnapshots.clear();
+      for (final entry in snapshots.entries) {
+        _applySharedListSnapshot(entry.key, entry.value);
+      }
+      await _persistHiveCache();
+      notifyListeners();
+    } finally {
+      _automaticSharedSyncInProgress = false;
+    }
+  }
+
+  void _applySharedListSnapshot(String listId, Map<String, dynamic> data) {
+    final cloudName = (data['name'] ?? listId).toString();
+    String? localName;
+    for (final entry in _sharedListIds.entries) {
+      if (entry.value == listId) {
+        localName = entry.key;
+        break;
+      }
+    }
+    final name = localName ?? cloudName;
+    final cloudActive = _productsFromFirestore(name, data['active']);
+    final cloudFrequent = _productsFromFirestore(name, data['frequent']);
+    final deletedProducts = _deletedProductsFromFirestore(
+      data['deletedProductTimestamps'],
+    );
+    final knownDeletedProducts = <String, DateTime>{
+      ...?_deletedSharedProducts[listId],
+    };
+    for (final entry in deletedProducts.entries) {
+      final current = knownDeletedProducts[entry.key];
+      if (current == null || entry.value.isAfter(current)) {
+        knownDeletedProducts[entry.key] = entry.value;
+      }
+    }
+
+    _deletedSharedProducts[listId] = knownDeletedProducts;
+    _sharedListIds[name] = listId;
+    _sharedListOwners[name] = (data['ownerUid'] ?? '').toString();
+    final localList = _shoppingLists[name] ?? {
+      'active': <Product>[],
+      'frequent': <Product>[],
+    };
+    _shoppingLists[name] = _mergeSharedListProducts(
+      localList,
+      {'active': cloudActive, 'frequent': cloudFrequent},
+      knownDeletedProducts,
+    );
+    final updatedAt = data['updatedAt'];
+    if (updatedAt is Timestamp) {
+      _listUpdatedAt[name] = updatedAt.toDate();
+    }
+  }
+
+  Future<void> _persistHiveCache() async {
+    if (_box == null) return;
+
+    final dataToSave = <String, Map<String, List<Map<String, dynamic>>>>{};
+    for (final entry in _shoppingLists.entries) {
+      dataToSave[entry.key] = {
+        for (final category in entry.value.entries)
+          category.key: category.value.map((product) => product.toMapHive()).toList(),
+      };
+    }
+
+    await _box!.put('shopping_lists', dataToSave);
+    await _box!.put('selected_list_name', _selectedListName);
+    await _box!.put('shared_list_ids', _sharedListIds);
+    await _box!.put('shared_list_owners', _sharedListOwners);
+    await _box!.put(
+      'deleted_shared_products',
+      _deletedSharedProducts.map(
+        (listId, products) => MapEntry(
+          listId,
+          products.map(
+            (productId, deletedAt) =>
+                MapEntry(productId, deletedAt.millisecondsSinceEpoch),
+          ),
+        ),
+      ),
+    );
   }
 
   List<Product> _productsFromFirestore(String listName, dynamic rawProducts) {
@@ -561,9 +775,81 @@ class ShoppingProvider extends ChangeNotifier {
     return result;
   }
 
+  Map<String, DateTime> _deletedProductsFromFirestore(dynamic rawDeletes) {
+    if (rawDeletes is! Map) return <String, DateTime>{};
+
+    final result = <String, DateTime>{};
+    for (final entry in rawDeletes.entries) {
+      final value = entry.value;
+      DateTime? deletedAt;
+      if (value is Timestamp) {
+        deletedAt = value.toDate();
+      } else if (value is DateTime) {
+        deletedAt = value;
+      }
+      if (entry.key is String && deletedAt != null) {
+        result[entry.key as String] = deletedAt;
+      }
+    }
+    return result;
+  }
+
+  static Map<String, List<Product>> _mergeSharedListProducts(
+    Map<String, List<Product>> local,
+    Map<String, List<Product>> cloud,
+    Map<String, DateTime> deletedProducts,
+  ) {
+    final productsByKey = <String, Product>{};
+    final categoryByKey = <String, String>{};
+
+    void addProducts(List<Product> products, String category) {
+      for (final product in products) {
+        final key = product.id.isNotEmpty
+            ? 'id:${product.id}'
+            : 'name:${product.name.trim().toLowerCase()}';
+        final existing = productsByKey[key];
+        final shouldReplace = existing == null ||
+            product.lastAdded.isAfter(existing.lastAdded) ||
+            (product.lastAdded.isAtSameMomentAs(existing.lastAdded) &&
+                product.frequency >= existing.frequency);
+        if (shouldReplace) {
+          productsByKey[key] = product;
+          categoryByKey[key] = category;
+        }
+      }
+    }
+
+    addProducts(cloud['active'] ?? <Product>[], 'active');
+    addProducts(cloud['frequent'] ?? <Product>[], 'frequent');
+    addProducts(local['active'] ?? <Product>[], 'active');
+    addProducts(local['frequent'] ?? <Product>[], 'frequent');
+
+    bool wasDeleted(Product product) {
+      final deletedAt = deletedProducts[product.id];
+      return deletedAt != null && !product.lastAdded.isAfter(deletedAt);
+    }
+
+    return {
+      'active': productsByKey.entries
+          .where((entry) => categoryByKey[entry.key] == 'active')
+          .map((entry) => entry.value)
+          .where((product) => !wasDeleted(product))
+          .toList()
+        ..sort((a, b) => b.lastAdded.compareTo(a.lastAdded)),
+      'frequent': productsByKey.entries
+          .where((entry) => categoryByKey[entry.key] == 'frequent')
+          .map((entry) => entry.value)
+          .where((product) => !wasDeleted(product))
+          .toList()
+        ..sort((a, b) => b.lastAdded.compareTo(a.lastAdded)),
+    };
+  }
+
   /// Cambia el entorno de datos entre invitado local y caché online.
   /// Se ejecuta al iniciar o cerrar sesión en SessionProvider.
   Future<void> switchUserEnvironment({required bool isOffline}) async {
+    await _cancelSharedListListeners();
+    _pendingSharedSnapshots.clear();
     _isOfflineMode = isOffline;
     _setSyncStatus(
       isOffline ? ShoppingSyncStatus.offline : ShoppingSyncStatus.syncing,
@@ -578,6 +864,7 @@ class ShoppingProvider extends ChangeNotifier {
     _shoppingLists.clear();
     _sharedListIds.clear();
     _sharedListOwners.clear();
+    _deletedSharedProducts.clear();
     _listIds.clear();
     _deletedLists.clear();
     _selectedListName = '';
@@ -686,6 +973,18 @@ class ShoppingProvider extends ChangeNotifier {
 
           final cloudActive = _productsFromFirestore(name, data['active']);
           final cloudFrequent = _productsFromFirestore(name, data['frequent']);
+          final mergedDeletedProducts = <String, DateTime>{
+            ...?_deletedSharedProducts[listId],
+          };
+          for (final entry in _deletedProductsFromFirestore(
+            data['deletedProductTimestamps'],
+          ).entries) {
+            final current = mergedDeletedProducts[entry.key];
+            if (current == null || entry.value.isAfter(current)) {
+              mergedDeletedProducts[entry.key] = entry.value;
+            }
+          }
+          _deletedSharedProducts[listId] = mergedDeletedProducts;
 
           final localList =
               _shoppingLists[name] ??
@@ -693,19 +992,11 @@ class ShoppingProvider extends ChangeNotifier {
           final localTs =
               _listUpdatedAt[name] ?? DateTime.fromMillisecondsSinceEpoch(0);
 
-          final Map<String, List<Product>> chosenList;
-          if (cloudUpdatedAt.isAfter(localTs)) {
-            chosenList = {'active': cloudActive, 'frequent': cloudFrequent};
-          } else if (localTs.isAfter(cloudUpdatedAt)) {
-            chosenList = localList;
-          } else {
-            chosenList = _mergeListCategories(localList, {
-              'active': cloudActive,
-              'frequent': cloudFrequent,
-            });
-          }
-
-          _shoppingLists[name] = chosenList;
+          _shoppingLists[name] = _mergeSharedListProducts(
+            localList,
+            {'active': cloudActive, 'frequent': cloudFrequent},
+            mergedDeletedProducts,
+          );
           _listUpdatedAt[name] = cloudUpdatedAt.isAfter(localTs)
               ? cloudUpdatedAt
               : localTs;
@@ -735,6 +1026,18 @@ class ShoppingProvider extends ChangeNotifier {
         await _box!.put('selected_list_name', _selectedListName);
         await _box!.put('shared_list_ids', _sharedListIds);
         await _box!.put('shared_list_owners', _sharedListOwners);
+        await _box!.put(
+          'deleted_shared_products',
+          _deletedSharedProducts.map(
+            (listId, products) => MapEntry(
+              listId,
+              products.map(
+                (productId, deletedAt) =>
+                    MapEntry(productId, deletedAt.millisecondsSinceEpoch),
+              ),
+            ),
+          ),
+        );
       }
 
       if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
@@ -788,6 +1091,7 @@ class ShoppingProvider extends ChangeNotifier {
     _shoppingLists.clear();
     _sharedListIds.clear();
     _sharedListOwners.clear();
+    _deletedSharedProducts.clear();
     _listIds.clear();
     _listUpdatedAt.clear();
     _deletedLists.clear();
@@ -971,12 +1275,31 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     _shoppingLists[listName]!['active'] ??= <Product>[];
+    _shoppingLists[listName]!['frequent'] ??= <Product>[];
     _touchList(listName);
 
     final activeList = _shoppingLists[listName]!['active']!;
+    final frequentList = _shoppingLists[listName]!['frequent']!;
     final existingIndex = activeList.indexWhere(
       (p) => p.name.toLowerCase() == cleanedName.toLowerCase(),
     );
+
+    final frequentIndex = frequentList.indexWhere(
+      (p) => p.name.toLowerCase() == cleanedName.toLowerCase(),
+    );
+
+    if (frequentIndex >= 0 && existingIndex < 0) {
+      final existing = frequentList.removeAt(frequentIndex);
+      activeList.add(
+        existing.copyWith(
+          frequency: existing.frequency + 1,
+          lastAdded: DateTime.now(),
+        ),
+      );
+      notifyListeners();
+      unawaited(saveToStorage());
+      return;
+    }
 
     if (existingIndex >= 0) {
       // Si ya existe, incrementar frecuencia
@@ -1121,7 +1444,7 @@ class ShoppingProvider extends ChangeNotifier {
     frequentList.removeWhere(
       (frequentProduct) => frequentProduct.id == product.id,
     );
-    frequentList.add(product);
+    frequentList.add(product.copyWith(lastAdded: DateTime.now()));
     _touchList(listName);
     notifyListeners();
     unawaited(saveToStorage());
@@ -1146,7 +1469,12 @@ class ShoppingProvider extends ChangeNotifier {
 
     final product = frequentList.removeAt(frequentIndex);
     activeList.removeWhere((activeProduct) => activeProduct.id == product.id);
-    activeList.add(product.copyWith(frequency: product.frequency + 1));
+    activeList.add(
+      product.copyWith(
+        frequency: product.frequency + 1,
+        lastAdded: DateTime.now(),
+      ),
+    );
     _touchList(listName);
     notifyListeners();
     unawaited(saveToStorage());
@@ -1193,6 +1521,8 @@ class ShoppingProvider extends ChangeNotifier {
     final list = _shoppingLists[listName];
     if (list == null) return;
 
+    final sharedListId = _sharedListIds[listName];
+    final deletedAt = DateTime.now();
     var removed = false;
     for (final category in ['active', 'frequent']) {
       final products = list[category];
@@ -1203,6 +1533,14 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     if (!removed) return;
+
+    if (sharedListId != null) {
+      final deletedProducts = _deletedSharedProducts.putIfAbsent(
+        sharedListId,
+        () => <String, DateTime>{},
+      );
+      deletedProducts[productId] = deletedAt;
+    }
 
     _touchList(listName);
     notifyListeners();

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
+import 'package:shopping_hero/core/providers/theme_provider.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_main_page.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 
@@ -232,19 +233,21 @@ class _ListBubbleState extends State<ListBubble> {
   @override
   Widget build(BuildContext context) {
     final shoppingProvider = context.read<ShoppingProvider>();
+    final themeProvider = context.read<ThemeProvider>();
     final visibleMembers = _sharedMembers.take(4).toList();
     final extraMembersCount = _sharedMembers.length > 4 ? _sharedMembers.length - 4 : 0;
     final isDark = widget.isDark;
 
-    final primary = isDark ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
-    final primarySoft = isDark ? const Color(0xFF7DBB74) : const Color(0xFFBFE0B0);
-    final border = isDark ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
-    final textStrong = isDark ? Colors.white : const Color(0xFF234B2A);
-    final cardShadow = isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.08);
-    final dangerColor = const Color(0xFFB35C5C);
-    final gradientColors = isDark
-        ? [const Color(0xFF1D2D1F).withValues(alpha: 0.85), const Color(0xFF243928).withValues(alpha: 0.85)]
-        : [const Color(0xFFF6F8E8).withValues(alpha: 0.95), const Color(0xFFE7F4E1).withValues(alpha: 0.95)];
+    final primary = themeProvider.primaryColor;
+    final primarySoft = themeProvider.primarySoftColor;
+    // final border = isDark ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
+    final border = themeProvider.borderColor;
+    // final textStrong = isDark ? Colors.white : const Color(0xFF234B2A);
+    final textStrong = themeProvider.textStrongColor;
+    // final cardShadow = isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.08);
+    final cardShadow = themeProvider.cardShadowColor;
+    final dangerColor = themeProvider.dangerColor;
+    final gradientColors = themeProvider.gradientColors2;
 
     return Padding(
       padding: const EdgeInsets.all(8.0),

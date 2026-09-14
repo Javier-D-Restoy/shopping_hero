@@ -177,18 +177,22 @@ class _ListMainPageState extends State<ListMainPage> {
               ),
             ),
           SizedBox(height: 10),
-          IndexedStack(
-            index: _selectedIndex,
-            children: [
-              _buildListContent(
-                activeProducts2,
-                frequentProducts2,
-                shoppingProvider,
-                themeProvider,
-              ),
-              const ProfilePage(),
-              const SharingPage(),
-            ],
+          RefreshIndicator(
+            color: themeProvider.primaryColor,
+            onRefresh: shoppingProvider.refreshFromCloud,
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _buildListContent(
+                  activeProducts2,
+                  frequentProducts2,
+                  shoppingProvider,
+                  themeProvider,
+                ),
+                const ProfilePage(),
+                const SharingPage(),
+              ],
+            ),
           ),
         ],
       ),

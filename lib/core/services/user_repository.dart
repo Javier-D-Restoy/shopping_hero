@@ -147,13 +147,136 @@ class UserRepository {
     required List<Product> active,
     required List<Product> frequent,
     required DateTime updatedAt,
+    Map<String, DateTime>? deletedProductTimestamps,
   }) async {
-    await _sharedListsCollection.doc(listId).set({
-      'name': name,
-      'active': active.map((product) => product.toMap()).toList(),
-      'frequent': frequent.map((product) => product.toMap()).toList(),
-      'updatedAt': Timestamp.fromDate(updatedAt),
-    }, SetOptions(merge: true));
+    final docRef = _sharedListsCollection.doc(listId);
+
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(docRef);
+      final cloudData = snapshot.data() ?? <String, dynamic>{};
+      final cloudActive = _productsFromData(cloudData['active']);
+      final cloudFrequent = _productsFromData(cloudData['frequent']);
+      final cloudDeletedProducts = _timestampsFromData(
+        cloudData['deletedProductTimestamps'],
+      );
+
+      final mergedDeletedProducts = <String, DateTime>{...cloudDeletedProducts};
+      for (final entry in (deletedProductTimestamps ?? {}).entries) {
+        final current = mergedDeletedProducts[entry.key];
+        if (current == null || entry.value.isAfter(current)) {
+          mergedDeletedProducts[entry.key] = entry.value;
+        }
+      }
+      final cloudUpdatedAt = cloudData['updatedAt'] is Timestamp
+          ? (cloudData['updatedAt'] as Timestamp).toDate()
+          : DateTime.fromMillisecondsSinceEpoch(0);
+      final mergedUpdatedAt = updatedAt.isAfter(cloudUpdatedAt)
+          ? updatedAt
+          : cloudUpdatedAt;
+      final mergedCategories = _mergeCategorizedProducts(
+        cloudActive,
+        cloudFrequent,
+        active,
+        frequent,
+        mergedDeletedProducts,
+      );
+
+      transaction.set(
+        docRef,
+        {
+          'name': name,
+            'active': mergedCategories['active']!
+              .map((product) => product.toMap())
+              .toList(),
+            'frequent': mergedCategories['frequent']!
+              .map((product) => product.toMap())
+              .toList(),
+          'updatedAt': Timestamp.fromDate(mergedUpdatedAt),
+          'deletedProductTimestamps': {
+            for (final entry in mergedDeletedProducts.entries)
+              entry.key: Timestamp.fromDate(entry.value),
+          },
+        },
+        SetOptions(merge: true),
+      );
+    });
+  }
+
+  List<Product> _productsFromData(dynamic rawProducts) {
+    if (rawProducts is! List) return <Product>[];
+
+    return rawProducts
+        .whereType<Map>()
+        .map((rawProduct) => Product.fromMap(
+              (rawProduct['id'] ?? '').toString(),
+              rawProduct.map((key, value) => MapEntry(key.toString(), value)),
+            ))
+        .toList();
+  }
+
+  Map<String, DateTime> _timestampsFromData(dynamic rawTimestamps) {
+    if (rawTimestamps is! Map) return <String, DateTime>{};
+
+    final result = <String, DateTime>{};
+    for (final entry in rawTimestamps.entries) {
+      if (entry.key is String && entry.value is Timestamp) {
+        result[entry.key as String] = (entry.value as Timestamp).toDate();
+      }
+    }
+    return result;
+  }
+
+  Map<String, List<Product>> _mergeCategorizedProducts(
+    List<Product> cloudActive,
+    List<Product> cloudFrequent,
+    List<Product> localActive,
+    List<Product> localFrequent,
+    Map<String, DateTime> deletedProducts,
+  ) {
+    final productsByKey = <String, Product>{};
+    final categoryByKey = <String, String>{};
+
+    void addProducts(List<Product> products, String category) {
+      for (final product in products) {
+        final key = product.id.isNotEmpty
+            ? 'id:${product.id}'
+            : 'name:${product.name.trim().toLowerCase()}';
+        final existing = productsByKey[key];
+        final shouldReplace = existing == null ||
+            product.lastAdded.isAfter(existing.lastAdded) ||
+            (product.lastAdded.isAtSameMomentAs(existing.lastAdded) &&
+                product.frequency >= existing.frequency);
+        if (shouldReplace) {
+          productsByKey[key] = product;
+          categoryByKey[key] = category;
+        }
+      }
+    }
+
+    addProducts(cloudActive, 'active');
+    addProducts(cloudFrequent, 'frequent');
+    addProducts(localActive, 'active');
+    addProducts(localFrequent, 'frequent');
+
+    bool isDeleted(Product product) {
+      final deletedAt = deletedProducts[product.id];
+      return deletedAt != null && !product.lastAdded.isAfter(deletedAt);
+    }
+
+    final active = <Product>[];
+    final frequent = <Product>[];
+    for (final entry in productsByKey.entries) {
+      if (isDeleted(entry.value)) continue;
+      if (categoryByKey[entry.key] == 'active') {
+        active.add(entry.value);
+      } else {
+        frequent.add(entry.value);
+      }
+    }
+
+    active.sort((a, b) => b.lastAdded.compareTo(a.lastAdded));
+    frequent.sort((a, b) => b.lastAdded.compareTo(a.lastAdded));
+    return {'active': active, 'frequent': frequent};
   }
 
   Future<void> deleteSharedShoppingList(String listId) async {

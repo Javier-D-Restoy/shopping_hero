@@ -13,17 +13,28 @@ class ThemeProvider extends ChangeNotifier {
   bool get isDarkMode => _isDarkMode;
 
   // Getters de colores centralizados
+  // Color get primaryColor =>
+  //     _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
   Color get primaryColor =>
-      _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
+      _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF78A3D4);
+  Color get primarySoftColor =>
+      _isDarkMode ? const Color(0xFF7DBB74) : const Color.fromARGB(255, 145, 178, 223);
+  // Color get borderColor =>
+  //     _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
   Color get borderColor =>
-      _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
+      _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF37537C);
+  // Color get textStrongColor =>
+  //     _isDarkMode ? Colors.white : const Color(0xFF234B2A);
   Color get textStrongColor =>
-      _isDarkMode ? Colors.white : const Color(0xFF234B2A);
+      _isDarkMode ? Colors.white : const Color(0xFF2F4064);
+  // Color get textMutedColor =>
+  //     _isDarkMode ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
   Color get textMutedColor =>
       _isDarkMode ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
+  Color get dangerColor => const Color(0xFFB35C5C);
   Color get cardShadowColor => _isDarkMode
       ? Colors.black.withValues(alpha: 0.35)
-      : Colors.black.withValues(alpha: 0.08);
+      : Colors.black.withValues(alpha: 0.2);
 
   List<Color> get gradientColors => _isDarkMode
       ? [
@@ -33,6 +44,16 @@ class ThemeProvider extends ChangeNotifier {
       : [
           const Color(0xFFF6F8E8).withValues(alpha: 0.50),
           const Color(0xFFE7F4E1).withValues(alpha: 0.50),
+        ];
+
+  List<Color> get gradientColors2 => _isDarkMode
+      ? [
+          const Color(0xFF1D2D1F).withValues(alpha: 0.85),
+          const Color(0xFF243928).withValues(alpha: 0.85)
+        ]
+      : [
+          const Color.fromARGB(255, 210, 226, 248).withValues(alpha: 0.85),
+          const Color.fromARGB(255, 191, 204, 241).withValues(alpha: 0.85)
         ];
 
   String get backgroundImagePath => _isDarkMode

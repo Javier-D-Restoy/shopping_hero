@@ -68,9 +68,13 @@ class _ListManagerState extends State<ListManager> {
             ),
           ),
           SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.all(12),
-              children: [
+            child: RefreshIndicator(
+              color: themeProvider.primaryColor,
+              onRefresh: shoppingProvider.refreshFromCloud,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(12),
+                children: [
                 Column(
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -170,7 +174,8 @@ class _ListManagerState extends State<ListManager> {
                     ),
                   ],
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
