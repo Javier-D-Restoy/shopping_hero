@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/session_provider.dart';
@@ -29,20 +30,30 @@ class _ListManagerState extends State<ListManager> {
         toolbarHeight: 40,
         leading: BackButton(
           onPressed: () async {
-            if (context.mounted) {
-              await context.read<SessionProvider>().logout();
-              if (context.mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              }
-            }
+            final session = context.read<SessionProvider>();
+            final shopping = context.read<ShoppingProvider>();
+
+            // Reemplazamos la ruta al instante eliminando todo el historial previo.
+            // Al no haber 'await' previo, no se requiere la comprobación de context.mounted.
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const LoginPage()),
+              (route) => false, // Elimina todas las rutas anteriores
+            );
+
+            // Limpiamos los datos y ejecutamos el logout en segundo plano.
+            // Como ListManager ya fue desmontado del árbol de widgets,
+            // notifyListeners() no provocará ningún redibujado no deseado.
+            shopping.clearCurrentUser();
+            session.logout();
           },
         ),
-        title: Text(
+        title: AutoSizeText(
           'Listas de $displayName',
-          style: TextStyle(fontSize: 18, color: themeProvider.textStrongColor),
+          maxLines: 1,
+          minFontSize: 10,
+          stepGranularity: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight(500), color: themeProvider.textStrongColor),
         ),
         centerTitle: true,
         actions: [
@@ -163,13 +174,14 @@ class _ListManagerState extends State<ListManager> {
                         style: FilledButton.styleFrom(
                           backgroundColor: themeProvider.primaryColor,
                           foregroundColor: isDark ? Colors.black : Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
+                          side: BorderSide(color: themeProvider.borderColor.withValues(alpha: 0.3), width: 2,)
                         ),
-                        icon: const Icon(Icons.add),
-                        label: const Text('Crear lista'),
+                        icon: const Icon(Icons.add, size: 19,),
+                        label: const Text('Crear lista', style: TextStyle(fontSize: 16),),
                       ),
                     ),
                   ],

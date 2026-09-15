@@ -240,11 +240,15 @@ class _ListBubbleState extends State<ListBubble> {
 
     final primary = themeProvider.primaryColor;
     final primarySoft = themeProvider.primarySoftColor;
-    // final border = isDark ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
-    final border = themeProvider.borderColor;
-    // final textStrong = isDark ? Colors.white : const Color(0xFF234B2A);
+    final Color border;
+    if (widget.isSharedList) {
+      border = widget.canManageList 
+          ? themeProvider.borderOwnerColor 
+          : themeProvider.borderSharedColor;
+    } else {
+      border = themeProvider.borderColor;
+    }
     final textStrong = themeProvider.textStrongColor;
-    // final cardShadow = isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.08);
     final cardShadow = themeProvider.cardShadowColor;
     final dangerColor = themeProvider.dangerColor;
     final gradientColors = themeProvider.gradientColors2;
@@ -286,7 +290,7 @@ class _ListBubbleState extends State<ListBubble> {
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _isHovered ? primary : border,
-                        width: _isHovered ? 1.8 : 1.4,
+                        width: _isHovered ? 3.8 : 2.4,
                       ),
                       boxShadow: [
                         BoxShadow(
@@ -309,7 +313,7 @@ class _ListBubbleState extends State<ListBubble> {
                                 color: primary,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Icon(Icons.list_alt_rounded, color: isDark? Colors.black : Colors.white, size: 16),
+                              child: Icon(Icons.list_alt_rounded, color: isDark ? Colors.black : Colors.white, size: 16),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -327,11 +331,9 @@ class _ListBubbleState extends State<ListBubble> {
                                 ),
                               ),
                             ),
-                            Expanded(
+                            const Expanded(
                               flex: 1,
-                              child: SizedBox(
-                                // width: 55,
-                              ),
+                              child: SizedBox(),
                             )
                           ],
                         ),
@@ -351,71 +353,86 @@ class _ListBubbleState extends State<ListBubble> {
                                 stepGranularity: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color: isDark? Colors.black : Colors.white,
+                                  color: isDark ? Colors.black : Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
-                            const Spacer(),
+                            const SizedBox(width: 10),
                             if (widget.isSharedList) ...[
-                              if (_isLoadingMembers)
-                                Padding(
-                                  padding: const EdgeInsets.all(3.0),
-                                  child: CircleAvatar(
-                                    radius: 15,
-                                    backgroundColor: primarySoft.withValues(alpha: 0.35),
-                                    child: SizedBox(
-                                      width: 12,
-                                      height: 12,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: primary,
-                                      ),
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: AlignmentGeometry.centerRight,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (_isLoadingMembers)
+                                          Padding(
+                                            padding: const EdgeInsets.all(3.0),
+                                            child: CircleAvatar(
+                                              radius: 15,
+                                              backgroundColor: primarySoft.withValues(alpha: 0.35),
+                                              child: SizedBox(
+                                                width: 12,
+                                                height: 12,
+                                                child: CircularProgressIndicator(
+                                                  strokeWidth: 2,
+                                                  color: primary,
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                        else ...[
+                                          ...visibleMembers.asMap().entries.map((entry) {
+                                            final index = entry.key;
+                                            final member = entry.value;
+                                            final initials = member.displayName.trim().isNotEmpty
+                                                ? member.displayName.trim().split(RegExp(r'\s+')).take(2).map((part) => part[0].toUpperCase()).join()
+                                                : 'U';
+                                    
+                                            return Padding(
+                                              padding: EdgeInsets.only(left: index == 0 ? 0 : 3.0, right: 3.0),
+                                              child: CircleAvatar(
+                                                radius: 15,
+                                                backgroundColor: primarySoft,
+                                                child: Text(
+                                                  initials,
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.black : Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          }),
+                                          if (extraMembersCount > 0)
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 3.0),
+                                              child: CircleAvatar(
+                                                radius: 15,
+                                                backgroundColor: primary,
+                                                child: Text(
+                                                  '+$extraMembersCount',
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.black : Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ],
                                     ),
                                   ),
-                                )
-                              else ...[
-                                ...visibleMembers.asMap().entries.map((entry) {
-                                  final index = entry.key;
-                                  final member = entry.value;
-                                  final initials = member.displayName.trim().isNotEmpty
-                                      ? member.displayName.trim().split(RegExp(r'\s+')).take(2).map((part) => part[0].toUpperCase()).join()
-                                      : 'U';
-
-                                  return Padding(
-                                    padding: EdgeInsets.only(left: index == 0 ? 0 : 3.0, right: 3.0),
-                                    child: CircleAvatar(
-                                      radius: 15,
-                                      backgroundColor: primarySoft,
-                                      child: Text(
-                                        initials,
-                                        style: TextStyle(
-                                          color: isDark? Colors.black : Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                }),
-                                if (extraMembersCount > 0)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 3.0),
-                                    child: CircleAvatar(
-                                      radius: 15,
-                                      backgroundColor: primary,
-                                      child: Text(
-                                        '+$extraMembersCount',
-                                        style: TextStyle(
-                                          color: isDark? Colors.black : Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
+                                ),
+                              ),
                             ],
                           ],
                         ),
@@ -434,9 +451,9 @@ class _ListBubbleState extends State<ListBubble> {
                   if (widget.canManageList) ...[
                     IconButton(
                       iconSize: 25,
-                      constraints: BoxConstraints(
+                      constraints: const BoxConstraints(
                         minWidth: 35,
-                        minHeight: 35
+                        minHeight: 35,
                       ),
                       padding: EdgeInsets.zero,
                       onPressed: _showDeleteConfirmationDialog,
@@ -445,9 +462,9 @@ class _ListBubbleState extends State<ListBubble> {
                     ),
                     IconButton(
                       iconSize: 23,
-                      constraints: BoxConstraints(
+                      constraints: const BoxConstraints(
                         minWidth: 35,
-                        minHeight: 35
+                        minHeight: 35,
                       ),
                       padding: EdgeInsets.zero,
                       onPressed: _showRenameDialog,

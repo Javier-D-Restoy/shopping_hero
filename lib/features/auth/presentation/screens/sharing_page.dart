@@ -187,19 +187,13 @@ class _SharingPageState extends State<SharingPage> {
     final listName = shoppingProvider.selectedListName;
     final isOwner = shoppingProvider.canManageList(listName);
 
-    final surface = isDark ? const Color(0xFF1F2A1E) : Colors.white;
-    final surfaceSoft = isDark
-        ? const Color(0xFF2C3A2D)
-        : const Color(0xFFF4F8EE);
-    final primary = isDark ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
-    final border = isDark ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
-    final textStrong = isDark ? Colors.white : const Color(0xFF234B2A);
-    final textMuted = isDark
-        ? const Color(0xFFD9E9D2)
-        : const Color(0xFF55755E);
-    final cardShadow = isDark
-        ? Colors.black.withValues(alpha: 0.35)
-        : Colors.black.withValues(alpha: 0.08);
+    final surface = themeProvider.surface;
+    final surfaceSoft = themeProvider.surfaceSoft;
+    final primary = themeProvider.primaryColor;
+    final border = themeProvider.borderColor;
+    final textStrong = themeProvider.textStrongColor;
+    final textMuted = themeProvider.textMutedColor;
+    final cardShadow = themeProvider.cardShadowColor;
 
     final shareCard = Container(
       padding: const EdgeInsets.all(20),
@@ -244,12 +238,12 @@ class _SharingPageState extends State<SharingPage> {
                   size: 22,
                   shadows: [
                     Shadow(
-                      color: Colors.black.withValues(alpha: 0.7),
+                      color: Colors.black.withValues(alpha: 0.4),
                       blurRadius: 8,
                       offset: Offset(0, 0),
                     ),
                     Shadow(
-                      color: Colors.black.withValues(alpha: 0.5),
+                      color: Colors.black.withValues(alpha: 0.3),
                       blurRadius: 4,
                       offset: Offset(0, 0),
                     ),
@@ -322,12 +316,12 @@ class _SharingPageState extends State<SharingPage> {
                         Icons.person_add_alt_1_rounded,
                         shadows: [
                           Shadow(
-                            color: Colors.black.withValues(alpha: 0.9),
+                            color: Colors.black.withValues(alpha: 0.4),
                             blurRadius: 8,
                             offset: Offset(0, 0),
                           ),
                           Shadow(
-                            color: Colors.black.withValues(alpha: 0.7),
+                            color: Colors.black.withValues(alpha: 0.3),
                             blurRadius: 4,
                             offset: Offset(0, 0),
                           ),
@@ -338,12 +332,12 @@ class _SharingPageState extends State<SharingPage> {
                   style: TextStyle(
                     shadows: [
                       Shadow(
-                        color: Colors.black.withValues(alpha: 0.9),
+                        color: Colors.black.withValues(alpha: 0.4),
                         blurRadius: 8,
                         offset: Offset(0, 0),
                       ),
                       Shadow(
-                        color: Colors.black.withValues(alpha: 0.7),
+                        color: Colors.black.withValues(alpha: 0.3),
                         blurRadius: 4,
                         offset: Offset(0, 0),
                       ),

@@ -37,6 +37,27 @@ class SessionProvider extends ChangeNotifier {
 
   // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE ][ ---------------------------------------------- //
 
+  // Future<void> init() async {
+  //   try {
+  //     if (!Hive.isBoxOpen(_sessionBoxName)) {
+  //       _box = await Hive.openBox(_sessionBoxName);
+  //     }
+  //   } catch (_) {
+  //     _box = null;
+  //   }
+
+  //   if (_box == null) return;
+
+  //   // Restaurar datos guardados de sesión local
+  //   _uid = _box!.get('uid') as String?;
+  //   _email = _box!.get('email', defaultValue: '') as String;
+  //   _displayName = _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
+  //   _isOffline = _box!.get('isOffline', defaultValue: true) as bool;
+  //   _isLoggedIn = _box!.get('isLoggedIn', defaultValue: false) as bool;
+
+  //   notifyListeners();
+  // }
+
   Future<void> init() async {
     try {
       if (!Hive.isBoxOpen(_sessionBoxName)) {
@@ -51,7 +72,15 @@ class SessionProvider extends ChangeNotifier {
     // Restaurar datos guardados de sesión local
     _uid = _box!.get('uid') as String?;
     _email = _box!.get('email', defaultValue: '') as String;
-    _displayName = _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
+    
+    // LEER DE HIVE SI EXISTE UN NOMBRE GUARDADO
+    final savedName = _box!.get('displayName') as String?;
+    if (savedName != null && savedName.isNotEmpty) {
+      _displayName = savedName;
+    } else {
+      _displayName = _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
+    }
+
     _isOffline = _box!.get('isOffline', defaultValue: true) as bool;
     _isLoggedIn = _box!.get('isLoggedIn', defaultValue: false) as bool;
 
@@ -162,6 +191,40 @@ class SessionProvider extends ChangeNotifier {
   }
 
   /// Continúa como usuario offline/invitado con un nombre
+  // Future<bool> continueOffline({
+  //   required String displayName,
+  // }) async {
+  //   _isLoading = true;
+  //   _errorMessage = null;
+  //   notifyListeners();
+
+  //   try {
+  //     if (displayName.trim().isEmpty) {
+  //       _errorMessage = 'Por favor introduce un nombre';
+  //       _isLoading = false;
+  //       notifyListeners();
+  //       return false;
+  //     }
+
+  //     _uid = null;
+  //     _email = '';
+  //     _displayName = displayName.trim();
+  //     _isOffline = true;
+  //     _isLoggedIn = false;
+  //     _isLoading = false;
+  //     _errorMessage = null;
+
+  //     await _saveSessionToStorage();
+  //     notifyListeners();
+  //     return true;
+  //   } catch (e) {
+  //     _isLoading = false;
+  //     _errorMessage = 'Error: $e';
+  //     notifyListeners();
+  //     return false;
+  //   }
+  // }
+
   Future<bool> continueOffline({
     required String displayName,
   }) async {
@@ -170,16 +233,22 @@ class SessionProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      if (displayName.trim().isEmpty) {
-        _errorMessage = 'Por favor introduce un nombre';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
+      await _ensureInitialized();
 
       _uid = null;
       _email = '';
-      _displayName = displayName.trim();
+
+      // Si ya existe un nombre personalizado guardado en Hive, lo conservamos.
+      // De lo contrario, usamos el parámetro o 'Shopping Hero'.
+      final savedName = _box?.get('displayName') as String?;
+      if (savedName != null && savedName.trim().isNotEmpty) {
+        _displayName = savedName;
+      } else if (displayName.trim().isNotEmpty) {
+        _displayName = displayName.trim();
+      } else {
+        _displayName = 'Shopping Hero';
+      }
+
       _isOffline = true;
       _isLoggedIn = false;
       _isLoading = false;

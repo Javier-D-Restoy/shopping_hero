@@ -13,24 +13,29 @@ class ThemeProvider extends ChangeNotifier {
   bool get isDarkMode => _isDarkMode;
 
   // Getters de colores centralizados
-  // Color get primaryColor =>
-  //     _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
   Color get primaryColor =>
-      _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF78A3D4);
+      _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
+  // Color get primaryColor =>
+  //     _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF78A3D4);
   Color get primarySoftColor =>
-      _isDarkMode ? const Color(0xFF7DBB74) : const Color.fromARGB(255, 145, 178, 223);
-  // Color get borderColor =>
-  //     _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
+      _isDarkMode ? const Color(0xFF7DBB74) : const Color.fromARGB(255, 137, 206, 128);
+  Color get surface => _isDarkMode ? const Color(0xFF1F2A1E) : Colors.white;
+  Color get surfaceSoft => _isDarkMode
+        ? const Color(0xFF2C3A2D) : const Color(0xFFF4F8EE);
   Color get borderColor =>
-      _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF37537C);
-  // Color get textStrongColor =>
-  //     _isDarkMode ? Colors.white : const Color(0xFF234B2A);
+      _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF9FC090);
+  Color get borderOwnerColor =>
+      _isDarkMode ? const Color(0xFFD48E32) : const Color(0xFFD48E32);
+  Color get borderSharedColor =>
+      _isDarkMode ? const Color(0xFF954D97) : const Color(0xFF954D97);
   Color get textStrongColor =>
-      _isDarkMode ? Colors.white : const Color(0xFF2F4064);
-  // Color get textMutedColor =>
-  //     _isDarkMode ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
+      _isDarkMode ? Colors.white : const Color(0xFF234B2A);
+  // Color get textStrongColor =>
+  //     _isDarkMode ? Colors.white : const Color(0xFF2F4064);
   Color get textMutedColor =>
       _isDarkMode ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
+  // Color get textMutedColor =>
+  //     _isDarkMode ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
   Color get dangerColor => const Color(0xFFB35C5C);
   Color get cardShadowColor => _isDarkMode
       ? Colors.black.withValues(alpha: 0.35)
@@ -52,8 +57,8 @@ class ThemeProvider extends ChangeNotifier {
           const Color(0xFF243928).withValues(alpha: 0.85)
         ]
       : [
-          const Color.fromARGB(255, 210, 226, 248).withValues(alpha: 0.85),
-          const Color.fromARGB(255, 191, 204, 241).withValues(alpha: 0.85)
+          const Color(0xFFF6F8E8).withValues(alpha: 0.95),
+          const Color(0xFFE7F4E1).withValues(alpha: 0.95),
         ];
 
   String get backgroundImagePath => _isDarkMode

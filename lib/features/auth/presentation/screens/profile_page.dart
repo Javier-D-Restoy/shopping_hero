@@ -170,62 +170,62 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
     );
 
-    final dangerCard = Container(
-      margin: const EdgeInsets.only(top: 18),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: surface.withValues(alpha: 0.80),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: border, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: cardShadow,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.warning_amber_rounded, color: dangerColor),
-              const SizedBox(width: 8),
-              Text(
-                'Datos locales',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: textStrong,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'Esta acción borra las listas de la compra guardadas en este dispositivo. Tu perfil (nombre, email) no se ve afectado.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textMuted),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _showResetCacheDialog,
-              style: FilledButton.styleFrom(
-                backgroundColor: dangerColor,
-                foregroundColor: isDark? Colors.black : Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              icon: const Icon(Icons.delete_sweep_rounded),
-              label: const Text('Liberar caché local'),
-            ),
-          ),
-        ],
-      ),
-    );
+    // final dangerCard = Container(
+    //   margin: const EdgeInsets.only(top: 18),
+    //   padding: const EdgeInsets.all(18),
+    //   decoration: BoxDecoration(
+    //     color: surface.withValues(alpha: 0.80),
+    //     borderRadius: BorderRadius.circular(22),
+    //     border: Border.all(color: border, width: 1.2),
+    //     boxShadow: [
+    //       BoxShadow(
+    //         color: cardShadow,
+    //         blurRadius: 8,
+    //         offset: const Offset(0, 4),
+    //       ),
+    //     ],
+    //   ),
+    //   child: Column(
+    //     crossAxisAlignment: CrossAxisAlignment.start,
+    //     children: [
+    //       Row(
+    //         children: [
+    //           Icon(Icons.warning_amber_rounded, color: dangerColor),
+    //           const SizedBox(width: 8),
+    //           Text(
+    //             'Datos locales',
+    //             style: Theme.of(context).textTheme.titleMedium?.copyWith(
+    //               fontWeight: FontWeight.w700,
+    //               color: textStrong,
+    //             ),
+    //           ),
+    //         ],
+    //       ),
+    //       const SizedBox(height: 14),
+    //       Text(
+    //         'Esta acción borra las listas de la compra guardadas en este dispositivo. Tu perfil (nombre, email) no se ve afectado.',
+    //         style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textMuted),
+    //       ),
+    //       const SizedBox(height: 14),
+    //       SizedBox(
+    //         width: double.infinity,
+    //         child: FilledButton.icon(
+    //           onPressed: _showResetCacheDialog,
+    //           style: FilledButton.styleFrom(
+    //             backgroundColor: dangerColor,
+    //             foregroundColor: isDark? Colors.black : Colors.white,
+    //             padding: const EdgeInsets.symmetric(vertical: 14),
+    //             shape: RoundedRectangleBorder(
+    //               borderRadius: BorderRadius.circular(14),
+    //             ),
+    //           ),
+    //           icon: const Icon(Icons.delete_sweep_rounded),
+    //           label: const Text('Liberar caché local'),
+    //         ),
+    //       ),
+    //     ],
+    //   ),
+    // );
 
     final deleteAccountCard = Container(
       margin: const EdgeInsets.only(top: 18),
@@ -294,51 +294,51 @@ class _ProfilePageState extends State<ProfilePage> {
       padding: const EdgeInsets.all(20),
       children: [
         profileCard,
-        dangerCard,
-        deleteAccountCard,
+        // dangerCard,
+        if (!sessionProvider.isOffline) deleteAccountCard,
       ],
     );
   }
 
-  void _showResetCacheDialog() {
-    final pageContext = context;
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Liberar caché local'),
-          content: const Text('Si haces esto, se borrarán todos los datos guardados en el dispositivo. ¿Estás seguro?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _handleResetLocalData(pageContext);
-              },
-              child: const Text('Liberar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // void _showResetCacheDialog() {
+  //   final pageContext = context;
+  //   showDialog<void>(
+  //     context: context,
+  //     builder: (dialogContext) {
+  //       return AlertDialog(
+  //         title: const Text('Liberar caché local'),
+  //         content: const Text('Si haces esto, se borrarán todos los datos guardados en el dispositivo. ¿Estás seguro?'),
+  //         actions: [
+  //           TextButton(
+  //             onPressed: () => Navigator.pop(dialogContext),
+  //             child: const Text('Cancelar'),
+  //           ),
+  //           TextButton(
+  //             onPressed: () {
+  //               Navigator.pop(dialogContext);
+  //               _handleResetLocalData(pageContext);
+  //             },
+  //             child: const Text('Liberar'),
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
 
-  Future<void> _handleResetLocalData(BuildContext context) async {
-    final shoppingProvider = context.read<ShoppingProvider>();
+  // Future<void> _handleResetLocalData(BuildContext context) async {
+  //   final shoppingProvider = context.read<ShoppingProvider>();
 
-    // Solo se borran las listas locales; el perfil del usuario (nombre, email, uid) se conserva.
-    await shoppingProvider.clearLocalShoppingCache();
+  //   // Solo se borran las listas locales; el perfil del usuario (nombre, email, uid) se conserva.
+  //   await shoppingProvider.clearLocalShoppingCache();
 
-    if (context.mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    }
-  }
+  //   if (context.mounted) {
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => const LoginPage()),
+  //     );
+  //   }
+  // }
 
   void _showDeleteAccountDialog() {
     final pageContext = context;

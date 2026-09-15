@@ -205,7 +205,7 @@ class LoginPage extends StatelessWidget {
                                   : () async {
                                       final success = await sessionProvider
                                           .continueOffline(
-                                            displayName: 'Usuario Offline',
+                                            displayName: sessionProvider.displayName,
                                           );
 
                                       if (!context.mounted) return;
