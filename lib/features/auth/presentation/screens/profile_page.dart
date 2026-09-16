@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/session_provider.dart';
@@ -43,7 +42,8 @@ class _ProfilePageState extends State<ProfilePage> {
         content: Text(
           success
               ? 'Nombre de usuario actualizado'
-              : (sessionProvider.errorMessage ?? 'No se pudo actualizar el nombre'),
+              : (sessionProvider.errorMessage ??
+                    'No se pudo actualizar el nombre'),
         ),
       ),
     );
@@ -65,8 +65,12 @@ class _ProfilePageState extends State<ProfilePage> {
     final primary = isDark ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
     final border = isDark ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
     final textStrong = isDark ? Colors.white : const Color(0xFF234B2A);
-    final textMuted = isDark ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
-    final cardShadow = isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.08);
+    final textMuted = isDark
+        ? const Color(0xFFD9E9D2)
+        : const Color(0xFF55755E);
+    final cardShadow = isDark
+        ? Colors.black.withValues(alpha: 0.35)
+        : Colors.black.withValues(alpha: 0.08);
     final dangerColor = const Color(0xFFB35C5C);
 
     final profileCard = Container(
@@ -76,8 +80,14 @@ class _ProfilePageState extends State<ProfilePage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? [const Color(0xFF1D2D1F).withValues(alpha: 0.80), const Color(0xFF243928).withValues(alpha: 0.80)]
-              : [const Color(0xFFF6F8E8).withValues(alpha: 0.80), const Color(0xFFE7F4E1).withValues(alpha: 0.80)],
+              ? [
+                  const Color(0xFF1D2D1F).withValues(alpha: 0.80),
+                  const Color(0xFF243928).withValues(alpha: 0.80),
+                ]
+              : [
+                  const Color(0xFFF6F8E8).withValues(alpha: 0.80),
+                  const Color(0xFFE7F4E1).withValues(alpha: 0.80),
+                ],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: border, width: 1.6),
@@ -100,7 +110,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   color: primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(Icons.person_rounded, color: isDark? Colors.black : Colors.white, size: 22),
+                child: Icon(
+                  Icons.person_rounded,
+                  color: isDark ? Colors.black : Colors.white,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -118,7 +132,9 @@ class _ProfilePageState extends State<ProfilePage> {
             const SizedBox(height: 10),
             Text(
               sessionProvider.email,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textMuted),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: textMuted),
             ),
           ],
           const SizedBox(height: 16),
@@ -152,7 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: _isSaving ? null : _saveUsername,
               style: FilledButton.styleFrom(
                 backgroundColor: primary,
-                foregroundColor: isDark? Colors.black : Colors.white,
+                foregroundColor: isDark ? Colors.black : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -162,7 +178,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.save_rounded),
               label: Text(_isSaving ? 'Guardando...' : 'Guardar cambios'),
@@ -263,7 +282,9 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 14),
           Text(
             'Esta acción es irreversible: se borrará tu cuenta, con su perfil y listas, se desvincularán las listas compartidas con otros usuarios y se borrarán datos locales del dispositivo.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textMuted),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: textMuted),
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -272,7 +293,7 @@ class _ProfilePageState extends State<ProfilePage> {
               onPressed: _isDeletingAccount ? null : _showDeleteAccountDialog,
               style: FilledButton.styleFrom(
                 backgroundColor: dangerColor,
-                foregroundColor: isDark? Colors.black : Colors.white,
+                foregroundColor: isDark ? Colors.black : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -282,10 +303,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.dangerous_rounded),
-              label: Text(_isDeletingAccount ? 'Eliminando...' : 'Eliminar cuenta definitivamente'),
+              label: Text(
+                _isDeletingAccount
+                    ? 'Eliminando...'
+                    : 'Eliminar cuenta definitivamente',
+              ),
             ),
           ),
         ],
@@ -370,7 +398,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (!success) {
       messenger?.showSnackBar(
-        SnackBar(content: Text(sessionProvider.errorMessage ?? 'No se pudo eliminar la cuenta')),
+        SnackBar(
+          content: Text(
+            sessionProvider.errorMessage ?? 'No se pudo eliminar la cuenta',
+          ),
+        ),
       );
       return;
     }
@@ -391,10 +423,12 @@ class _DeleteAccountDialogContent extends StatefulWidget {
   const _DeleteAccountDialogContent();
 
   @override
-  State<_DeleteAccountDialogContent> createState() => _DeleteAccountDialogContentState();
+  State<_DeleteAccountDialogContent> createState() =>
+      _DeleteAccountDialogContentState();
 }
 
-class _DeleteAccountDialogContentState extends State<_DeleteAccountDialogContent> {
+class _DeleteAccountDialogContentState
+    extends State<_DeleteAccountDialogContent> {
   int _secondsRemaining = 10;
   Timer? _timer;
 
@@ -467,7 +501,9 @@ class _DeleteAccountDialogContentState extends State<_DeleteAccountDialogContent
               ? () => Navigator.pop(context, true)
               : null, // Si es null, Flutter inhabilita visualmente el botón
           style: FilledButton.styleFrom(
-            backgroundColor: isButtonEnabled ? const Color(0xFFB35C5C) : Colors.grey,
+            backgroundColor: isButtonEnabled
+                ? const Color(0xFFB35C5C)
+                : Colors.grey,
           ),
           child: Text(
             isButtonEnabled ? 'Eliminar' : 'Eliminar ($_secondsRemaining)',
