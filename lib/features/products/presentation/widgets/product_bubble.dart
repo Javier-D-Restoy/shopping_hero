@@ -92,12 +92,24 @@ class _ProductBubbleState extends State<ProductBubble> {
                       widget.amount > 1 ? "${widget.label}\n(${widget.amount})"
                       : widget.label,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         foreground: Paint()
                           ..style = PaintingStyle.stroke
                           ..strokeWidth = 3
                           ..color = Colors.black,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            blurRadius: 8,
+                            offset: Offset(0, 0),
+                          ),
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: Offset(0, 0),
+                          ),
+                        ],
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -105,7 +117,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                       widget.amount > 1 ? "${widget.label}\n(${widget.amount})"
                       : widget.label,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),

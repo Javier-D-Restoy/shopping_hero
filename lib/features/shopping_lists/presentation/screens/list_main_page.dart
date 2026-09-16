@@ -81,11 +81,12 @@ class _ListMainPageState extends State<ListMainPage> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final sessionProvider = context.watch<SessionProvider>();
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
-    // final activeProducts = shoppingProvider.productsForList(widget.listName);  <- PARA LISTA ANTIGUA. QUITAR
+    
     final activeProducts2 = shoppingProvider.activeProductsForList(
       widget.listName,
     );
@@ -93,25 +94,20 @@ class _ListMainPageState extends State<ListMainPage> {
       widget.listName,
     );
 
-    // 1. Obtener las dimensiones totales combinando la altura visible y el teclado
-    // final double screenWidth = MediaQuery.of(context).size.width;
-    // final double screenHeight =
-    //     MediaQuery.of(context).size.height +
-    //     MediaQuery.of(context).viewInsets.bottom;
+    final viewInsetsBottom = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardOpen = viewInsetsBottom > 0;
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         toolbarHeight: 40,
         leading: BackButton(
-          onPressed: () async {
+          onPressed: () {
             if (context.mounted) {
-              if (context.mounted) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ListManager()),
-                );
-              }
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const ListManager()),
+              );
             }
           },
         ),
@@ -145,38 +141,36 @@ class _ListMainPageState extends State<ListMainPage> {
               if (context.mounted) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ConfigPage()),
+                  MaterialPageRoute(builder: (context) => const ConfigPage()),
                 );
               }
             },
-            icon: Icon(Icons.settings),
+            icon: const Icon(Icons.settings),
           ),
         ],
       ),
       body: Stack(
         children: [
-          if (_selectedIndex == 0)
-            Positioned.fill(
+          // IMAGEN DE FONDO FIJA: Usa el tamaño total del dispositivo e ignora los cambios del viewport
+          SizedBox.expand(
+            child: OverflowBox(
+              alignment: Alignment.topCenter,
+              minWidth: MediaQuery.of(context).size.width,
+              maxWidth: MediaQuery.of(context).size.width,
+              minHeight: MediaQuery.of(context).size.height * 0.83,
+              maxHeight: MediaQuery.of(context).size.height,
               child: Image.asset(
-                'assets/images/background/Background_Image_2.png',
+                _selectedIndex == 0
+                    ? 'assets/images/background/Background_Image_2.png'
+                    : _selectedIndex == 1
+                        ? 'assets/images/background/Background_Profile_Image_1.png'
+                        : 'assets/images/background/Background_Sharing_Image_1.jpg',
                 fit: BoxFit.cover,
               ),
             ),
-          if (_selectedIndex == 1)
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/background/Background_Profile_Image_1.png',
-                fit: BoxFit.cover,
-              ),
-            ),
-          if (_selectedIndex == 2)
-            Positioned.fill(
-              child: Image.asset(
-                'assets/images/background/Background_Sharing_Image_1.jpg',
-                fit: BoxFit.cover,
-              ),
-            ),
-          SizedBox(height: 10),
+          ),
+      
+          // 2. CONTENIDO PRINCIPAL
           RefreshIndicator(
             color: themeProvider.primaryColor,
             onRefresh: shoppingProvider.refreshFromCloud,
@@ -196,103 +190,94 @@ class _ListMainPageState extends State<ListMainPage> {
           ),
         ],
       ),
-      bottomNavigationBar: () {
-        // Detecta si el teclado está abierto
-        final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: _selectedIndex == 0
-              ? SafeArea(
-                  top: false,
-                  // Si el teclado está abierto, quitamos el safeArea inferior para que quede pegado
-                  bottom: !isKeyboardOpen,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: themeProvider.isDarkMode
-                              ? Colors.black
-                              : Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.08),
-                              blurRadius: 6,
-                              offset: const Offset(0, -2),
-                            ),
-                          ],
-                        ),
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _productNameController,
-                                textCapitalization:
-                                    TextCapitalization.sentences,
-                                maxLength: 24,
-                                onTapOutside: (event) {
-                                  focusNode.unfocus();
-                                },
-                                focusNode: focusNode,
-                                decoration: const InputDecoration(
-                                  hintText: 'Me hace falta...',
-                                  counterText: '',
-                                  border: OutlineInputBorder(),
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
-                                ),
-                                onFieldSubmitted: (value) {
-                                  _addProduct(shoppingProvider);
-                                  focusNode.requestFocus();
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            ElevatedButton(
-                              onPressed: () => _addProduct(shoppingProvider),
-                              child: Center(
-                                heightFactor: 1,
-                                widthFactor: 0,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(bottom: 4.5),
-                                  child: const Text(
-                                    '+',
-                                    style: TextStyle(
-                                      fontSize: 30,
-                                      fontWeight: FontWeight(1000),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+      // 3. PADDING DIRECTO: Se sincroniza milisegundo a milisegundo con el teclado
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.only(bottom: viewInsetsBottom),
+        child: _selectedIndex == 0
+            ? SafeArea(
+                top: false,
+                bottom: !isKeyboardOpen,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: themeProvider.isDarkMode
+                            ? Colors.black
+                            : Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 6,
+                            offset: const Offset(0, -2),
+                          ),
+                        ],
                       ),
-                      // Solo se muestra el BottomNav si el teclado está CERRADO
-                      if (!isKeyboardOpen)
-                        MainBottomNav(
-                          currentIndex: _selectedIndex,
-                          showSharedTab: sessionProvider.isLoggedIn,
-                          onTap: _onNavigationTap,
-                        ),
-                    ],
-                  ),
-                )
-              : SafeArea(
-                  top: false,
-                  child: MainBottomNav(
-                    currentIndex: _selectedIndex,
-                    showSharedTab: sessionProvider.isLoggedIn,
-                    onTap: _onNavigationTap,
-                  ),
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _productNameController,
+                              textCapitalization: TextCapitalization.sentences,
+                              maxLength: 24,
+                              onTapOutside: (event) {
+                                focusNode.unfocus();
+                              },
+                              focusNode: focusNode,
+                              decoration: const InputDecoration(
+                                hintText: 'Me hace falta...',
+                                counterText: '',
+                                border: OutlineInputBorder(),
+                                contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                              ),
+                              onFieldSubmitted: (value) {
+                                _addProduct(shoppingProvider);
+                                focusNode.requestFocus();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => _addProduct(shoppingProvider),
+                            child: const Center(
+                              heightFactor: 1,
+                              widthFactor: 0,
+                              child: Padding(
+                                padding: EdgeInsets.only(bottom: 4.5),
+                                child: Text(
+                                  '+',
+                                  style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!isKeyboardOpen)
+                      MainBottomNav(
+                        currentIndex: _selectedIndex,
+                        showSharedTab: sessionProvider.isLoggedIn,
+                        onTap: _onNavigationTap,
+                      ),
+                  ],
                 ),
-        );
-      }(),
+              )
+            : SafeArea(
+                top: false,
+                child: MainBottomNav(
+                  currentIndex: _selectedIndex,
+                  showSharedTab: sessionProvider.isLoggedIn,
+                  onTap: _onNavigationTap,
+                ),
+              ),
+      ),
     );
   }
 

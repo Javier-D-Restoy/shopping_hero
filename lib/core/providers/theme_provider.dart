@@ -15,14 +15,19 @@ class ThemeProvider extends ChangeNotifier {
   // Getters de colores centralizados
   Color get primaryColor =>
       _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
-  // Color get primaryColor =>
-  //     _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF78A3D4);
+  Color get navPrimaryColor =>
+      _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF1D1D1D);
   Color get primarySoftColor =>
-      _isDarkMode ? const Color(0xFF7DBB74) : const Color.fromARGB(255, 137, 206, 128);
+      _isDarkMode ? const Color(0xFF7DBB74) : const Color(0xFF89CE80);
+  Color get navPrimarySoftColor =>
+      _isDarkMode ? const Color(0xFF7DBB74) : const Color(0xFF89CE80);
   Color get surface => _isDarkMode ? const Color(0xFF1F2A1E) : Colors.white;
+  Color get navSurface => _isDarkMode ? const Color(0xFF1F2A1E) : const Color(0xFF9DD388);
   Color get surfaceSoft => _isDarkMode
         ? const Color(0xFF2C3A2D) : const Color(0xFFF4F8EE);
   Color get borderColor =>
+      _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF9FC090);
+  Color get navBorderColor =>
       _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF9FC090);
   Color get borderOwnerColor =>
       _isDarkMode ? const Color(0xFFD48E32) : const Color(0xFFD48E32);

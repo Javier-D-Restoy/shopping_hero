@@ -212,7 +212,7 @@ class _SharingPageState extends State<SharingPage> {
                 ],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: border, width: 1.6),
+        border: Border.all(color: isDark ? border : border.withValues(alpha: 0.2), width: 1.6),
         boxShadow: [
           BoxShadow(
             color: cardShadow,

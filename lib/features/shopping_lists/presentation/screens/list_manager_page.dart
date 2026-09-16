@@ -24,8 +24,10 @@ class _ListManagerState extends State<ListManager> {
     final displayName = sessionProvider.displayName;
     final isDark = themeProvider.isDarkMode;
     final listNames = shoppingProvider.shoppingLists.keys.toList();
+    final screenSize = MediaQuery.sizeOf(context);
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         toolbarHeight: 40,
         leading: BackButton(
@@ -72,7 +74,15 @@ class _ListManagerState extends State<ListManager> {
       ),
       body: Stack(
         children: [
-          Positioned.fill(
+          // Positioned.fill(
+          //   child: Image.asset(
+          //     themeProvider.backgroundImagePath,
+          //     fit: BoxFit.cover,
+          //   ),
+          // ),
+          SizedBox(
+            width: screenSize.width,
+            height: screenSize.height,
             child: Image.asset(
               themeProvider.backgroundImagePath,
               fit: BoxFit.cover,

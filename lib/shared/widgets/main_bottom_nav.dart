@@ -19,12 +19,17 @@ class MainBottomNav extends StatelessWidget {
 
     final themeProvider = context.watch<ThemeProvider>();
 
+    final backgroundColor = themeProvider.navSurface;
+    final borderColor = themeProvider.navBorderColor;
+    final iconColor = themeProvider.navPrimaryColor;
+    final labelColor = themeProvider.navPrimaryColor;
+
     return SafeArea(
       child: Container(
         decoration: BoxDecoration(
           color: themeProvider.isDarkMode ? Colors.black : Colors.white,
           boxShadow: [
-            BoxShadow(
+            if (currentIndex != 0) BoxShadow(
               color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 6,
               offset: const Offset(0, -2),
@@ -34,10 +39,10 @@ class MainBottomNav extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
         child: Row(
           children: [
-            _buildNavigationButton(Icons.list, 'Lista', 0),
-            _buildNavigationButton(Icons.person, 'Perfil', 1),
+            _buildNavigationButton(Icons.list, 'Lista', 0, backgroundColor, borderColor, iconColor, labelColor),
+            _buildNavigationButton(Icons.person, 'Perfil', 1, backgroundColor, borderColor, iconColor, labelColor),
             if (showSharedTab)
-              _buildNavigationButton(Icons.supervised_user_circle, 'Compartido', 2),
+              _buildNavigationButton(Icons.supervised_user_circle, 'Compartido', 2, backgroundColor, borderColor, iconColor, labelColor),
           ],
         ),
       ),
@@ -48,29 +53,34 @@ class MainBottomNav extends StatelessWidget {
     IconData icon,
     String label,
     int index,
+    Color backgroundColor,
+    Color borderColor,
+    Color iconColor,
+    Color labelColor,
   ) {
     final isSelected = currentIndex == index;
-
     return Expanded(
       child: InkWell(
         onTap: () => onTap(index),
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 3),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.orange.shade100 : Colors.transparent,
+            color: isSelected ? backgroundColor : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: isSelected ? borderColor : Colors.transparent, width: 2)
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: isSelected ? Colors.orange : Colors.grey),
+              Icon(icon, color: isSelected ? iconColor : Colors.grey),
               const SizedBox(height: 4),
               Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? Colors.orange : Colors.grey,
+                  color: isSelected ? labelColor : Colors.grey,
                   fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],

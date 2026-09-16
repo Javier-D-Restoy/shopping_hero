@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/session_provider.dart';
@@ -340,32 +342,20 @@ class _ProfilePageState extends State<ProfilePage> {
   //   }
   // }
 
-  void _showDeleteAccountDialog() {
-    final pageContext = context;
-    showDialog<void>(
+  Future<void> _showDeleteAccountDialog() async {
+    // 1. Esperamos a que el usuario confirme o cancele en el diálogo
+    final confirmed = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Eliminar cuenta'),
-          content: const Text(
-            'Esta acción es irreversible. Se eliminará tu cuenta, tu perfil, tus listas y tu acceso a las listas compartidas. ¿Quieres continuar?',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-                _handleDeleteAccount(pageContext);
-              },
-              child: const Text('Eliminar'),
-            ),
-          ],
-        );
+        return const _DeleteAccountDialogContent();
       },
     );
+
+    // 2. Verificamos 'mounted' después del 'await' antes de usar 'context'
+    if (confirmed == true && mounted) {
+      _handleDeleteAccount(context);
+    }
   }
 
   Future<void> _handleDeleteAccount(BuildContext context) async {
@@ -397,5 +387,93 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 }
 
+class _DeleteAccountDialogContent extends StatefulWidget {
+  const _DeleteAccountDialogContent();
 
+  @override
+  State<_DeleteAccountDialogContent> createState() => _DeleteAccountDialogContentState();
+}
 
+class _DeleteAccountDialogContentState extends State<_DeleteAccountDialogContent> {
+  int _secondsRemaining = 10;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining > 1) {
+        setState(() => _secondsRemaining--);
+      } else {
+        setState(() => _secondsRemaining = 0);
+        _timer?.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel(); // Cancelamos el timer para evitar fugas de memoria
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isButtonEnabled = _secondsRemaining == 0;
+
+    return AlertDialog(
+      title: const Text('Eliminar cuenta'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Esta acción es irreversible. Se eliminará tu cuenta, tu perfil, tus listas y tu acceso a las listas compartidas.',
+          ),
+          const SizedBox(height: 16),
+          if (!isButtonEnabled)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Espera para confirmar...',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Theme.of(context).colorScheme.secondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: isButtonEnabled
+              ? () => Navigator.pop(context, true)
+              : null, // Si es null, Flutter inhabilita visualmente el botón
+          style: FilledButton.styleFrom(
+            backgroundColor: isButtonEnabled ? const Color(0xFFB35C5C) : Colors.grey,
+          ),
+          child: Text(
+            isButtonEnabled ? 'Eliminar' : 'Eliminar ($_secondsRemaining)',
+          ),
+        ),
+      ],
+    );
+  }
+}
