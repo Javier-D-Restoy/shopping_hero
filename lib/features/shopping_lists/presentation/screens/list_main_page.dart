@@ -170,7 +170,7 @@ class _ListMainPageState extends State<ListMainPage> {
             ),
           ),
       
-          // 2. CONTENIDO PRINCIPAL
+          // CONTENIDO PRINCIPAL
           RefreshIndicator(
             color: themeProvider.primaryColor,
             onRefresh: shoppingProvider.refreshFromCloud,
@@ -202,6 +202,7 @@ class _ListMainPageState extends State<ListMainPage> {
                   children: [
                     Container(
                       decoration: BoxDecoration(
+                        borderRadius: BorderRadiusDirectional.vertical(top: Radius.circular(18)),
                         color: themeProvider.isDarkMode
                             ? Colors.black
                             : Colors.white,
@@ -213,24 +214,38 @@ class _ListMainPageState extends State<ListMainPage> {
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
                       child: Row(
                         children: [
                           Expanded(
                             child: TextFormField(
                               controller: _productNameController,
                               textCapitalization: TextCapitalization.sentences,
-                              maxLength: 24,
+                              maxLength: 30,
                               onTapOutside: (event) {
                                 focusNode.unfocus();
                               },
                               focusNode: focusNode,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Me hace falta...',
                                 counterText: '',
-                                border: OutlineInputBorder(),
                                 contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12,
+                                ),
+                                filled: true,
+                                fillColor: themeProvider.surface,
+                                labelStyle: TextStyle(color: themeProvider.textMutedColor),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: themeProvider.borderColor),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  borderSide: BorderSide(color: themeProvider.primaryColor, width: 1.8),
                                 ),
                               ),
                               onFieldSubmitted: (value) {
@@ -242,16 +257,18 @@ class _ListMainPageState extends State<ListMainPage> {
                           const SizedBox(width: 8),
                           ElevatedButton(
                             onPressed: () => _addProduct(shoppingProvider),
-                            child: const Center(
-                              heightFactor: 1,
+                            style: ElevatedButton.styleFrom(elevation: 3),
+                            child: Center(
+                              heightFactor: 0.9,
                               widthFactor: 0,
                               child: Padding(
                                 padding: EdgeInsets.only(bottom: 4.5),
                                 child: Text(
                                   '+',
                                   style: TextStyle(
-                                    fontSize: 30,
+                                    fontSize: 32,
                                     fontWeight: FontWeight.w900,
+                                    color: themeProvider.primaryColor,
                                   ),
                                 ),
                               ),
@@ -484,7 +501,7 @@ class _ListMainPageState extends State<ListMainPage> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameController,
-                    maxLength: 24,
+                    maxLength: 30,
                     autofocus: true,
                     textInputAction: TextInputAction.next,
                     decoration: const InputDecoration(

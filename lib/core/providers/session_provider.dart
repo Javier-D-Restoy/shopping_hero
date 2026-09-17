@@ -37,27 +37,6 @@ class SessionProvider extends ChangeNotifier {
 
   // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE ][ ---------------------------------------------- //
 
-  // Future<void> init() async {
-  //   try {
-  //     if (!Hive.isBoxOpen(_sessionBoxName)) {
-  //       _box = await Hive.openBox(_sessionBoxName);
-  //     }
-  //   } catch (_) {
-  //     _box = null;
-  //   }
-
-  //   if (_box == null) return;
-
-  //   // Restaurar datos guardados de sesión local
-  //   _uid = _box!.get('uid') as String?;
-  //   _email = _box!.get('email', defaultValue: '') as String;
-  //   _displayName = _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
-  //   _isOffline = _box!.get('isOffline', defaultValue: true) as bool;
-  //   _isLoggedIn = _box!.get('isLoggedIn', defaultValue: false) as bool;
-
-  //   notifyListeners();
-  // }
-
   Future<void> init() async {
     try {
       if (!Hive.isBoxOpen(_sessionBoxName)) {
@@ -189,41 +168,6 @@ class SessionProvider extends ChangeNotifier {
       return false;
     }
   }
-
-  /// Continúa como usuario offline/invitado con un nombre
-  // Future<bool> continueOffline({
-  //   required String displayName,
-  // }) async {
-  //   _isLoading = true;
-  //   _errorMessage = null;
-  //   notifyListeners();
-
-  //   try {
-  //     if (displayName.trim().isEmpty) {
-  //       _errorMessage = 'Por favor introduce un nombre';
-  //       _isLoading = false;
-  //       notifyListeners();
-  //       return false;
-  //     }
-
-  //     _uid = null;
-  //     _email = '';
-  //     _displayName = displayName.trim();
-  //     _isOffline = true;
-  //     _isLoggedIn = false;
-  //     _isLoading = false;
-  //     _errorMessage = null;
-
-  //     await _saveSessionToStorage();
-  //     notifyListeners();
-  //     return true;
-  //   } catch (e) {
-  //     _isLoading = false;
-  //     _errorMessage = 'Error: $e';
-  //     notifyListeners();
-  //     return false;
-  //   }
-  // }
 
   Future<bool> continueOffline({
     required String displayName,

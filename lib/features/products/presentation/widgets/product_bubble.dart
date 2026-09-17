@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 
 enum ProductAdd { active, frequent }
@@ -113,9 +114,13 @@ class _ProductBubbleState extends State<ProductBubble> {
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    Text(
+                    AutoSizeText(
                       widget.amount > 1 ? "${widget.label}\n(${widget.amount})"
                       : widget.label,
+                      maxLines: 3,
+                      minFontSize: 10,
+                      stepGranularity: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.bold,
