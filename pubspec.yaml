@@ -91,8 +91,8 @@ flutter_launcher_icons:
     generate: true
     icon_size: 48 # Tamaño recomendado para Windows
   image_path: "assets/images/logos/app_logo.png" # Para IOs habría que buscar una imagen sin transparencia.
-  # adaptive_icon_background: "#FFFFFF" # O el color de fondo de tu app
-  # adaptive_icon_foreground: "assets/images/logos/app_logo.png" # Logo sin transparente alrededor
+  adaptive_icon_background: "#FFFFFF" # O el color de fondo de tu app
+  adaptive_icon_foreground: "assets/images/logos/app_logo.png" # Logo sin transparente alrededor
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
