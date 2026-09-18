@@ -12,7 +12,6 @@ class ShoppingProvider extends ChangeNotifier {
   ShoppingProvider({UserRepository? userRepository})
     : _userRepository = userRepository ?? UserRepository();
 
-  // Cajas dinámicas según el entorno
   static const String _guestBoxName = 'shopping_lists_guest';
   static const String _onlineCacheBoxName = 'shopping_lists_online_cache';
 
@@ -37,10 +36,12 @@ class ShoppingProvider extends ChangeNotifier {
   DateTime? _lastSyncedAt;
 
   final Map<String, Map<String, List<Product>>> _shoppingLists = {};
+  
+  /// Categorías por cada lista. Mantiene 'Genérico' y las creadas por el usuario.
+  final Map<String, List<String>> _listCategories = {};
 
   String _selectedListName = '';
 
-  // Getter de conveniencia
   bool get isOfflineMode => _isOfflineMode;
   ShoppingSyncStatus get syncStatus => _syncStatus;
   DateTime? get lastSyncedAt => _lastSyncedAt;
@@ -48,6 +49,16 @@ class ShoppingProvider extends ChangeNotifier {
   String? sharedListIdFor(String listName) => _sharedListIds[listName];
   bool canManageList(String listName) =>
       !isSharedList(listName) || _sharedListOwners[listName] == _currentUid;
+
+  /// Devuelve las categorías de la lista activa seleccionada.
+  List<String> get availableCategories {
+    if (_selectedListName.isEmpty) return const ['Genérico'];
+    final list = _listCategories[_selectedListName] ?? ['Genérico'];
+    if (!list.contains('Genérico')) {
+      list.insert(0, 'Genérico');
+    }
+    return List<String>.unmodifiable(list);
+  }
 
   @override
   void dispose() {
@@ -83,6 +94,7 @@ class ShoppingProvider extends ChangeNotifier {
     );
 
     _shoppingLists.remove(cleanedName);
+    _listCategories.remove(cleanedName);
     _sharedListIds.remove(cleanedName);
     _sharedListOwners.remove(cleanedName);
     _deletedSharedProducts.remove(sharedListId);
@@ -274,7 +286,6 @@ class ShoppingProvider extends ChangeNotifier {
         preferredName = cloudEntry?.key ?? (localEntry?.key ?? id);
       }
 
-      // Se conserva la lista aunque esté vacía, para que exista en ambos repositorios desde su creación.
       result[preferredName] = {
         'active': List<Product>.from(chosenList['active'] ?? <Product>[]),
         'frequent': List<Product>.from(chosenList['frequent'] ?? <Product>[]),
@@ -342,9 +353,8 @@ class ShoppingProvider extends ChangeNotifier {
     return result;
   }
 
-  // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE CE ][ ---------------------------------------------- //
+  // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE ][ ---------------------------------------------- //
 
-  /// Inicializa la box adecuada dependiendo de si el usuario arranca en modo Offline (guest) u Online.
   Future<void> init({bool isOffline = true}) async {
     _isOfflineMode = isOffline;
     _currentBoxName = isOffline ? _guestBoxName : _onlineCacheBoxName;
@@ -367,11 +377,21 @@ class ShoppingProvider extends ChangeNotifier {
     final storedSharedListIds = _box!.get('shared_list_ids');
     final storedSharedListOwners = _box!.get('shared_list_owners');
     final storedDeletedSharedProducts = _box!.get('deleted_shared_products');
+    final storedListCategories = _box!.get('list_categories');
 
     if (storedSharedListIds is Map) {
       for (final entry in storedSharedListIds.entries) {
         if (entry.key is String && entry.value is String) {
           _sharedListIds[entry.key as String] = entry.value as String;
+        }
+      }
+    }
+
+    if (storedListCategories is Map) {
+      for (final entry in storedListCategories.entries) {
+        if (entry.key is String && entry.value is List) {
+          _listCategories[entry.key as String] =
+              (entry.value as List).map((e) => e.toString()).toList();
         }
       }
     }
@@ -483,6 +503,14 @@ class ShoppingProvider extends ChangeNotifier {
       );
     }
 
+    // Inicializar categorías faltantes para cada lista
+    for (final listName in _shoppingLists.keys) {
+      _listCategories[listName] ??= ['Genérico'];
+      if (!_listCategories[listName]!.contains('Genérico')) {
+        _listCategories[listName]!.insert(0, 'Genérico');
+      }
+    }
+
     final storedSelectedList = _box!.get('selected_list_name');
     if (storedSelectedList is String &&
         _shoppingLists.containsKey(storedSelectedList)) {
@@ -515,7 +543,6 @@ class ShoppingProvider extends ChangeNotifier {
     _setSyncStatus(ShoppingSyncStatus.offline);
   }
 
-  // Se conservan también las listas vacías: deben sincronizarse en cuanto se crean, no solo al añadir productos.
   Map<String, Map<String, List<Product>>> _sanitizeForCloud(
     Map<String, Map<String, List<Product>>> source,
   ) {
@@ -622,9 +649,7 @@ class ShoppingProvider extends ChangeNotifier {
             .snapshots()
             .listen(_onSharedListSnapshot);
         _sharedListSubscriptions[listId] = subscription;
-      } catch (_) {
-        // El listener se reintentará en el siguiente refresco o cambio de entorno.
-      }
+      } catch (_) {}
     }
   }
 
@@ -743,6 +768,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     await _box!.put('shopping_lists', dataToSave);
+    await _box!.put('list_categories', _listCategories);
     await _box!.put('selected_list_name', _selectedListName);
     await _box!.put('shared_list_ids', _sharedListIds);
     await _box!.put('shared_list_owners', _sharedListOwners);
@@ -845,8 +871,6 @@ class ShoppingProvider extends ChangeNotifier {
     };
   }
 
-  /// Cambia el entorno de datos entre invitado local y caché online.
-  /// Se ejecuta al iniciar o cerrar sesión en SessionProvider.
   Future<void> switchUserEnvironment({required bool isOffline}) async {
     await _cancelSharedListListeners();
     _pendingSharedSnapshots.clear();
@@ -862,6 +886,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     _shoppingLists.clear();
+    _listCategories.clear();
     _sharedListIds.clear();
     _sharedListOwners.clear();
     _deletedSharedProducts.clear();
@@ -894,7 +919,6 @@ class ShoppingProvider extends ChangeNotifier {
           !_isOfflineMode &&
           _currentUid != null &&
           _currentUid!.isNotEmpty) {
-        // 1. Obtener y fusionar listas personales
         final cloudLists = await _userRepository.getShoppingLists(_currentUid!);
         final cloudTs = await _userRepository.getShoppingListTimestamps(
           _currentUid!,
@@ -904,7 +928,7 @@ class ShoppingProvider extends ChangeNotifier {
         );
         final cloudDeletedLists = await _userRepository
             .getDeletedShoppingListTimestamps(_currentUid!);
-        // Los tombstones locales aún no subidos deben prevalecer para no resucitar una lista recién borrada.
+
         final deletedLists = <String, DateTime>{...cloudDeletedLists};
         for (final entry in _deletedLists.entries) {
           final existing = deletedLists[entry.key];
@@ -931,12 +955,10 @@ class ShoppingProvider extends ChangeNotifier {
           }
         }
 
-        // 2. Obtener y fusionar listas compartidas
         final sharedLists = await _userRepository.getSharedShoppingLists(
           _currentUid!,
         );
-        // Nombre local vigente por listId: evita duplicar la lista bajo el nombre antiguo
-        // cuando hay un renombrado local que aún no se ha subido a Firestore.
+
         final localNameByListId = <String, String>{
           for (final entry in _sharedListIds.entries) entry.value: entry.key,
         };
@@ -963,6 +985,8 @@ class ShoppingProvider extends ChangeNotifier {
 
           if (localName != null && localName != name) {
             _shoppingLists.remove(localName);
+            final cats = _listCategories.remove(localName);
+            if (cats != null) _listCategories[name] = cats;
             _sharedListIds.remove(localName);
             _sharedListOwners.remove(localName);
             _listUpdatedAt.remove(localName);
@@ -1023,6 +1047,7 @@ class ShoppingProvider extends ChangeNotifier {
         }
 
         await _box!.put('shopping_lists', dataToSave);
+        await _box!.put('list_categories', _listCategories);
         await _box!.put('selected_list_name', _selectedListName);
         await _box!.put('shared_list_ids', _sharedListIds);
         await _box!.put('shared_list_owners', _sharedListOwners);
@@ -1071,14 +1096,13 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   Future<void> resetGuestData() async {
-    // Limpiar caché de las Listas de Compra. El método de la sesión es "resetLocalProfile()"
     if (Hive.isBoxOpen(_guestBoxName)) {
       final guestBox = Hive.box(_guestBoxName);
       await guestBox.clear();
     }
 
-    // Reseteamos el estado en memoria
     _shoppingLists.clear();
+    _listCategories.clear();
     _listIds.clear();
     _deletedLists.clear();
     _selectedListName = '';
@@ -1086,9 +1110,9 @@ class ShoppingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Borra las listas locales (memoria + Hive) sin tocar los datos de sesión del usuario.
   Future<void> clearLocalShoppingCache() async {
     _shoppingLists.clear();
+    _listCategories.clear();
     _sharedListIds.clear();
     _sharedListOwners.clear();
     _deletedSharedProducts.clear();
@@ -1107,9 +1131,7 @@ class ShoppingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ---------------------------------------------- ][ GESTION DE LISTAS Y PRODUCTOS ][ ---------------------------------------------- //
-
-  // ------------------------------------------------- ][ Getters ][ ------------------------------------------------- //
+  // ---------------------------------------------- ][ GESTIÓN DE LISTAS Y PRODUCTOS ][ ---------------------------------------------- //
 
   String get selectedListName => _selectedListName;
 
@@ -1131,10 +1153,52 @@ class ShoppingProvider extends ChangeNotifier {
 
   List<Product> frequentProductsForList(String listName) {
     final products = getListAdd(listName)?['frequent'] ?? <Product>[];
-    // Ordenar por frecuencia descendente
     final sorted = List<Product>.from(products);
     sorted.sort((a, b) => b.frequency.compareTo(a.frequency));
     return sorted;
+  }
+
+  // -------------------------------------------- ][ Gestión de Categorías de Lista ][ -------------------------------------------- //
+
+  void addCategoryToSelectedList(String category) {
+    final cleaned = category.trim();
+    if (cleaned.isEmpty || _selectedListName.isEmpty) return;
+
+    final categories = _listCategories.putIfAbsent(_selectedListName, () => ['Genérico']);
+    if (!categories.contains(cleaned)) {
+      categories.add(cleaned);
+      _touchList(_selectedListName);
+      notifyListeners();
+      unawaited(saveToStorage());
+    }
+  }
+
+  void removeCategoryFromSelectedList(String category) {
+    if (category == 'Genérico' || _selectedListName.isEmpty) return;
+
+    final categories = _listCategories[_selectedListName];
+    if (categories != null && categories.contains(category)) {
+      categories.remove(category);
+
+      // Reasignar los productos que tenían esa categoría a 'Genérico'
+      final list = _shoppingLists[_selectedListName];
+      if (list != null) {
+        for (final group in ['active', 'frequent']) {
+          final products = list[group];
+          if (products != null) {
+            for (var i = 0; i < products.length; i++) {
+              if (products[i].category == category) {
+                products[i] = products[i].copyWith(category: 'Genérico');
+              }
+            }
+          }
+        }
+      }
+
+      _touchList(_selectedListName);
+      notifyListeners();
+      unawaited(saveToStorage());
+    }
   }
 
   // -------------------------------------------- ][ Selección/gestión de Listas ][ -------------------------------------------- //
@@ -1164,6 +1228,7 @@ class ShoppingProvider extends ChangeNotifier {
       'active': <Product>[],
       'frequent': <Product>[],
     };
+    _listCategories[uniqueName] = ['Genérico'];
     _listIds[uniqueName] =
         _listIds[uniqueName] ??
         'list_${DateTime.now().millisecondsSinceEpoch}_${uniqueName.hashCode}';
@@ -1175,7 +1240,6 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   void renameList(String oldName, String newName) {
-    // Solo el propietario puede renombrar una lista compartida; los demás no tienen permiso.
     if (!canManageList(oldName)) return;
     final cleanedName = newName.trim();
     if (cleanedName.isEmpty || !_shoppingLists.containsKey(oldName)) {
@@ -1216,6 +1280,11 @@ class ShoppingProvider extends ChangeNotifier {
     _shoppingLists
       ..clear()
       ..addAll(reorderedLists);
+
+    final categories = _listCategories.remove(oldName);
+    if (categories != null) {
+      _listCategories[cleanedName] = categories;
+    }
 
     if (_selectedListName == oldName) {
       _selectedListName = cleanedName;
@@ -1272,6 +1341,7 @@ class ShoppingProvider extends ChangeNotifier {
         'active': <Product>[],
         'frequent': <Product>[],
       };
+      _listCategories[listName] ??= ['Genérico'];
     }
 
     _shoppingLists[listName]!['active'] ??= <Product>[];
@@ -1302,14 +1372,12 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     if (existingIndex >= 0) {
-      // Si ya existe, incrementar frecuencia
       final existing = activeList[existingIndex];
       activeList[existingIndex] = existing.copyWith(
         frequency: existing.frequency + 1,
         lastAdded: DateTime.now(),
       );
     } else {
-      // Si no existe, crear nuevo
       final product = Product(
         id: '${listName}_active_${DateTime.now().millisecondsSinceEpoch}',
         name: cleanedName,
@@ -1339,6 +1407,7 @@ class ShoppingProvider extends ChangeNotifier {
         'active': <Product>[],
         'frequent': <Product>[],
       };
+      _listCategories[listName] ??= ['Genérico'];
     }
 
     _shoppingLists[listName]!['frequent'] ??= <Product>[];
@@ -1350,14 +1419,12 @@ class ShoppingProvider extends ChangeNotifier {
     );
 
     if (existingIndex >= 0) {
-      // Si ya existe, incrementar frecuencia
       final existing = frequentList[existingIndex];
       frequentList[existingIndex] = existing.copyWith(
         frequency: existing.frequency + 1,
         lastAdded: DateTime.now(),
       );
     } else {
-      // Si no existe, crear nuevo
       final product = Product(
         id: '${listName}_frequent_${DateTime.now().millisecondsSinceEpoch}',
         name: cleanedName,
@@ -1491,13 +1558,16 @@ class ShoppingProvider extends ChangeNotifier {
     required int frequency,
     required int amount,
     double? price,
+    double? pricePerKilo,
     String? imageUrl,
+    String? category,
+    String? icon,
   }) {
     final list = _shoppingLists[listName];
     if (list == null) return;
 
-    for (final category in ['active', 'frequent']) {
-      final products = list[category];
+    for (final categoryKey in ['active', 'frequent']) {
+      final products = list[categoryKey];
       if (products == null) continue;
 
       final index = products.indexWhere((product) => product.id == productId);
@@ -1508,7 +1578,10 @@ class ShoppingProvider extends ChangeNotifier {
         frequency: frequency,
         amount: amount,
         price: price,
+        pricePerKilo: pricePerKilo,
         imageUrl: imageUrl,
+        category: category,
+        icon: icon,
       );
       _touchList(listName);
       notifyListeners();
@@ -1560,10 +1633,10 @@ class ShoppingProvider extends ChangeNotifier {
     if (!canManageList(cleanedName)) return;
 
     final sharedListId = _sharedListIds[cleanedName];
-
     final deletedId = _listIds[cleanedName];
 
     _shoppingLists.remove(cleanedName);
+    _listCategories.remove(cleanedName);
 
     if (sharedListId != null && _currentUid != null) {
       _sharedListIds.remove(cleanedName);

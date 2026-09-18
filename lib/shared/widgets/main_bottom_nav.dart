@@ -24,6 +24,8 @@ class MainBottomNav extends StatelessWidget {
     final iconColor = themeProvider.navPrimaryColor;
     final labelColor = themeProvider.navPrimaryColor;
 
+    final double topInset = currentIndex == 0 ? 2 : 10;
+
     return SafeArea(
       child: Container(
         decoration: BoxDecoration(
@@ -36,7 +38,7 @@ class MainBottomNav extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+        padding: EdgeInsets.fromLTRB(12, topInset, 12, 12),
         child: Row(
           children: [
             _buildNavigationButton(Icons.list, 'Lista', 0, backgroundColor, borderColor, iconColor, labelColor),

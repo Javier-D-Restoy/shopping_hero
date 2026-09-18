@@ -81,7 +81,6 @@ class _ListMainPageState extends State<ListMainPage> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     final sessionProvider = context.watch<SessionProvider>();
     final shoppingProvider = context.watch<ShoppingProvider>();
@@ -214,7 +213,7 @@ class _ListMainPageState extends State<ListMainPage> {
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
+                      padding: EdgeInsets.fromLTRB(12, 10, 12, _selectedIndex == 0 ? 10 : 2),
                       child: Row(
                         children: [
                           Expanded(
@@ -360,7 +359,7 @@ class _ListMainPageState extends State<ListMainPage> {
                   height: 35,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    border: Border(),
+                    // border: Border(),
                     boxShadow: [
                       BoxShadow(
                         color: themeProvider.isDarkMode
@@ -463,187 +462,418 @@ class _ListMainPageState extends State<ListMainPage> {
     Product product,
   ) async {
     final nameController = TextEditingController(text: product.name);
-    final frequencyController = TextEditingController(
-      text: product.frequency.toString(),
-    );
-    final priceController = TextEditingController(
-      text: product.price?.toString() ?? '',
-    );
-    final amountController = TextEditingController(
-      text: product.amount.toString(),
-    );
-    final imageUrlController = TextEditingController(
-      text: product.imageUrl ?? '',
-    );
+    final frequencyController = TextEditingController(text: product.frequency.toString());
+    final priceController = TextEditingController(text: product.price?.toString() ?? '');
+    final pricePerKiloController = TextEditingController(text: product.pricePerKilo?.toString() ?? '');
+    final amountController = TextEditingController(text: product.amount.toString());
+    final imageUrlController = TextEditingController(text: product.imageUrl ?? '');
+
+    String selectedCategory = product.category;
+    String? selectedIcon = product.icon;
+
+    // Mapa de iconos disponibles
+    final Map<String, IconData> availableIcons = {
+      'shopping_bag': Icons.shopping_bag,
+      'fastfood': Icons.fastfood,
+      'local_grocery_store': Icons.local_grocery_store,
+      'local_drink': Icons.local_drink,
+      'kitchen': Icons.kitchen,
+      'cleaning_services': Icons.cleaning_services,
+    };
 
     try {
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        builder: (context) {
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 20,
-              right: 20,
-              top: 20,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-            ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Editar producto',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    maxLength: 30,
-                    autofocus: true,
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      labelText: 'Nombre',
-                      counterText: '',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          textAlign: TextAlign.center,
-                          controller: frequencyController,
-                          maxLength: 6,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Frecuencia',
-                            counterText: '',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          textAlign: TextAlign.center,
-                          controller: amountController,
-                          maxLength: 3,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Cantidad',
-                            counterText: '',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          textAlign: TextAlign.center,
-                          controller: priceController,
-                          maxLength: 7,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'Precio',
-                            alignLabelWithHint: false,
-                            counterText: '',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: imageUrlController,
-                    keyboardType: TextInputType.url,
-                    decoration: const InputDecoration(
-                      labelText: 'URL de imagen',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            final name = nameController.text.trim();
-                            final frequency = int.tryParse(
-                              frequencyController.text.trim(),
-                            );
-                            final amount = int.tryParse(
-                              amountController.text.trim(),
-                            );
-                            final priceText = priceController.text
-                                .trim()
-                                .replaceAll(',', '.');
-                            final price = priceText.isEmpty
-                                ? null
-                                : double.tryParse(priceText);
+        builder: (modalContext) {
+          return StatefulBuilder(
+            builder: (BuildContext context, StateSetter setModalState) {
 
-                            if (name.isEmpty ||
-                                frequency == null ||
-                                frequency < 0 ||
-                                amount == null ||
-                                amount < 0 ||
-                                (priceText.isNotEmpty && price == null)) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Revisa los datos del producto',
-                                  ),
+              // Obtener la lista de categorías actual de la lista seleccionada
+              final availableCategories = shoppingProvider.availableCategories;
+
+              // Si la categoría del producto ya no existe en la lista, fallback a 'Genérico'
+              if (!availableCategories.contains(selectedCategory)) {
+                selectedCategory = 'Genérico';
+              }
+
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  top: 20,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Editar producto',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: nameController,
+                        maxLength: 30,
+                        decoration: const InputDecoration(
+                          labelText: 'Nombre',
+                          counterText: '',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // --------------------------------------------------------
+                      // CAMPO SELECTOR DE CATEGORÍA (REEMPLAZO SEGURO DEL DROPDOWN)
+                      // --------------------------------------------------------
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InkWell(
+                              onTap: () async {
+                                // 1. Desenfocar cualquier TextField activo globalmente antes de abrir el diálogo
+                                FocusManager.instance.primaryFocus?.unfocus();
+                            
+                                // 2. Abrir diálogo asegurando un descarte (dismiss) seguro
+                                final selectedResult = await showDialog<String>(
+                                  context: context,
+                                  barrierDismissible: true, // Permite tocar fuera sin bloquear la app
+                                  builder: (dialogContext) {
+                                    return StatefulBuilder(
+                                      builder: (context, setDialogState) {
+                                        final currentCategories = shoppingProvider.availableCategories;
+                            
+                                        return AlertDialog(
+                                          title: const Text('Seleccionar Categoría'),
+                                          content: SizedBox(
+                                            width: double.maxFinite,
+                                            child: SingleChildScrollView(
+                                              child: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  // --------------------------------------------------------
+                                                  // API MODERNA DE FLUTTER: RadioGroup engloba los RadioListTile
+                                                  // --------------------------------------------------------
+                                                  RadioGroup<String>(
+                                                    groupValue: selectedCategory,
+                                                    onChanged: (String? val) {
+                                                      if (val != null) {
+                                                        Navigator.pop(dialogContext, val);
+                                                      }
+                                                    },
+                                                    child: Column(
+                                                      children: currentCategories.map((cat) {
+                                                        return RadioListTile<String>(
+                                                          title: Text(cat),
+                                                          value: cat, // Solo necesita su propio valor
+                                                          secondary: cat != 'Genérico'
+                                                              ? IconButton(
+                                                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                                                  onPressed: () {
+                                                                    shoppingProvider.removeCategoryFromSelectedList(cat);
+                                                                    if (selectedCategory == cat) {
+                                                                      selectedCategory = 'Genérico';
+                                                                    }
+                                                                    setDialogState(() {});
+                                                                    setModalState(() {});
+                                                                  },
+                                                                )
+                                                              : null,
+                                                          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                                        );
+                                                      }).toList(),
+                                                    ),
+                                                  ),
+                                                  const Divider(),
+                                                  ListTile(
+                                                    leading: const Icon(Icons.add, color: Colors.blue),
+                                                    title: const Text(
+                                                      'Añadir nueva categoría',
+                                                      style: TextStyle(color: Colors.blue),
+                                                    ),
+                                                    onTap: () async {
+                                                      final newCatController = TextEditingController();
+                                                      final newCat = await showDialog<String>(
+                                                        context: dialogContext,
+                                                        barrierDismissible: true,
+                                                        builder: (ctx) => AlertDialog(
+                                                          title: const Text('Nueva Categoría'),
+                                                          content: TextField(
+                                                            controller: newCatController,
+                                                            autofocus: true,
+                                                          ),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(ctx),
+                                                              child: const Text('Cancelar'),
+                                                            ),
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(
+                                                                ctx,
+                                                                newCatController.text.trim(),
+                                                              ),
+                                                              child: const Text('Añadir'),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+                            
+                                                      if (newCat != null && newCat.isNotEmpty) {
+                                                        shoppingProvider.addCategoryToSelectedList(newCat);
+                                                        selectedCategory = newCat;
+                                                        setDialogState(() {});
+                                                        setModalState(() {});
+                                                      }
+                                                    },
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
+                            
+                                // 3. Si el usuario seleccionó una categoría (no tocó fuera), actualizamos la variable local
+                                if (selectedResult != null) {
+                                  setModalState(() {
+                                    selectedCategory = selectedResult;
+                                  });
+                                }
+                              },
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: 'Categoría',
+                                  border: OutlineInputBorder(),
                                 ),
-                              );
-                              return;
-                            }
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(selectedCategory),
+                                    const Icon(Icons.arrow_drop_down),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
 
-                            shoppingProvider.updateProduct(
-                              widget.listName,
-                              product.id,
-                              name: name,
-                              frequency: frequency,
-                              amount: amount,
-                              price: price,
-                              imageUrl: imageUrlController.text.trim().isEmpty
-                                  ? null
-                                  : imageUrlController.text.trim(),
-                            );
-                            Navigator.of(context).pop();
-                          },
-                          icon: const Icon(Icons.save_outlined),
-                          label: const Text('Guardar'),
+                          // 2. Selector de Icono
+                          Expanded(
+                            child: InkWell(
+                              onTap: () async {
+                                FocusManager.instance.primaryFocus?.unfocus();
+
+                                final chosenIcon = await showDialog<String?>(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  builder: (dialogContext) {
+                                    return AlertDialog(
+                                      title: const Text('Seleccionar Icono'),
+                                      content: SizedBox(
+                                        width: double.maxFinite,
+                                        child: SingleChildScrollView(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              // Opción para no llevar ningún icono
+                                              ListTile(
+                                                leading: const Icon(Icons.block, color: Colors.grey),
+                                                title: const Text('Sin icono'),
+                                                trailing: selectedIcon == null
+                                                    ? const Icon(Icons.check, color: Colors.blue)
+                                                    : null,
+                                                onTap: () => Navigator.pop(dialogContext, 'CLEAR'),
+                                              ),
+                                              const Divider(),
+                                              // Lista estática de iconos
+                                              ...availableIcons.entries.map((entry) {
+                                                return ListTile(
+                                                  leading: Icon(entry.value),
+                                                  title: Text(entry.key),
+                                                  trailing: selectedIcon == entry.key
+                                                      ? const Icon(Icons.check, color: Colors.blue)
+                                                      : null,
+                                                  onTap: () => Navigator.pop(dialogContext, entry.key),
+                                                );
+                                              }),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+
+                                if (chosenIcon != null) {
+                                  setModalState(() {
+                                    selectedIcon = chosenIcon == 'CLEAR' ? null : chosenIcon;
+                                  });
+                                }
+                              },
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: 'Icono',
+                                  border: OutlineInputBorder(),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        if (selectedIcon != null && availableIcons.containsKey(selectedIcon))
+                                          Icon(availableIcons[selectedIcon], size: 20)
+                                        else
+                                          const Text('Ninguno', style: TextStyle(color: Colors.grey)),
+                                      ],
+                                    ),
+                                    const Icon(Icons.arrow_drop_down),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // CAMPO DE FRECUENCIA, CANTIDAD, PRECIO y PRECIOKILO
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: frequencyController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Frecuencia',
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                labelStyle: TextStyle(fontSize: 14),
+                                border: OutlineInputBorder()
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: amountController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                labelText: 'Cantidad',
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                labelStyle: TextStyle(fontSize: 14),
+                                border: OutlineInputBorder()
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              textAlign: TextAlign.center,
+                              controller: priceController,
+                              maxLength: 7,
+                              keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              decoration: const InputDecoration(
+                                labelText: 'Precio',
+                                alignLabelWithHint: false,
+                                counterText: '',
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                labelStyle: TextStyle(fontSize: 14),
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              textAlign: TextAlign.center,
+                              controller: pricePerKiloController,
+                              maxLength: 7,
+                              keyboardType: const TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              decoration: const InputDecoration(
+                                labelText: 'Precio/Kg',
+                                alignLabelWithHint: false,
+                                counterText: '',
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                labelStyle: TextStyle(fontSize: 14),
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: imageUrlController,
+                        keyboardType: TextInputType.url,
+                        decoration: const InputDecoration(
+                          labelText: 'URL de imagen',
+                          border: OutlineInputBorder(),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () {
-                            shoppingProvider.deleteProduct(
-                              widget.listName,
-                              product.id,
-                            );
-                            Navigator.of(context).pop();
-                          },
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Colors.red,
-                            foregroundColor: Colors.white,
+                      const SizedBox(height: 20),
+
+                      // BOTONES DE ACCIÓN
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(elevation: 10),
+                              onPressed: () {
+                                final name = nameController.text.trim();
+                                final frequency = int.tryParse(frequencyController.text.trim());
+                                final amount = int.tryParse(amountController.text.trim());
+
+                                if (name.isEmpty || frequency == null || amount == null) return;
+
+                                shoppingProvider.updateProduct(
+                                  widget.listName,
+                                  product.id,
+                                  name: name,
+                                  frequency: frequency,
+                                  amount: amount,
+                                  category: selectedCategory,
+                                  icon: selectedIcon,
+                                );
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('Guardar'),
+                            ),
                           ),
-                          icon: const Icon(Icons.delete_outline),
-                          label: const Text('Borrar'),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(elevation: 10, backgroundColor: Colors.red),
+                              onPressed: () {
+                                shoppingProvider.deleteProduct(widget.listName, product.id);
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('Borrar', style: TextStyle(color: Colors.white)),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       );
@@ -651,6 +881,8 @@ class _ListMainPageState extends State<ListMainPage> {
       nameController.dispose();
       frequencyController.dispose();
       priceController.dispose();
+      pricePerKiloController.dispose();
+      amountController.dispose();
       imageUrlController.dispose();
     }
   }
