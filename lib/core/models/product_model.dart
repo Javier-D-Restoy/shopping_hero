@@ -9,10 +9,10 @@ class Product {
   final double? pricePerKilo;
   final String? imageUrl;
   final DateTime lastAdded;
-  
+
   /// Categoría asignada al producto. Valor por defecto 'Genérico'.
   final String category;
-  
+
   /// Identificador o nombre del icono/símbolo/imagen del producto.
   final String? icon;
 
@@ -40,6 +40,7 @@ class Product {
     DateTime? lastAdded,
     String? category,
     String? icon,
+    bool clearIcon = false,
   }) {
     return Product(
       id: id ?? this.id,
@@ -51,7 +52,7 @@ class Product {
       imageUrl: imageUrl ?? this.imageUrl,
       lastAdded: lastAdded ?? this.lastAdded,
       category: category ?? this.category,
-      icon: icon ?? this.icon,
+      icon: clearIcon ? null : (icon ?? this.icon),
     );
   }
 
@@ -66,7 +67,10 @@ class Product {
     if (rawCategory is String && rawCategory.isNotEmpty) {
       parsedCategory = rawCategory;
     } else if (rawCategory is Iterable && rawCategory.isNotEmpty) {
-      final first = rawCategory.firstWhere((e) => e != null, orElse: () => 'Genérico');
+      final first = rawCategory.firstWhere(
+        (e) => e != null,
+        orElse: () => 'Genérico',
+      );
       parsedCategory = first.toString();
     }
 
@@ -76,14 +80,17 @@ class Product {
       frequency: (map['frequency'] ?? 1) as int,
       amount: (map['amount'] ?? 1) as int,
       price: map['price'] != null ? (map['price'] as num).toDouble() : null,
-      pricePerKilo: map['pricePerKilo'] != null ? (map['pricePerKilo'] as num).toDouble() : null,
+      pricePerKilo: map['pricePerKilo'] != null
+          ? (map['pricePerKilo'] as num).toDouble()
+          : null,
       imageUrl: map['imageUrl']?.toString(),
       lastAdded: lastAddedValue is Timestamp
           ? lastAddedValue.toDate()
           : (lastAddedValue is DateTime
-              ? lastAddedValue
-              : DateTime.parse(
-                  map['lastAdded'] ?? DateTime.now().toIso8601String())),
+                ? lastAddedValue
+                : DateTime.parse(
+                    map['lastAdded'] ?? DateTime.now().toIso8601String(),
+                  )),
       category: parsedCategory,
       icon: map['icon']?.toString(),
     );
@@ -126,7 +133,10 @@ class Product {
     if (rawCategory is String && rawCategory.isNotEmpty) {
       parsedCategory = rawCategory;
     } else if (rawCategory is Iterable && rawCategory.isNotEmpty) {
-      final first = rawCategory.firstWhere((e) => e != null, orElse: () => 'Genérico');
+      final first = rawCategory.firstWhere(
+        (e) => e != null,
+        orElse: () => 'Genérico',
+      );
       parsedCategory = first.toString();
     }
 
@@ -136,11 +146,15 @@ class Product {
       frequency: (map['frequency'] ?? 1) as int,
       amount: (map['amount'] ?? 1) as int,
       price: map['price'] != null ? (map['price'] as num).toDouble() : null,
-      pricePerKilo: map['pricePerKilo'] != null ? (map['pricePerKilo'] as num).toDouble() : null,
+      pricePerKilo: map['pricePerKilo'] != null
+          ? (map['pricePerKilo'] as num).toDouble()
+          : null,
       imageUrl: map['imageUrl']?.toString(),
       lastAdded: map['lastAdded'] is DateTime
           ? map['lastAdded'] as DateTime
-          : DateTime.parse(map['lastAdded'] ?? DateTime.now().toIso8601String()),
+          : DateTime.parse(
+              map['lastAdded'] ?? DateTime.now().toIso8601String(),
+            ),
       category: parsedCategory,
       icon: map['icon']?.toString(),
     );

@@ -22,9 +22,10 @@ class ThemeProvider extends ChangeNotifier {
   Color get navPrimarySoftColor =>
       _isDarkMode ? const Color(0xFF7DBB74) : const Color(0xFF89CE80);
   Color get surface => _isDarkMode ? const Color(0xFF1F2A1E) : Colors.white;
-  Color get navSurface => _isDarkMode ? const Color(0xFF1F2A1E) : const Color(0xFF9DD388);
-  Color get surfaceSoft => _isDarkMode
-        ? const Color(0xFF2C3A2D) : const Color(0xFFF4F8EE);
+  Color get navSurface =>
+      _isDarkMode ? const Color(0xFF1F2A1E) : const Color(0xFF9DD388);
+  Color get surfaceSoft =>
+      _isDarkMode ? const Color(0xFF2C3A2D) : const Color(0xFFF4F8EE);
   Color get borderColor =>
       _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF9FC090);
   Color get navBorderColor =>
@@ -46,6 +47,32 @@ class ThemeProvider extends ChangeNotifier {
       ? Colors.black.withValues(alpha: 0.35)
       : Colors.black.withValues(alpha: 0.2);
 
+  List<Shadow> get shadows => [
+    Shadow(
+      color: Colors.black.withValues(alpha: 0.4),
+      blurRadius: 8,
+      offset: Offset(0, 0),
+    ),
+    Shadow(
+      color: Colors.black.withValues(alpha: 0.3),
+      blurRadius: 4,
+      offset: Offset(0, 0),
+    ),
+  ];
+
+  List<Shadow> get shadowsSoft => [
+    Shadow(
+      color: Colors.black.withValues(alpha: 0.1),
+      blurRadius: 8,
+      offset: Offset(0, 0),
+    ),
+    Shadow(
+      color: Colors.black.withValues(alpha: 0.05),
+      blurRadius: 4,
+      offset: Offset(0, 0),
+    ),
+  ];
+
   List<Color> get gradientColors => _isDarkMode
       ? [
           const Color(0xFF1D2D1F).withValues(alpha: 0.50),
@@ -59,7 +86,7 @@ class ThemeProvider extends ChangeNotifier {
   List<Color> get gradientColors2 => _isDarkMode
       ? [
           const Color(0xFF1D2D1F).withValues(alpha: 0.85),
-          const Color(0xFF243928).withValues(alpha: 0.85)
+          const Color(0xFF243928).withValues(alpha: 0.85),
         ]
       : [
           const Color(0xFFF6F8E8).withValues(alpha: 0.95),
@@ -69,6 +96,29 @@ class ThemeProvider extends ChangeNotifier {
   String get backgroundImagePath => _isDarkMode
       ? 'assets/images/background/Background_Dark_Image_1.jpg'
       : 'assets/images/background/Background_Image_1.jpg';
+
+  // Mapa de iconos disponibles
+  final Map<String, IconData> availableIcons = {
+    'shopping_bag': Icons.shopping_bag,
+    'fastfood': Icons.fastfood,
+    'local_grocery_store': Icons.local_grocery_store,
+    'local_drink': Icons.local_drink,
+    'kitchen': Icons.kitchen,
+    'cleaning_services': Icons.cleaning_services,
+  };
+
+  final Map<String, String> availableIconsSvg = {
+    'beach': 'assets/svg/beach.svg',
+    'dizzy': 'assets/svg/dizzy.svg',
+    'house': 'assets/svg/house.svg',
+    'hut': 'assets/svg/hut.svg',
+    'kiss': 'assets/svg/kiss.svg',
+    'maracas': 'assets/svg/maracas.svg',
+    'palm tree': 'assets/svg/palm_tree.svg',
+    'speech': 'assets/svg/speech.svg',
+    'star': 'assets/svg/star.svg',
+    'surfing': 'assets/svg/surfing.svg',
+  };
 
   Future<void> init() async {
     try {

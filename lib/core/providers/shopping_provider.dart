@@ -27,7 +27,7 @@ class ShoppingProvider extends ChangeNotifier {
   final Map<String, Map<String, DateTime>> _deletedSharedProducts = {};
   final Map<String, DateTime> _deletedLists = {};
   final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>>
-      _sharedListSubscriptions = {};
+  _sharedListSubscriptions = {};
   DateTime? _lastAutomaticSharedSync;
   Timer? _automaticSharedSyncTimer;
   bool _automaticSharedSyncInProgress = false;
@@ -36,7 +36,7 @@ class ShoppingProvider extends ChangeNotifier {
   DateTime? _lastSyncedAt;
 
   final Map<String, Map<String, List<Product>>> _shoppingLists = {};
-  
+
   /// Categorías por cada lista. Mantiene 'Genérico' y las creadas por el usuario.
   final Map<String, List<String>> _listCategories = {};
 
@@ -390,8 +390,9 @@ class ShoppingProvider extends ChangeNotifier {
     if (storedListCategories is Map) {
       for (final entry in storedListCategories.entries) {
         if (entry.key is String && entry.value is List) {
-          _listCategories[entry.key as String] =
-              (entry.value as List).map((e) => e.toString()).toList();
+          _listCategories[entry.key as String] = (entry.value as List)
+              .map((e) => e.toString())
+              .toList();
         }
       }
     }
@@ -662,16 +663,15 @@ class ShoppingProvider extends ChangeNotifier {
     _sharedListSubscriptions.clear();
   }
 
-  void _onSharedListSnapshot(
-    DocumentSnapshot<Map<String, dynamic>> snapshot,
-  ) {
+  void _onSharedListSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot) {
     if (!snapshot.exists || snapshot.data() == null || _isOfflineMode) return;
 
     _pendingSharedSnapshots[snapshot.id] = snapshot.data()!;
 
     final now = DateTime.now();
     final lastSync = _lastAutomaticSharedSync;
-    if (lastSync != null && now.difference(lastSync) < const Duration(seconds: 5)) {
+    if (lastSync != null &&
+        now.difference(lastSync) < const Duration(seconds: 5)) {
       _automaticSharedSyncTimer ??= Timer(
         const Duration(seconds: 5),
         _runAutomaticSharedSync,
@@ -688,7 +688,8 @@ class ShoppingProvider extends ChangeNotifier {
 
     final now = DateTime.now();
     final lastSync = _lastAutomaticSharedSync;
-    if (lastSync != null && now.difference(lastSync) < const Duration(seconds: 5)) {
+    if (lastSync != null &&
+        now.difference(lastSync) < const Duration(seconds: 5)) {
       _automaticSharedSyncTimer = Timer(
         const Duration(seconds: 5),
         _runAutomaticSharedSync,
@@ -741,15 +742,13 @@ class ShoppingProvider extends ChangeNotifier {
     _deletedSharedProducts[listId] = knownDeletedProducts;
     _sharedListIds[name] = listId;
     _sharedListOwners[name] = (data['ownerUid'] ?? '').toString();
-    final localList = _shoppingLists[name] ?? {
-      'active': <Product>[],
-      'frequent': <Product>[],
-    };
-    _shoppingLists[name] = _mergeSharedListProducts(
-      localList,
-      {'active': cloudActive, 'frequent': cloudFrequent},
-      knownDeletedProducts,
-    );
+    final localList =
+        _shoppingLists[name] ??
+        {'active': <Product>[], 'frequent': <Product>[]};
+    _shoppingLists[name] = _mergeSharedListProducts(localList, {
+      'active': cloudActive,
+      'frequent': cloudFrequent,
+    }, knownDeletedProducts);
     final updatedAt = data['updatedAt'];
     if (updatedAt is Timestamp) {
       _listUpdatedAt[name] = updatedAt.toDate();
@@ -763,7 +762,9 @@ class ShoppingProvider extends ChangeNotifier {
     for (final entry in _shoppingLists.entries) {
       dataToSave[entry.key] = {
         for (final category in entry.value.entries)
-          category.key: category.value.map((product) => product.toMapHive()).toList(),
+          category.key: category.value
+              .map((product) => product.toMapHive())
+              .toList(),
       };
     }
 
@@ -834,7 +835,8 @@ class ShoppingProvider extends ChangeNotifier {
             ? 'id:${product.id}'
             : 'name:${product.name.trim().toLowerCase()}';
         final existing = productsByKey[key];
-        final shouldReplace = existing == null ||
+        final shouldReplace =
+            existing == null ||
             product.lastAdded.isAfter(existing.lastAdded) ||
             (product.lastAdded.isAtSameMomentAs(existing.lastAdded) &&
                 product.frequency >= existing.frequency);
@@ -856,18 +858,20 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     return {
-      'active': productsByKey.entries
-          .where((entry) => categoryByKey[entry.key] == 'active')
-          .map((entry) => entry.value)
-          .where((product) => !wasDeleted(product))
-          .toList()
-        ..sort((a, b) => b.lastAdded.compareTo(a.lastAdded)),
-      'frequent': productsByKey.entries
-          .where((entry) => categoryByKey[entry.key] == 'frequent')
-          .map((entry) => entry.value)
-          .where((product) => !wasDeleted(product))
-          .toList()
-        ..sort((a, b) => b.lastAdded.compareTo(a.lastAdded)),
+      'active':
+          productsByKey.entries
+              .where((entry) => categoryByKey[entry.key] == 'active')
+              .map((entry) => entry.value)
+              .where((product) => !wasDeleted(product))
+              .toList()
+            ..sort((a, b) => b.lastAdded.compareTo(a.lastAdded)),
+      'frequent':
+          productsByKey.entries
+              .where((entry) => categoryByKey[entry.key] == 'frequent')
+              .map((entry) => entry.value)
+              .where((product) => !wasDeleted(product))
+              .toList()
+            ..sort((a, b) => b.lastAdded.compareTo(a.lastAdded)),
     };
   }
 
@@ -1016,11 +1020,10 @@ class ShoppingProvider extends ChangeNotifier {
           final localTs =
               _listUpdatedAt[name] ?? DateTime.fromMillisecondsSinceEpoch(0);
 
-          _shoppingLists[name] = _mergeSharedListProducts(
-            localList,
-            {'active': cloudActive, 'frequent': cloudFrequent},
-            mergedDeletedProducts,
-          );
+          _shoppingLists[name] = _mergeSharedListProducts(localList, {
+            'active': cloudActive,
+            'frequent': cloudFrequent,
+          }, mergedDeletedProducts);
           _listUpdatedAt[name] = cloudUpdatedAt.isAfter(localTs)
               ? cloudUpdatedAt
               : localTs;
@@ -1164,7 +1167,10 @@ class ShoppingProvider extends ChangeNotifier {
     final cleaned = category.trim();
     if (cleaned.isEmpty || _selectedListName.isEmpty) return;
 
-    final categories = _listCategories.putIfAbsent(_selectedListName, () => ['Genérico']);
+    final categories = _listCategories.putIfAbsent(
+      _selectedListName,
+      () => ['Genérico'],
+    );
     if (!categories.contains(cleaned)) {
       categories.add(cleaned);
       _touchList(_selectedListName);
@@ -1582,6 +1588,7 @@ class ShoppingProvider extends ChangeNotifier {
         imageUrl: imageUrl,
         category: category,
         icon: icon,
+        clearIcon: icon == null,
       );
       _touchList(listName);
       notifyListeners();

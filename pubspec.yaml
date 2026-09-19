@@ -45,6 +45,7 @@ dependencies:
   firebase_auth: ^6.6.1
   flutter_launcher_icons: ^0.14.3
   auto_size_text: ^3.0.0
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -83,6 +84,7 @@ flutter:
     - assets/images/background/Background_Profile_Image_1.png
     - assets/images/background/Background_Sharing_Image_1.jpg
     - assets/images/background/Background_Dark_Image_1.jpg
+    - assets/svg/
 
 flutter_launcher_icons:
   android: true
