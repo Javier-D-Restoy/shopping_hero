@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shopping_hero/core/models/product_model.dart';
+import 'package:shopping_hero/core/models/product_sort_option.dart';
 import 'package:shopping_hero/core/services/user_repository.dart';
 
 enum ShoppingSyncStatus { offline, syncing, synced, error }
@@ -41,6 +42,10 @@ class ShoppingProvider extends ChangeNotifier {
   /// Categorías por cada lista. Mantiene 'Genérico' y las creadas por el usuario.
   final Map<String, List<String>> _listCategories = {};
 
+  /// Criterio de orden elegido para cada lista. Preferencia local del dispositivo,
+  /// no se sincroniza con Firestore para no entrar en conflicto entre usuarios.
+  final Map<String, ProductSortOption> _sortOptionForList = {};
+
   String _selectedListName = '';
 
   bool get isOfflineMode => _isOfflineMode;
@@ -50,6 +55,26 @@ class ShoppingProvider extends ChangeNotifier {
   String? sharedListIdFor(String listName) => _sharedListIds[listName];
   bool canManageList(String listName) =>
       !isSharedList(listName) || _sharedListOwners[listName] == _currentUid;
+
+  /// Devuelve el criterio de orden elegido para una lista (por defecto, fecha descendente).
+  ProductSortOption sortOptionForList(String listName) =>
+      _sortOptionForList[listName] ?? ProductSortOption.dateDesc;
+
+  /// Cambia el criterio de orden de una lista. Es una preferencia solo local:
+  /// no dispara sincronización con Firestore ni afecta a otros usuarios.
+  void setSortOptionForList(String listName, ProductSortOption option) {
+    _sortOptionForList[listName] = option;
+    notifyListeners();
+    unawaited(_persistSortOptions());
+  }
+
+  Future<void> _persistSortOptions() async {
+    if (_box == null) return;
+    await _box!.put(
+      'sort_options',
+      _sortOptionForList.map((listName, option) => MapEntry(listName, option.name)),
+    );
+  }
 
   /// Devuelve las categorías de la lista activa seleccionada.
   List<String> get availableCategories {
@@ -380,6 +405,18 @@ class ShoppingProvider extends ChangeNotifier {
     final storedSharedListOwners = _box!.get('shared_list_owners');
     final storedDeletedSharedProducts = _box!.get('deleted_shared_products');
     final storedListCategories = _box!.get('list_categories');
+    final storedSortOptions = _box!.get('sort_options');
+
+    if (storedSortOptions is Map) {
+      for (final entry in storedSortOptions.entries) {
+        if (entry.key is! String || entry.value is! String) continue;
+        final option = ProductSortOption.values.firstWhere(
+          (value) => value.name == entry.value,
+          orElse: () => ProductSortOption.dateDesc,
+        );
+        _sortOptionForList[entry.key as String] = option;
+      }
+    }
 
     if (storedSharedListIds is Map) {
       for (final entry in storedSharedListIds.entries) {
@@ -1169,8 +1206,35 @@ class ShoppingProvider extends ChangeNotifier {
 
   List<Product> activeProductsForList(String listName) {
     final products = getListAdd(listName)?['active'] ?? <Product>[];
+    return _sortProducts(products, sortOptionForList(listName));
+  }
+
+  static List<Product> _sortProducts(
+    List<Product> products,
+    ProductSortOption option,
+  ) {
     final sorted = List<Product>.from(products);
-    sorted.sort((a, b) => b.lastAdded.compareTo(a.lastAdded));
+
+    switch (option) {
+      case ProductSortOption.dateDesc:
+        sorted.sort((a, b) => b.lastAdded.compareTo(a.lastAdded));
+        break;
+      case ProductSortOption.alphabetical:
+        sorted.sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
+        break;
+      case ProductSortOption.category:
+        sorted.sort((a, b) {
+          final categoryCompare = a.category.toLowerCase().compareTo(
+            b.category.toLowerCase(),
+          );
+          if (categoryCompare != 0) return categoryCompare;
+          return b.lastAdded.compareTo(a.lastAdded);
+        });
+        break;
+    }
+
     return sorted;
   }
 

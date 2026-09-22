@@ -2,6 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/models/product_model.dart';
+import 'package:shopping_hero/core/models/product_sort_option.dart';
 import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
@@ -329,6 +330,66 @@ class _ListMainPageState extends State<ListMainPage> {
     );
   }
 
+  Widget _buildSortButton(
+    ShoppingProvider shoppingProvider,
+    ThemeProvider themeProvider,
+  ) {
+    final currentOption = shoppingProvider.sortOptionForList(widget.listName);
+
+    return PopupMenuButton<ProductSortOption>(
+      initialValue: currentOption,
+      tooltip: 'Ordenar productos',
+      onSelected: (option) {
+        shoppingProvider.setSortOptionForList(widget.listName, option);
+      },
+      itemBuilder: (context) => ProductSortOption.values
+          .map(
+            (option) => PopupMenuItem<ProductSortOption>(
+              value: option,
+              child: Row(
+                children: [
+                  if (option == currentOption)
+                    Icon(Icons.check, size: 18, color: themeProvider.primaryColor)
+                  else
+                    const SizedBox(width: 18),
+                  const SizedBox(width: 8),
+                  Text(option.label),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: themeProvider.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: themeProvider.borderColor, width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.sort, size: 18, color: themeProvider.primaryColor),
+            const SizedBox(width: 6),
+            Text(
+              currentOption.label,
+              style: TextStyle(
+                fontSize: 13,
+                color: themeProvider.textStrongColor,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_drop_down,
+              size: 20,
+              color: themeProvider.textMutedColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildListContent(
     List<Product> activeProducts,
     List<Product> frequentProducts,
@@ -350,6 +411,13 @@ class _ListMainPageState extends State<ListMainPage> {
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: SizedBox(height: 8)),
+          SliverToBoxAdapter(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _buildSortButton(shoppingProvider, themeProvider),
+            ),
+          ),
+          SliverToBoxAdapter(child: SizedBox(height: 6)),
           SliverGrid.builder(
             // ------------------------ ][ PRODUCTOS ACTIVOS ][ ------------------------ //
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
