@@ -111,7 +111,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Text(
                             '${widget.amount}',
-                            style: TextStyle(fontWeight: FontWeight(500)),
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight(500)),
                           ),
                         ),
                       ),

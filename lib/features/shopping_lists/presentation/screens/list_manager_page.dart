@@ -17,6 +17,15 @@ class ListManager extends StatefulWidget {
 
 class _ListManagerState extends State<ListManager> {
   @override
+  void initState() {
+    super.initState();
+    // Sincronización instantánea al entrar, sin esperar el debounce de 5s.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<ShoppingProvider>().syncNow();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final sessionProvider = context.watch<SessionProvider>();
     final shoppingProvider = context.watch<ShoppingProvider>();

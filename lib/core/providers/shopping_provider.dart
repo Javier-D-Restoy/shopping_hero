@@ -32,6 +32,7 @@ class ShoppingProvider extends ChangeNotifier {
   Timer? _automaticSharedSyncTimer;
   bool _automaticSharedSyncInProgress = false;
   final Map<String, Map<String, dynamic>> _pendingSharedSnapshots = {};
+  Timer? _pendingSaveTimer;
   ShoppingSyncStatus _syncStatus = ShoppingSyncStatus.offline;
   DateTime? _lastSyncedAt;
 
@@ -62,6 +63,7 @@ class ShoppingProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _pendingSaveTimer?.cancel();
     _automaticSharedSyncTimer?.cancel();
     for (final subscription in _sharedListSubscriptions.values) {
       unawaited(subscription.cancel());
@@ -593,6 +595,24 @@ class ShoppingProvider extends ChangeNotifier {
 
   void _touchList(String listName) {
     _listUpdatedAt[listName] = DateTime.now();
+  }
+
+  /// Agrupa cambios locales sucesivos en un único guardado, esperando 5s de inactividad
+  /// antes de sincronizar con Firestore (evita saturar lecturas/escrituras).
+  void _scheduleSave() {
+    _pendingSaveTimer?.cancel();
+    _pendingSaveTimer = Timer(const Duration(seconds: 5), () {
+      _pendingSaveTimer = null;
+      unawaited(saveToStorage());
+    });
+  }
+
+  /// Fuerza una sincronización inmediata, saltándose el debounce de 5s.
+  /// Pensado para el momento en que el usuario entra en una pantalla de listas.
+  Future<void> syncNow() async {
+    _pendingSaveTimer?.cancel();
+    _pendingSaveTimer = null;
+    await refreshFromCloud();
   }
 
   Future<void> _loadListsFromFirestore(String uid) async {
@@ -1175,7 +1195,7 @@ class ShoppingProvider extends ChangeNotifier {
       categories.add(cleaned);
       _touchList(_selectedListName);
       notifyListeners();
-      unawaited(saveToStorage());
+      _scheduleSave();
     }
   }
 
@@ -1203,7 +1223,7 @@ class ShoppingProvider extends ChangeNotifier {
 
       _touchList(_selectedListName);
       notifyListeners();
-      unawaited(saveToStorage());
+      _scheduleSave();
     }
   }
 
@@ -1216,7 +1236,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _selectedListName = listName;
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   void createList({String? name}) {
@@ -1242,7 +1262,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _selectedListName = uniqueName;
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   void renameList(String oldName, String newName) {
@@ -1315,7 +1335,7 @@ class ShoppingProvider extends ChangeNotifier {
     _listUpdatedAt.remove(oldName);
 
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   String _getUniqueListName(String baseName) {
@@ -1373,7 +1393,7 @@ class ShoppingProvider extends ChangeNotifier {
         ),
       );
       notifyListeners();
-      unawaited(saveToStorage());
+      _scheduleSave();
       return;
     }
 
@@ -1396,7 +1416,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   void addFrequentProductToList(
@@ -1443,7 +1463,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   void addActiveProductToSelectedList(
@@ -1480,7 +1500,7 @@ class ShoppingProvider extends ChangeNotifier {
     _shoppingLists[listName]!['active']!.removeWhere((p) => p.id == productId);
     _touchList(listName);
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   void _removeFrequentProductFromList(String listName, String productId) {
@@ -1493,7 +1513,7 @@ class ShoppingProvider extends ChangeNotifier {
     );
     _touchList(listName);
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   void removeActiveProductFromSelectedList(String productId) {
@@ -1520,7 +1540,7 @@ class ShoppingProvider extends ChangeNotifier {
     frequentList.add(product.copyWith(lastAdded: DateTime.now()));
     _touchList(listName);
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   void moveActiveProductToFrequentSelectedList(String productId) {
@@ -1550,7 +1570,7 @@ class ShoppingProvider extends ChangeNotifier {
     );
     _touchList(listName);
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   void moveFrequentProductToActiveSelectedList(String productId) {
@@ -1592,7 +1612,7 @@ class ShoppingProvider extends ChangeNotifier {
       );
       _touchList(listName);
       notifyListeners();
-      unawaited(saveToStorage());
+      _scheduleSave();
       return;
     }
   }
@@ -1624,7 +1644,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _touchList(listName);
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 
   void removeFrequentProductFromSelectedList(String productId) {
@@ -1665,6 +1685,6 @@ class ShoppingProvider extends ChangeNotifier {
     _listUpdatedAt.remove(cleanedName);
 
     notifyListeners();
-    unawaited(saveToStorage());
+    _scheduleSave();
   }
 }

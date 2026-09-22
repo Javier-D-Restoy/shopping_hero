@@ -30,6 +30,15 @@ class _ListMainPageState extends State<ListMainPage> {
   final Map<String, ProductAdd> _productLocations = {};
   bool _initialProductsRegistered = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Sincronización instantánea al entrar, sin esperar el debounce de 5s.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<ShoppingProvider>().syncNow();
+    });
+  }
+
   bool _shouldAnimateProduct(Product product, ProductAdd location) {
     final previousLocation = _productLocations[product.id];
     _productLocations[product.id] = location;
