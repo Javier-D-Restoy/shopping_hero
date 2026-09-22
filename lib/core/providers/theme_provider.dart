@@ -60,6 +60,19 @@ class ThemeProvider extends ChangeNotifier {
     ),
   ];
 
+  List<Shadow> get shadowsMid => [
+    Shadow(
+      color: Colors.black.withValues(alpha: 0.3),
+      blurRadius: 8,
+      offset: Offset(0, 0),
+    ),
+    Shadow(
+      color: Colors.black.withValues(alpha: 0.2),
+      blurRadius: 2,
+      offset: Offset(0, 0),
+    ),
+  ];
+
   List<Shadow> get shadowsSoft => [
     Shadow(
       color: Colors.black.withValues(alpha: 0.1),

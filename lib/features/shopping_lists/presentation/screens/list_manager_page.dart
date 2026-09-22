@@ -41,24 +41,44 @@ class _ListManagerState extends State<ListManager> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         toolbarHeight: 40,
-        leading: BackButton(
-          onPressed: () async {
-            final session = context.read<SessionProvider>();
-            final shopping = context.read<ShoppingProvider>();
-
-            // Reemplazamos la ruta al instante eliminando todo el historial previo.
-            // Al no haber 'await' previo, no se requiere la comprobación de context.mounted.
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const LoginPage()),
-              (route) => false, // Elimina todas las rutas anteriores
-            );
-
-            // Limpiamos los datos y ejecutamos el logout en segundo plano.
-            // Como ListManager ya fue desmontado del árbol de widgets,
-            // notifyListeners() no provocará ningún redibujado no deseado.
-            shopping.clearCurrentUser();
-            session.logout();
-          },
+        elevation: 2,
+        shadowColor: themeProvider.cardShadowColor,
+        leading: Padding(
+          padding: const EdgeInsets.all(2.0),
+          child: Material(
+            // color: Colors.yellow,
+            shape: const CircleBorder(),
+            elevation: 8.0,
+            shadowColor: themeProvider.cardShadowColor,
+            child: IconButton(
+              icon: Stack(
+                children: [
+                  Icon(Icons.logout,color: Colors.black,),
+                  Icon(Icons.logout,color: themeProvider.dangerColor,),
+                ],
+              ),
+              // color: Colors.red,
+              style: ButtonStyle(),
+              tooltip: 'Cerrar Sesión',
+              onPressed: () async {
+                final session = context.read<SessionProvider>();
+                final shopping = context.read<ShoppingProvider>();
+            
+                // Reemplazamos la ruta al instante eliminando todo el historial previo.
+                // Al no haber 'await' previo, no se requiere la comprobación de context.mounted.
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                  (route) => false, // Elimina todas las rutas anteriores
+                );
+            
+                // Limpiamos los datos y ejecutamos el logout en segundo plano.
+                // Como ListManager ya fue desmontado del árbol de widgets,
+                // notifyListeners() no provocará ningún redibujado no deseado.
+                shopping.clearCurrentUser();
+                session.logout();
+              },
+            ),
+          ),
         ),
         title: AutoSizeText(
           'Listas de $displayName',

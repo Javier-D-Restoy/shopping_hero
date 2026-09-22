@@ -116,6 +116,8 @@ class _ListMainPageState extends State<ListMainPage> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         toolbarHeight: 40,
+        elevation: 2,
+        shadowColor: themeProvider.cardShadowColor,
         leading: BackButton(
           onPressed: () {
             if (context.mounted) {
@@ -463,27 +465,51 @@ class _ListMainPageState extends State<ListMainPage> {
                   height: 35,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    // border: Border(),
+                    border: Border.symmetric(
+                      horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
+                      vertical: BorderSide(color: themeProvider.borderColor, width: 5)
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: themeProvider.isDarkMode
-                            ? Colors.blueGrey
-                            : Colors.black,
+                        color: themeProvider.borderColor,
                         spreadRadius: 1.5,
                       ),
                     ],
                     color: themeProvider.isDarkMode
                         ? Colors.black
                         : Colors.white,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: themeProvider.gradientColors2,
+                    ),
                   ),
                   child: Center(
-                    child: Text(
-                      'Productos Frecuentes',
-                      style: TextStyle(
-                        fontSize: 20,
-                        letterSpacing: 1.0,
-                        wordSpacing: 5.0,
-                      ),
+                    child: Stack(
+                      children: [
+                        Text(
+                          'Productos Frecuentes',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 20,
+                            letterSpacing: 1.0,
+                            wordSpacing: 5.0,
+                            fontWeight: FontWeight(700),
+                            // shadows: themeProvider.shadowsMid
+                          ),
+                        ),
+                        Text(
+                          'Productos Frecuentes',
+                          style: TextStyle(
+                            color: themeProvider.textStrongColor,
+                            fontSize: 20,
+                            letterSpacing: 1.0,
+                            wordSpacing: 5.0,
+                            fontWeight: FontWeight(700),
+                            // shadows: themeProvider.shadowsMid
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -589,15 +615,15 @@ class _ListMainPageState extends State<ListMainPage> {
     String selectedCategory = product.category;
     String? selectedIcon = product.icon;
 
-    // Mapa de iconos disponibles
-    final Map<String, IconData> availableIcons = {
-      'shopping_bag': Icons.shopping_bag,
-      'fastfood': Icons.fastfood,
-      'local_grocery_store': Icons.local_grocery_store,
-      'local_drink': Icons.local_drink,
-      'kitchen': Icons.kitchen,
-      'cleaning_services': Icons.cleaning_services,
-    };
+    // // Mapa de iconos disponibles
+    // final Map<String, IconData> availableIcons = {
+    //   'shopping_bag': Icons.shopping_bag,
+    //   'fastfood': Icons.fastfood,
+    //   'local_grocery_store': Icons.local_grocery_store,
+    //   'local_drink': Icons.local_drink,
+    //   'kitchen': Icons.kitchen,
+    //   'cleaning_services': Icons.cleaning_services,
+    // };
 
     try {
       await showModalBottomSheet<void>(

@@ -161,7 +161,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                           stepGranularity: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                             foreground: Paint()
                               ..style = PaintingStyle.stroke
@@ -189,7 +189,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                           stepGranularity: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: 15,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
