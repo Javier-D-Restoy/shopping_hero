@@ -19,6 +19,8 @@ class _ListManagerState extends State<ListManager> {
   @override
   void initState() {
     super.initState();
+    // Recordamos que esta fue la última pantalla visitada, para restaurarla al reabrir la app.
+    context.read<SessionProvider>().setLastRoute(route: 'listManager');
     // Sincronización instantánea al entrar, sin esperar el debounce de 5s.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<ShoppingProvider>().syncNow();

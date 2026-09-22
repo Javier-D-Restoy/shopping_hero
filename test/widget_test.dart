@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shopping_hero/core/providers/session_provider.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
+import 'package:shopping_hero/features/auth/presentation/screens/login_page.dart';
 
 import 'package:shopping_hero/main.dart';
 
@@ -24,6 +25,7 @@ void main() {
         sessionProvider: sessionProvider,
         shoppingProvider: shoppingProvider,
         themeProvider: themeProvider,
+        initialScreen: const LoginPage(),
       ),
     );
 

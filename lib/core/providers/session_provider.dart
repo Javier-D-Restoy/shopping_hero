@@ -19,6 +19,9 @@ class SessionProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isOffline = true;
   bool _isLoggedIn = false;
+  bool _hasActiveSession = false;
+  String _lastRoute = 'login';
+  String? _lastListName;
   String? _errorMessage;
 
   // Getters
@@ -28,6 +31,9 @@ class SessionProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isOffline => _isOffline;
   bool get isLoggedIn => _isLoggedIn;
+  bool get hasActiveSession => _hasActiveSession;
+  String get lastRoute => _lastRoute;
+  String? get lastListName => _lastListName;
   String? get errorMessage => _errorMessage;
 
   SessionProvider({AuthService? authService, UserRepository? userRepository}) {
@@ -62,6 +68,9 @@ class SessionProvider extends ChangeNotifier {
 
     _isOffline = _box!.get('isOffline', defaultValue: true) as bool;
     _isLoggedIn = _box!.get('isLoggedIn', defaultValue: false) as bool;
+    _hasActiveSession = _box!.get('hasActiveSession', defaultValue: false) as bool;
+    _lastRoute = _box!.get('lastRoute', defaultValue: 'login') as String;
+    _lastListName = _box!.get('lastListName') as String?;
 
     notifyListeners();
   }
@@ -80,7 +89,18 @@ class SessionProvider extends ChangeNotifier {
       await _box!.put('displayName', _displayName);
       await _box!.put('isOffline', _isOffline);
       await _box!.put('isLoggedIn', _isLoggedIn);
+      await _box!.put('hasActiveSession', _hasActiveSession);
+      await _box!.put('lastRoute', _lastRoute);
+      await _box!.put('lastListName', _lastListName);
     }
+  }
+
+  /// Recuerda la última pantalla visitada (ListManager o ListMainPage) para
+  /// restaurarla al reabrir la app, tanto en sesión online como offline.
+  Future<void> setLastRoute({required String route, String? listName}) async {
+    _lastRoute = route;
+    _lastListName = listName;
+    await _saveSessionToStorage();
   }
 
   // ---------------------------------------------- ][ GESTIÓN DE AUTENTICACIÓN ][ ---------------------------------------------- //
@@ -108,6 +128,7 @@ class SessionProvider extends ChangeNotifier {
         _displayName = user.displayName ?? 'Shopping Hero';
         _isOffline = false;
         _isLoggedIn = true;
+        _hasActiveSession = true;
         _isLoading = false;
         _errorMessage = null;
 
@@ -149,6 +170,7 @@ class SessionProvider extends ChangeNotifier {
         _displayName = user.displayName ?? 'Shopping Hero';
         _isOffline = false;
         _isLoggedIn = true;
+        _hasActiveSession = true;
         _isLoading = false;
         _errorMessage = null;
 
@@ -195,6 +217,7 @@ class SessionProvider extends ChangeNotifier {
 
       _isOffline = true;
       _isLoggedIn = false;
+      _hasActiveSession = true;
       _isLoading = false;
       _errorMessage = null;
 
@@ -224,6 +247,9 @@ class SessionProvider extends ChangeNotifier {
       _displayName = 'Shopping Hero';
       _isOffline = true;
       _isLoggedIn = false;
+      _hasActiveSession = false;
+      _lastRoute = 'login';
+      _lastListName = null;
       _errorMessage = null;
       _isLoading = false;
 
@@ -249,6 +275,9 @@ class SessionProvider extends ChangeNotifier {
     _displayName = 'Shopping Hero';
     _isOffline = true;
     _isLoggedIn = false;
+    _hasActiveSession = false;
+    _lastRoute = 'login';
+    _lastListName = null;
     _errorMessage = null;
 
     if (_box != null) {
@@ -311,6 +340,9 @@ class SessionProvider extends ChangeNotifier {
       _displayName = 'Shopping Hero';
       _isOffline = true;
       _isLoggedIn = false;
+      _hasActiveSession = false;
+      _lastRoute = 'login';
+      _lastListName = null;
       _errorMessage = null;
       _isLoading = false;
 

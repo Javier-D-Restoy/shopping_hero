@@ -10,6 +10,8 @@ import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
 import 'package:shopping_hero/core/theme/app_theme.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/login_page.dart';
+import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_manager_page.dart';
+import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_main_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,11 +50,26 @@ Future<void> main() async {
     await shoppingProvider.switchUserEnvironment(isOffline: false);
   }
 
+  // Restauramos la última pantalla visitada (ListManager o ListMainPage) si había
+  // una sesión activa, tanto online como offline.
+  Widget initialScreen = const LoginPage();
+  if (sessionProvider.hasActiveSession) {
+    initialScreen = const ListManager();
+    if (sessionProvider.lastRoute == 'listMain') {
+      final lastListName = sessionProvider.lastListName;
+      if (lastListName != null &&
+          shoppingProvider.shoppingLists.containsKey(lastListName)) {
+        initialScreen = ListMainPage(listName: lastListName);
+      }
+    }
+  }
+
   runApp(
     MyApp(
       sessionProvider: sessionProvider,
       shoppingProvider: shoppingProvider,
       themeProvider: themeProvider,
+      initialScreen: initialScreen,
     ),
   );
 }
@@ -63,11 +80,13 @@ class MyApp extends StatelessWidget {
     required this.sessionProvider,
     required this.shoppingProvider,
     required this.themeProvider,
+    required this.initialScreen,
   });
 
   final SessionProvider sessionProvider;
   final ShoppingProvider shoppingProvider;
   final ThemeProvider themeProvider;
+  final Widget initialScreen;
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +105,7 @@ class MyApp extends StatelessWidget {
               selectedColor: 0,
               isDarkMode: themeProvider.isDarkMode,
             ).theme(),
-            home: const LoginPage(),
+            home: initialScreen,
           );
         },
       ),

@@ -33,6 +33,11 @@ class _ListMainPageState extends State<ListMainPage> {
   @override
   void initState() {
     super.initState();
+    // Recordamos esta lista como última pantalla visitada, para restaurarla al reabrir la app.
+    context.read<SessionProvider>().setLastRoute(
+      route: 'listMain',
+      listName: widget.listName,
+    );
     // Sincronización instantánea al entrar, sin esperar el debounce de 5s.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<ShoppingProvider>().syncNow();
