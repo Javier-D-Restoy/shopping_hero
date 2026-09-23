@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
+import 'package:shopping_hero/features/auth/presentation/widgets/fontsize_segmented_button.dart';
 
 class ConfigPage extends StatefulWidget {
   const ConfigPage({super.key});
@@ -10,16 +11,14 @@ class ConfigPage extends StatefulWidget {
 }
 
 class _ConfigPageState extends State<ConfigPage> {
-
   @override
   Widget build(BuildContext context) {
-
     final themeProvider = context.watch<ThemeProvider>();
 
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 40,
-        title: Text('Configuración'),
+        title: const Text('Configuración'),
         centerTitle: true,
         leading: BackButton(
           onPressed: () {
@@ -31,41 +30,61 @@ class _ConfigPageState extends State<ConfigPage> {
       ),
       body: Stack(
         children: [
-          Positioned.fill(child: Image.asset('assets/images/background/Background_Config_Image_1.jpg', fit: BoxFit.cover,)),
-          SafeArea(
-            child: ListView(
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(height: 280,),
-                    Row(
-                      children: [
-                        SizedBox(width: 120,),
-                        Container(
-                          width: 130,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: themeProvider.isDarkMode? Colors.black : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border(),
-                            boxShadow: [BoxShadow(color: Colors.grey, spreadRadius: 1.5)]
-                          ),
-                          child: Center(child: Text( themeProvider.isDarkMode? 'Tema Oscuro' : 'Tema Claro',style: TextStyle(fontSize: 15),)),
-                        ),
-                        Switch(
-                          value: themeProvider.isDarkMode,
-                          onChanged: (value) {
-                            themeProvider.setDarkMode(value);
-                          },
-                        ),
-                      ],
-                    )
-                  ],
-                )
-              ],
+          // 1. Imagen de Fondo
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background/Background_Config_Image_1.jpg',
+              fit: BoxFit.cover,
             ),
           ),
+
+          // 2. Elemento posicionado en coordenadas específicas (ej. Top: 150, Right: 20)
+          Positioned(
+            top: 250, 
+            right: 0, 
+            left: 0,
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 130,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.grey, spreadRadius: 1.5),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        themeProvider.isDarkMode ? 'Tema Oscuro' : 'Tema Claro',
+                        style: const TextStyle(fontSize: 15),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Switch(
+                    value: themeProvider.isDarkMode,
+                    onChanged: (value) {
+                      themeProvider.setDarkMode(value);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: 340,
+            right: 0,
+            left: 0,
+            child: Center(
+              child: FontSizeSegmentedButton(value: themeProvider.fontSize, onChanged: (newSize) {
+                themeProvider.setFontSize(newSize);
+              }),
+            ),
+          )
         ],
       ),
     );

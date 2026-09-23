@@ -1206,12 +1206,43 @@ class ShoppingProvider extends ChangeNotifier {
 
   List<Product> activeProductsForList(String listName) {
     final products = getListAdd(listName)?['active'] ?? <Product>[];
-    return _sortProducts(products, sortOptionForList(listName));
+    final categories = _listCategories[listName] ?? const ['Genérico'];
+    return _sortProducts(products, sortOptionForList(listName), categories);
   }
+
+  // static List<Product> _sortProducts(
+  //   List<Product> products,
+  //   ProductSortOption option,
+  // ) {
+  //   final sorted = List<Product>.from(products);
+
+  //   switch (option) {
+  //     case ProductSortOption.dateDesc:
+  //       sorted.sort((a, b) => b.lastAdded.compareTo(a.lastAdded));
+  //       break;
+  //     case ProductSortOption.alphabetical:
+  //       sorted.sort(
+  //         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+  //       );
+  //       break;
+  //     case ProductSortOption.category:
+  //       sorted.sort((a, b) {
+  //         final categoryCompare = a.category.toLowerCase().compareTo(
+  //           b.category.toLowerCase(),
+  //         );
+  //         if (categoryCompare != 0) return categoryCompare;
+  //         return b.lastAdded.compareTo(a.lastAdded);
+  //       });
+  //       break;
+  //   }
+
+  //   return sorted;
+  // }
 
   static List<Product> _sortProducts(
     List<Product> products,
     ProductSortOption option,
+    List<String> listCategories,
   ) {
     final sorted = List<Product>.from(products);
 
@@ -1226,11 +1257,55 @@ class ShoppingProvider extends ChangeNotifier {
         break;
       case ProductSortOption.category:
         sorted.sort((a, b) {
-          final categoryCompare = a.category.toLowerCase().compareTo(
-            b.category.toLowerCase(),
-          );
+          final catA = a.category.trim();
+          final catB = b.category.trim();
+
+          // Regla 1: 'Genérico' siempre va al final
+          if (catA == 'Genérico' && catB != 'Genérico') return 1;
+          if (catA != 'Genérico' && catB == 'Genérico') return -1;
+          if (catA == 'Genérico' && catB == 'Genérico') {
+            return b.lastAdded.compareTo(a.lastAdded);
+          }
+
+          // Regla 2: Orden por posición definida en listCategories
+          int indexA = listCategories.indexOf(catA);
+          int indexB = listCategories.indexOf(catB);
+
+          if (indexA == -1) indexA = 999;
+          if (indexB == -1) indexB = 999;
+
+          final categoryCompare = indexA.compareTo(indexB);
           if (categoryCompare != 0) return categoryCompare;
+
+          // Regla 3: Dentro de la categoría -> Más reciente primero
           return b.lastAdded.compareTo(a.lastAdded);
+        });
+        break;
+
+      case ProductSortOption.categoryAlphabetical:
+        sorted.sort((a, b) {
+          final catA = a.category.trim();
+          final catB = b.category.trim();
+
+          // Regla 1: 'Genérico' siempre va al final
+          if (catA == 'Genérico' && catB != 'Genérico') return 1;
+          if (catA != 'Genérico' && catB == 'Genérico') return -1;
+          if (catA == 'Genérico' && catB == 'Genérico') {
+            return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          }
+
+          // Regla 2: Orden por posición definida en listCategories
+          int indexA = listCategories.indexOf(catA);
+          int indexB = listCategories.indexOf(catB);
+
+          if (indexA == -1) indexA = 999;
+          if (indexB == -1) indexB = 999;
+
+          final categoryCompare = indexA.compareTo(indexB);
+          if (categoryCompare != 0) return categoryCompare;
+
+          // Regla 3: Dentro de la categoría -> Alfabético (A-Z)
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
         });
         break;
     }
@@ -1289,6 +1364,38 @@ class ShoppingProvider extends ChangeNotifier {
       notifyListeners();
       _scheduleSave();
     }
+  }
+
+  /// Reordena las categorías de la lista seleccionada manteniendo 'Genérico' siempre al final.
+  void reorderCategoriesForSelectedList(int oldIndex, int newIndex) {
+    if (_selectedListName.isEmpty) return;
+
+    final categories = _listCategories[_selectedListName];
+    if (categories == null || categories.length <= 1) return;
+
+    // 'Genérico' siempre debe permanecer al final
+    if (categories.contains('Genérico')) {
+      categories.remove('Genérico');
+    }
+
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+
+    // Ajustar límites para asegurar que no interfiera con la posición reservada de Genérico
+    final maxIndex = categories.length;
+    final finalOldIndex = oldIndex.clamp(0, maxIndex - 1);
+    final finalNewIndex = newIndex.clamp(0, maxIndex);
+
+    final item = categories.removeAt(finalOldIndex);
+    categories.insert(finalNewIndex, item);
+
+    // Asegurar que 'Genérico' vuelva al final
+    categories.add('Genérico');
+
+    _touchList(_selectedListName);
+    notifyListeners();
+    _scheduleSave();
   }
 
   // -------------------------------------------- ][ Selección/gestión de Listas ][ -------------------------------------------- //

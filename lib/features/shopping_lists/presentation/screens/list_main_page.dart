@@ -341,6 +341,13 @@ class _ListMainPageState extends State<ListMainPage> {
     return PopupMenuButton<ProductSortOption>(
       initialValue: currentOption,
       tooltip: 'Ordenar productos',
+      color: themeProvider.surfaceSoft,
+      elevation: 6,
+      shadowColor: themeProvider.cardShadowColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+      ),
       onSelected: (option) {
         shoppingProvider.setSortOptionForList(widget.listName, option);
       },
@@ -355,18 +362,20 @@ class _ListMainPageState extends State<ListMainPage> {
                   else
                     const SizedBox(width: 18),
                   const SizedBox(width: 8),
-                  Text(option.label),
+                  Text(option.label,style: TextStyle(color: themeProvider.textStrongColor, fontSize: 15, fontWeight: FontWeight(600)),),
                 ],
               ),
             ),
           )
           .toList(),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           color: themeProvider.surface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: themeProvider.borderColor, width: 1.5),
+            border: Border.symmetric(
+              horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
+              vertical: BorderSide(color: themeProvider.borderColor, width: 5),)
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -378,6 +387,7 @@ class _ListMainPageState extends State<ListMainPage> {
               style: TextStyle(
                 fontSize: 13,
                 color: themeProvider.textStrongColor,
+                fontWeight: FontWeight(600)
               ),
             ),
             const SizedBox(width: 4),
@@ -615,16 +625,6 @@ class _ListMainPageState extends State<ListMainPage> {
     String selectedCategory = product.category;
     String? selectedIcon = product.icon;
 
-    // // Mapa de iconos disponibles
-    // final Map<String, IconData> availableIcons = {
-    //   'shopping_bag': Icons.shopping_bag,
-    //   'fastfood': Icons.fastfood,
-    //   'local_grocery_store': Icons.local_grocery_store,
-    //   'local_drink': Icons.local_drink,
-    //   'kitchen': Icons.kitchen,
-    //   'cleaning_services': Icons.cleaning_services,
-    // };
-
     try {
       await showModalBottomSheet<void>(
         context: context,
@@ -641,30 +641,71 @@ class _ListMainPageState extends State<ListMainPage> {
                 selectedCategory = 'Genérico';
               }
 
-              return Padding(
+              return Container(
+                // margin: EdgeInsets.only(
+                //   left: 8,
+                //   right: 8,
+                //   bottom: MediaQuery.of(context).viewInsets.bottom + 8,
+                //   top: 10,
+                // ),
                 padding: EdgeInsets.only(
                   left: 20,
                   right: 20,
                   top: 20,
                   bottom: MediaQuery.of(context).viewInsets.bottom + 20,
                 ),
+                decoration: BoxDecoration(
+                  color: themeProvider.surface,
+                  // borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+                  // border: Border.symmetric(
+                  //   horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
+                  //   vertical: BorderSide(color: themeProvider.borderColor, width: 10),
+                  // ),
+                  border: Border(
+                    top: BorderSide(color: themeProvider.borderColor, width: 1),
+                    left: BorderSide(color: themeProvider.borderColor, width: 10),
+                    right: BorderSide(color: themeProvider.borderColor, width: 10),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: themeProvider.cardShadowColor,
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        'Editar producto',
-                        style: Theme.of(context).textTheme.titleLarge,
+                      Center(
+                        child: Text(
+                          'Editar producto',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: themeProvider.textStrongColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                        ),
                       ),
                       const SizedBox(height: 16),
                       TextField(
                         controller: nameController,
                         maxLength: 30,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Nombre',
                           counterText: '',
                           border: OutlineInputBorder(),
+                          labelStyle: TextStyle(color: themeProvider.textMutedColor),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -692,9 +733,27 @@ class _ListMainPageState extends State<ListMainPage> {
                                             shoppingProvider
                                                 .availableCategories;
 
+                                        // Evaluamos si hay al menos 2 categorías personalizadas (excluyendo 'Genérico')
+                                        final customCategoriesCount = shoppingProvider.availableCategories
+                                            .where((cat) => cat != 'Genérico')
+                                            .length;
+                                        final canReorder = customCategoriesCount > 1;
+
                                         return AlertDialog(
-                                          title: const Text(
-                                            'Seleccionar Categoría',
+                                          backgroundColor: themeProvider.surface,
+                                          elevation: 10,
+                                          shadowColor: themeProvider.cardShadowColor,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(16),
+                                            side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                          ),
+                                          // insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                                          // contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+                                          title: Center(
+                                            child: const Text(
+                                              'Seleccionar Categoría',
+                                              style: TextStyle(fontWeight: FontWeight(500)),
+                                            ),
                                           ),
                                           content: SizedBox(
                                             width: double.maxFinite,
@@ -723,7 +782,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                                         return RadioListTile<
                                                           String
                                                         >(
-                                                          title: Text(cat),
+                                                          title: Text(cat, style: TextStyle(color: themeProvider.textStrongColor, fontWeight: FontWeight(500)),),
                                                           value:
                                                               cat, // Solo necesita su propio valor
                                                           secondary:
@@ -769,9 +828,10 @@ class _ListMainPageState extends State<ListMainPage> {
                                                       color: Colors.blue,
                                                     ),
                                                     title: const Text(
-                                                      'Añadir nueva categoría',
+                                                      'Crear categoría',
                                                       style: TextStyle(
                                                         color: Colors.blue,
+                                                        fontWeight: FontWeight(500)
                                                       ),
                                                     ),
                                                     onTap: () async {
@@ -829,6 +889,31 @@ class _ListMainPageState extends State<ListMainPage> {
                                                       }
                                                     },
                                                   ),
+                                                  const Divider(),
+                                                  ListTile(
+                                                    enabled: canReorder,
+                                                    leading: Icon(
+                                                      Icons.swap_vert,
+                                                      color: canReorder ? Colors.orange : Colors.grey,
+                                                    ),
+                                                    title: Text(
+                                                      'Reordenar categorías',
+                                                      style: TextStyle(
+                                                        color: canReorder ? Colors.orange : Colors.grey,
+                                                        fontWeight: FontWeight(500)
+                                                      ),
+                                                    ),
+                                                    onTap: canReorder
+                                                        ? () async {
+                                                            await _showReorderCategoriesDialog(
+                                                              dialogContext,
+                                                              shoppingProvider,
+                                                            );
+                                                            setDialogState(() {}); // Actualiza el diálogo de categorías
+                                                            setModalState(() {});  // Actualiza el modal del producto
+                                                          }
+                                                        : null,
+                                                  ),
                                                 ],
                                               ),
                                             ),
@@ -847,9 +932,14 @@ class _ListMainPageState extends State<ListMainPage> {
                                 }
                               },
                               child: InputDecorator(
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Categoría',
                                   border: OutlineInputBorder(),
+                                  labelStyle: TextStyle(color: themeProvider.textMutedColor),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisAlignment:
@@ -944,9 +1034,14 @@ class _ListMainPageState extends State<ListMainPage> {
                                 }
                               },
                               child: InputDecorator(
-                                decoration: const InputDecoration(
+                                decoration: InputDecoration(
                                   labelText: 'Icono',
                                   border: OutlineInputBorder(),
+                                  labelStyle: TextStyle(color: themeProvider.textMutedColor),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                  ),
                                 ),
                                 child: Row(
                                   mainAxisAlignment:
@@ -994,7 +1089,7 @@ class _ListMainPageState extends State<ListMainPage> {
                             child: TextField(
                               controller: frequencyController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Frecuencia',
                                 floatingLabelBehavior:
                                     FloatingLabelBehavior.always,
@@ -1003,8 +1098,16 @@ class _ListMainPageState extends State<ListMainPage> {
                                   horizontal: 2,
                                   vertical: 12,
                                 ),
-                                labelStyle: TextStyle(fontSize: 14),
                                 border: OutlineInputBorder(),
+                                labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                                enabledBorder: OutlineInputBorder(
+                                  // borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  // borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                                ),
                               ),
                             ),
                           ),
@@ -1013,7 +1116,7 @@ class _ListMainPageState extends State<ListMainPage> {
                             child: TextField(
                               controller: amountController,
                               keyboardType: TextInputType.number,
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Cantidad',
                                 floatingLabelBehavior:
                                     FloatingLabelBehavior.always,
@@ -1022,8 +1125,16 @@ class _ListMainPageState extends State<ListMainPage> {
                                   horizontal: 2,
                                   vertical: 12,
                                 ),
-                                labelStyle: TextStyle(fontSize: 14),
                                 border: OutlineInputBorder(),
+                                labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                                enabledBorder: OutlineInputBorder(
+                                  // borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  // borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                                ),
                               ),
                             ),
                           ),
@@ -1037,7 +1148,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
                                   ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Precio',
                                 alignLabelWithHint: false,
                                 counterText: '',
@@ -1048,8 +1159,16 @@ class _ListMainPageState extends State<ListMainPage> {
                                   horizontal: 2,
                                   vertical: 12,
                                 ),
-                                labelStyle: TextStyle(fontSize: 14),
                                 border: OutlineInputBorder(),
+                                labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                                enabledBorder: OutlineInputBorder(
+                                  // borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  // borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                                ),
                               ),
                             ),
                           ),
@@ -1063,7 +1182,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
                                   ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 labelText: 'Precio/Kg',
                                 alignLabelWithHint: false,
                                 counterText: '',
@@ -1074,8 +1193,16 @@ class _ListMainPageState extends State<ListMainPage> {
                                   horizontal: 2,
                                   vertical: 12,
                                 ),
-                                labelStyle: TextStyle(fontSize: 14),
                                 border: OutlineInputBorder(),
+                                labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                                enabledBorder: OutlineInputBorder(
+                                  // borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  // borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                                ),
                               ),
                             ),
                           ),
@@ -1085,9 +1212,18 @@ class _ListMainPageState extends State<ListMainPage> {
                       TextField(
                         controller: imageUrlController,
                         keyboardType: TextInputType.url,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'URL de imagen',
                           border: OutlineInputBorder(),
+                          labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                          enabledBorder: OutlineInputBorder(
+                            // borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            // borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -1165,6 +1301,65 @@ class _ListMainPageState extends State<ListMainPage> {
       amountController.dispose();
       imageUrlController.dispose();
     }
+  }
+
+  Future<void> _showReorderCategoriesDialog(
+    BuildContext context,
+    ShoppingProvider shoppingProvider,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            // Excluimos 'Genérico' del listado reordenable ya que siempre se mantiene al final
+            final categories = shoppingProvider.availableCategories
+                .where((cat) => cat != 'Genérico')
+                .toList();
+
+            return AlertDialog(
+              title: const Text('Reordenar Categorías'),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 300,
+                child: categories.isEmpty
+                    ? const Center(
+                        child: Text('No hay categorías personalizadas.'),
+                      )
+                    : ReorderableListView.builder(
+                        itemCount: categories.length,
+                        onReorder: (oldIndex, newIndex) {
+                          shoppingProvider.reorderCategoriesForSelectedList(
+                            oldIndex,
+                            newIndex,
+                          );
+                          setDialogState(() {});
+                        },
+                        itemBuilder: (context, index) {
+                          final cat = categories[index];
+                          return ListTile(
+                            key: ValueKey(cat),
+                            leading: Text(
+                              '${index + 1}.',
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            title: Text(cat),
+                            trailing: const Icon(Icons.drag_handle),
+                          );
+                        },
+                      ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cerrar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _onNavigationTap(int index) {

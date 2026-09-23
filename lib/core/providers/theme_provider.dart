@@ -4,13 +4,28 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+/// Define los tamaños de fuente disponibles y su factor de escala.
+enum FontSizeOption {
+  small(scale: 0.85, label: 'Pequeño'),
+  medium(scale: 1.0, label: 'Mediano'),
+  large(scale: 1.15, label: 'Grande');
+
+  final double scale;
+  final String label;
+
+  const FontSizeOption({required this.scale, required this.label});
+}
+
 class ThemeProvider extends ChangeNotifier {
   static const String _boxName = 'settings';
 
   Box? _box;
   bool _isDarkMode = false;
+  FontSizeOption _fontSize = FontSizeOption.medium;
 
   bool get isDarkMode => _isDarkMode;
+  FontSizeOption get fontSize => _fontSize;
+  double get fontScale => _fontSize.scale;
 
   // Getters de colores centralizados
   Color get primaryColor =>
@@ -143,9 +158,17 @@ class ThemeProvider extends ChangeNotifier {
       return;
     }
 
-    final storedValue = _box!.get('isDarkMode');
-    if (storedValue is bool) {
-      _isDarkMode = storedValue;
+    final storedDarkMode = _box!.get('isDarkMode');
+    if (storedDarkMode is bool) {
+      _isDarkMode = storedDarkMode;
+    }
+
+    final storedFontSize = _box!.get('fontSize');
+    if (storedFontSize is String) {
+      _fontSize = FontSizeOption.values.firstWhere(
+        (e) => e.name == storedFontSize,
+        orElse: () => FontSizeOption.medium,
+      );
     }
   }
 
@@ -163,6 +186,7 @@ class ThemeProvider extends ChangeNotifier {
     await _ensureInitialized();
     if (_box != null) {
       await _box!.put('isDarkMode', _isDarkMode);
+      await _box!.put('fontSize', _fontSize.name);
     }
   }
 
@@ -170,6 +194,14 @@ class ThemeProvider extends ChangeNotifier {
     if (_isDarkMode == value) return;
 
     _isDarkMode = value;
+    notifyListeners();
+    unawaited(saveToStorage());
+  }
+
+  void setFontSize(FontSizeOption value) {
+    if (_fontSize == value) return;
+
+    _fontSize = value;
     notifyListeners();
     unawaited(saveToStorage());
   }
