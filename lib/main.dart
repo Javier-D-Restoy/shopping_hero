@@ -96,19 +96,61 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider<ShoppingProvider>.value(value: shoppingProvider),
         ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, _) {
-          return MaterialApp(
-            title: 'Shopping Hero',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme(
-              selectedColor: 0,
-              isDarkMode: themeProvider.isDarkMode,
-            ).theme(),
-            home: initialScreen,
-          );
-        },
+      child: AppLifecycleWrapper(
+        child: Consumer<ThemeProvider>(
+          builder: (context, themeProvider, _) {
+            return MaterialApp(
+              title: 'Shopping Hero',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme(
+                selectedColor: 0,
+                isDarkMode: themeProvider.isDarkMode,
+              ).theme(),
+              home: initialScreen,
+            );
+          },
+        ),
       ),
     );
+  }
+}
+
+// ------------------------------------------------------------------
+// WIDGET OBSERVADOR DEL CICLO DE VIDA (Captura minimizado o cierre)
+// ------------------------------------------------------------------
+class AppLifecycleWrapper extends StatefulWidget {
+  final Widget child;
+  const AppLifecycleWrapper({super.key, required this.child});
+
+  @override
+  State<AppLifecycleWrapper> createState() => _AppLifecycleWrapperState();
+}
+
+class _AppLifecycleWrapperState extends State<AppLifecycleWrapper>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Si la aplicación se va a segundo plano (paused) o se cierra (detached)
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      // Forzamos la persistencia en Hive
+      context.read<ShoppingProvider>().saveToStorage(mergeCloud: false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }

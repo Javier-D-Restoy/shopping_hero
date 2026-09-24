@@ -39,14 +39,16 @@ class ShoppingProvider extends ChangeNotifier {
 
   final Map<String, Map<String, List<Product>>> _shoppingLists = {};
 
-  /// Categorías por cada lista. Mantiene 'Genérico' y las creadas por el usuario.
+  /// Categorías específicas por cada lista. Mantiene 'Genérico' siempre presente.
   final Map<String, List<String>> _listCategories = {};
 
-  /// Criterio de orden elegido para cada lista. Preferencia local del dispositivo,
-  /// no se sincroniza con Firestore para no entrar en conflicto entre usuarios.
+  /// Criterio de orden elegido para cada lista (preferencia puramente local).
   final Map<String, ProductSortOption> _sortOptionForList = {};
 
   String _selectedListName = '';
+
+  List<String> _customCategories = ['Genérico'];
+  List<String> get customCategories => List.unmodifiable(_customCategories);
 
   bool get isOfflineMode => _isOfflineMode;
   ShoppingSyncStatus get syncStatus => _syncStatus;
@@ -56,12 +58,9 @@ class ShoppingProvider extends ChangeNotifier {
   bool canManageList(String listName) =>
       !isSharedList(listName) || _sharedListOwners[listName] == _currentUid;
 
-  /// Devuelve el criterio de orden elegido para una lista (por defecto, fecha descendente).
   ProductSortOption sortOptionForList(String listName) =>
       _sortOptionForList[listName] ?? ProductSortOption.dateDesc;
 
-  /// Cambia el criterio de orden de una lista. Es una preferencia solo local:
-  /// no dispara sincronización con Firestore ni afecta a otros usuarios.
   void setSortOptionForList(String listName, ProductSortOption option) {
     _sortOptionForList[listName] = option;
     notifyListeners();
@@ -76,14 +75,31 @@ class ShoppingProvider extends ChangeNotifier {
     );
   }
 
-  /// Devuelve las categorías de la lista activa seleccionada.
-  List<String> get availableCategories {
-    if (_selectedListName.isEmpty) return const ['Genérico'];
-    final list = _listCategories[_selectedListName] ?? ['Genérico'];
-    if (!list.contains('Genérico')) {
-      list.insert(0, 'Genérico');
+  /// Devuelve las categorías de una lista específica asegurando 'Genérico' al final.
+  List<String> categoriesForList(String listName) {
+    final categories = List<String>.from(_listCategories[listName] ?? []);
+
+    // Asegurar que siempre contenga al menos 'Genérico'
+    if (!categories.contains('Genérico')) {
+      categories.add('Genérico');
     }
-    return List<String>.unmodifiable(list);
+
+    // Extraer las categorías asociadas a productos existentes en la lista
+    final products = activeProductsForList(listName) + frequentProductsForList(listName);
+    for (final product in products) {
+      final cat = product.category.trim();
+      if (cat.isNotEmpty && !categories.contains(cat)) {
+        final genericIdx = categories.indexOf('Genérico');
+        if (genericIdx != -1) {
+          categories.insert(genericIdx, cat);
+        } else {
+          categories.add(cat);
+        }
+      }
+    }
+
+    _listCategories[listName] = categories;
+    return categories;
   }
 
   @override
@@ -99,17 +115,13 @@ class ShoppingProvider extends ChangeNotifier {
 
   Future<void> leaveSharedList(String listName) async {
     if (_currentUid == null) {
-      throw Exception(
-        'Necesitas iniciar sesión para desvincularte de la lista',
-      );
+      throw Exception('Necesitas iniciar sesión para desvincularte de la lista');
     }
 
     final cleanedName = listName.trim();
     final sharedListId = _sharedListIds[cleanedName];
 
-    if (sharedListId == null) {
-      return;
-    }
+    if (sharedListId == null) return;
 
     if (_sharedListOwners[cleanedName] == _currentUid) {
       throw Exception('El propietario no puede desvincularse de la lista');
@@ -396,6 +408,8 @@ class ShoppingProvider extends ChangeNotifier {
       _box = null;
     }
 
+    await loadCategories();
+
     if (_box == null) return;
 
     final storedData = _box!.get('shopping_lists');
@@ -426,6 +440,7 @@ class ShoppingProvider extends ChangeNotifier {
       }
     }
 
+    // 1. Cargamos de Hive las categorías por lista persistidas
     if (storedListCategories is Map) {
       for (final entry in storedListCategories.entries) {
         if (entry.key is String && entry.value is List) {
@@ -543,11 +558,27 @@ class ShoppingProvider extends ChangeNotifier {
       );
     }
 
-    // Inicializar categorías faltantes para cada lista
-    for (final listName in _shoppingLists.keys) {
-      _listCategories[listName] ??= ['Genérico'];
-      if (!_listCategories[listName]!.contains('Genérico')) {
-        _listCategories[listName]!.insert(0, 'Genérico');
+    // 2. Extraemos categorías dinámicas de los productos restituidos y garantizamos 'Genérico'
+    for (final listEntry in _shoppingLists.entries) {
+      final listName = listEntry.key;
+      final listCategories = _listCategories.putIfAbsent(listName, () => ['Genérico']);
+
+      for (final catMap in listEntry.value.values) {
+        for (final product in catMap) {
+          final prodCat = product.category.trim();
+          if (prodCat.isNotEmpty && !listCategories.contains(prodCat)) {
+            final genericIdx = listCategories.indexOf('Genérico');
+            if (genericIdx != -1) {
+              listCategories.insert(genericIdx, prodCat);
+            } else {
+              listCategories.add(prodCat);
+            }
+          }
+        }
+      }
+
+      if (!listCategories.contains('Genérico')) {
+        listCategories.add('Genérico');
       }
     }
 
@@ -634,8 +665,6 @@ class ShoppingProvider extends ChangeNotifier {
     _listUpdatedAt[listName] = DateTime.now();
   }
 
-  /// Agrupa cambios locales sucesivos en un único guardado, esperando 5s de inactividad
-  /// antes de sincronizar con Firestore (evita saturar lecturas/escrituras).
   void _scheduleSave() {
     _pendingSaveTimer?.cancel();
     _pendingSaveTimer = Timer(const Duration(seconds: 5), () {
@@ -644,8 +673,6 @@ class ShoppingProvider extends ChangeNotifier {
     });
   }
 
-  /// Fuerza una sincronización inmediata, saltándose el debounce de 5s.
-  /// Pensado para el momento en que el usuario entra en una pantalla de listas.
   Future<void> syncNow() async {
     _pendingSaveTimer?.cancel();
     _pendingSaveTimer = null;
@@ -823,6 +850,13 @@ class ShoppingProvider extends ChangeNotifier {
               .map((product) => product.toMapHive())
               .toList(),
       };
+    }
+
+    for (final listName in _shoppingLists.keys) {
+      _listCategories[listName] ??= ['Genérico'];
+      if (!_listCategories[listName]!.contains('Genérico')) {
+        _listCategories[listName]!.add('Genérico');
+      }
     }
 
     await _box!.put('shopping_lists', dataToSave);
@@ -1106,6 +1140,14 @@ class ShoppingProvider extends ChangeNotifier {
           }
         }
 
+        // Asegurarnos de que toda lista en _shoppingLists tenga al menos 'Genérico' en _listCategories
+        for (final listName in _shoppingLists.keys) {
+          _listCategories[listName] ??= ['Genérico'];
+          if (!_listCategories[listName]!.contains('Genérico')) {
+            _listCategories[listName]!.add('Genérico');
+          }
+        }
+
         await _box!.put('shopping_lists', dataToSave);
         await _box!.put('list_categories', _listCategories);
         await _box!.put('selected_list_name', _selectedListName);
@@ -1210,35 +1252,6 @@ class ShoppingProvider extends ChangeNotifier {
     return _sortProducts(products, sortOptionForList(listName), categories);
   }
 
-  // static List<Product> _sortProducts(
-  //   List<Product> products,
-  //   ProductSortOption option,
-  // ) {
-  //   final sorted = List<Product>.from(products);
-
-  //   switch (option) {
-  //     case ProductSortOption.dateDesc:
-  //       sorted.sort((a, b) => b.lastAdded.compareTo(a.lastAdded));
-  //       break;
-  //     case ProductSortOption.alphabetical:
-  //       sorted.sort(
-  //         (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-  //       );
-  //       break;
-  //     case ProductSortOption.category:
-  //       sorted.sort((a, b) {
-  //         final categoryCompare = a.category.toLowerCase().compareTo(
-  //           b.category.toLowerCase(),
-  //         );
-  //         if (categoryCompare != 0) return categoryCompare;
-  //         return b.lastAdded.compareTo(a.lastAdded);
-  //       });
-  //       break;
-  //   }
-
-  //   return sorted;
-  // }
-
   static List<Product> _sortProducts(
     List<Product> products,
     ProductSortOption option,
@@ -1260,14 +1273,12 @@ class ShoppingProvider extends ChangeNotifier {
           final catA = a.category.trim();
           final catB = b.category.trim();
 
-          // Regla 1: 'Genérico' siempre va al final
           if (catA == 'Genérico' && catB != 'Genérico') return 1;
           if (catA != 'Genérico' && catB == 'Genérico') return -1;
           if (catA == 'Genérico' && catB == 'Genérico') {
             return b.lastAdded.compareTo(a.lastAdded);
           }
 
-          // Regla 2: Orden por posición definida en listCategories
           int indexA = listCategories.indexOf(catA);
           int indexB = listCategories.indexOf(catB);
 
@@ -1277,7 +1288,6 @@ class ShoppingProvider extends ChangeNotifier {
           final categoryCompare = indexA.compareTo(indexB);
           if (categoryCompare != 0) return categoryCompare;
 
-          // Regla 3: Dentro de la categoría -> Más reciente primero
           return b.lastAdded.compareTo(a.lastAdded);
         });
         break;
@@ -1287,14 +1297,12 @@ class ShoppingProvider extends ChangeNotifier {
           final catA = a.category.trim();
           final catB = b.category.trim();
 
-          // Regla 1: 'Genérico' siempre va al final
           if (catA == 'Genérico' && catB != 'Genérico') return 1;
           if (catA != 'Genérico' && catB == 'Genérico') return -1;
           if (catA == 'Genérico' && catB == 'Genérico') {
             return a.name.toLowerCase().compareTo(b.name.toLowerCase());
           }
 
-          // Regla 2: Orden por posición definida en listCategories
           int indexA = listCategories.indexOf(catA);
           int indexB = listCategories.indexOf(catB);
 
@@ -1304,7 +1312,6 @@ class ShoppingProvider extends ChangeNotifier {
           final categoryCompare = indexA.compareTo(indexB);
           if (categoryCompare != 0) return categoryCompare;
 
-          // Regla 3: Dentro de la categoría -> Alfabético (A-Z)
           return a.name.toLowerCase().compareTo(b.name.toLowerCase());
         });
         break;
@@ -1321,32 +1328,79 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   // -------------------------------------------- ][ Gestión de Categorías de Lista ][ -------------------------------------------- //
+  
+  
 
-  void addCategoryToSelectedList(String category) {
-    final cleaned = category.trim();
-    if (cleaned.isEmpty || _selectedListName.isEmpty) return;
-
-    final categories = _listCategories.putIfAbsent(
-      _selectedListName,
-      () => ['Genérico'],
-    );
-    if (!categories.contains(cleaned)) {
-      categories.add(cleaned);
-      _touchList(_selectedListName);
-      notifyListeners();
-      _scheduleSave();
+  /// Carga las categorías globales personalizadas al iniciar el Provider.
+  Future<void> loadCategories() async {
+    try {
+      final box = await Hive.openBox('settings');
+      final stored = box.get('custom_categories');
+      if (stored is List) {
+        _customCategories = stored.map((e) => e.toString()).toList();
+        if (!_customCategories.contains('Genérico')) {
+          _customCategories.add('Genérico');
+        }
+      }
+    } catch (_) {
+      _customCategories = ['Genérico'];
     }
   }
 
-  void removeCategoryFromSelectedList(String category) {
-    if (category == 'Genérico' || _selectedListName.isEmpty) return;
+  /// Añade una nueva categoría global y la asigna a la lista activa actual si corresponde.
+  Future<void> addCategory(String categoryName) async {
+    final cleaned = categoryName.trim();
+    if (cleaned.isEmpty) return;
 
-    final categories = _listCategories[_selectedListName];
+    if (!_customCategories.contains(cleaned)) {
+      _customCategories.add(cleaned);
+      
+      // Persistencia global en Hive
+      final box = await Hive.openBox('settings');
+      await box.put('custom_categories', _customCategories);
+
+      // Si hay una lista seleccionada, la vinculamos también a esa lista
+      if (_selectedListName.isNotEmpty) {
+        addCategoryToList(_selectedListName, cleaned);
+      } else {
+        notifyListeners();
+      }
+    }
+  }
+
+  void addCategoryToList(String listName, String category) {
+    final cleaned = category.trim();
+    if (cleaned.isEmpty || listName.isEmpty) return;
+
+    final categories = _listCategories.putIfAbsent(
+      listName,
+      () => ['Genérico'],
+    );
+    
+    if (!categories.contains(cleaned)) {
+      final genericIdx = categories.indexOf('Genérico');
+      if (genericIdx != -1) {
+        categories.insert(genericIdx, cleaned);
+      } else {
+        categories.add(cleaned);
+        categories.add('Genérico');
+      }
+
+      _box?.put('list_categories', _listCategories);
+      _touchList(listName);
+      notifyListeners();
+      unawaited(saveToStorage(mergeCloud: false));
+    }
+  }
+
+  void removeCategoryFromList(String listName, String category) {
+    if (category == 'Genérico' || listName.isEmpty) return;
+
+    final categories = _listCategories[listName];
     if (categories != null && categories.contains(category)) {
       categories.remove(category);
 
-      // Reasignar los productos que tenían esa categoría a 'Genérico'
-      final list = _shoppingLists[_selectedListName];
+      final list = _shoppingLists[listName];
       if (list != null) {
         for (final group in ['active', 'frequent']) {
           final products = list[group];
@@ -1360,29 +1414,24 @@ class ShoppingProvider extends ChangeNotifier {
         }
       }
 
-      _touchList(_selectedListName);
+      _touchList(listName);
       notifyListeners();
-      _scheduleSave();
+      unawaited(saveToStorage(mergeCloud: false));
     }
   }
 
-  /// Reordena las categorías de la lista seleccionada manteniendo 'Genérico' siempre al final.
-  void reorderCategoriesForSelectedList(int oldIndex, int newIndex) {
-    if (_selectedListName.isEmpty) return;
+  void reorderCategoriesForList(String listName, int oldIndex, int newIndex) {
+    if (listName.isEmpty) return;
 
-    final categories = _listCategories[_selectedListName];
+    final categories = _listCategories[listName];
     if (categories == null || categories.length <= 1) return;
 
-    // 'Genérico' siempre debe permanecer al final
-    if (categories.contains('Genérico')) {
-      categories.remove('Genérico');
-    }
+    categories.removeWhere((c) => c == 'Genérico');
 
     if (oldIndex < newIndex) {
       newIndex -= 1;
     }
 
-    // Ajustar límites para asegurar que no interfiera con la posición reservada de Genérico
     final maxIndex = categories.length;
     final finalOldIndex = oldIndex.clamp(0, maxIndex - 1);
     final finalNewIndex = newIndex.clamp(0, maxIndex);
@@ -1390,12 +1439,11 @@ class ShoppingProvider extends ChangeNotifier {
     final item = categories.removeAt(finalOldIndex);
     categories.insert(finalNewIndex, item);
 
-    // Asegurar que 'Genérico' vuelva al final
     categories.add('Genérico');
 
-    _touchList(_selectedListName);
+    _touchList(listName);
     notifyListeners();
-    _scheduleSave();
+    unawaited(saveToStorage(mergeCloud: false));
   }
 
   // -------------------------------------------- ][ Selección/gestión de Listas ][ -------------------------------------------- //
@@ -1637,60 +1685,6 @@ class ShoppingProvider extends ChangeNotifier {
     _scheduleSave();
   }
 
-  void addActiveProductToSelectedList(
-    String productName, {
-    double? price,
-    String? imageUrl,
-  }) {
-    addActiveProductToList(
-      _selectedListName,
-      productName,
-      price: price,
-      imageUrl: imageUrl,
-    );
-  }
-
-  void addFrequentProductToSelectedList(
-    String productName, {
-    double? price,
-    String? imageUrl,
-  }) {
-    addFrequentProductToList(
-      _selectedListName,
-      productName,
-      price: price,
-      imageUrl: imageUrl,
-    );
-  }
-
-  void _removeActiveProductFromList(String listName, String productId) {
-    if (!_shoppingLists.containsKey(listName)) {
-      return;
-    }
-
-    _shoppingLists[listName]!['active']!.removeWhere((p) => p.id == productId);
-    _touchList(listName);
-    notifyListeners();
-    _scheduleSave();
-  }
-
-  void _removeFrequentProductFromList(String listName, String productId) {
-    if (!_shoppingLists.containsKey(listName)) {
-      return;
-    }
-
-    _shoppingLists[listName]!['frequent']!.removeWhere(
-      (p) => p.id == productId,
-    );
-    _touchList(listName);
-    notifyListeners();
-    _scheduleSave();
-  }
-
-  void removeActiveProductFromSelectedList(String productId) {
-    _removeActiveProductFromList(_selectedListName, productId);
-  }
-
   void moveActiveProductToFrequent(String listName, String productId) {
     final list = _shoppingLists[listName];
     if (list == null) return;
@@ -1712,10 +1706,6 @@ class ShoppingProvider extends ChangeNotifier {
     _touchList(listName);
     notifyListeners();
     _scheduleSave();
-  }
-
-  void moveActiveProductToFrequentSelectedList(String productId) {
-    moveActiveProductToFrequent(_selectedListName, productId);
   }
 
   void moveFrequentProductToActive(String listName, String productId) {
@@ -1742,10 +1732,6 @@ class ShoppingProvider extends ChangeNotifier {
     _touchList(listName);
     notifyListeners();
     _scheduleSave();
-  }
-
-  void moveFrequentProductToActiveSelectedList(String productId) {
-    moveFrequentProductToActive(_selectedListName, productId);
   }
 
   void updateProduct(
@@ -1816,10 +1802,6 @@ class ShoppingProvider extends ChangeNotifier {
     _touchList(listName);
     notifyListeners();
     _scheduleSave();
-  }
-
-  void removeFrequentProductFromSelectedList(String productId) {
-    _removeFrequentProductFromList(_selectedListName, productId);
   }
 
   void removeList(String listName) {

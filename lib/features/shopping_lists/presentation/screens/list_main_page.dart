@@ -1,5 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shopping_hero/core/models/product_model.dart';
 import 'package:shopping_hero/core/models/product_sort_option.dart';
@@ -12,7 +13,6 @@ import 'package:shopping_hero/features/auth/presentation/screens/sharing_page.da
 import 'package:shopping_hero/features/products/presentation/widgets/product_bubble.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_manager_page.dart';
 import 'package:shopping_hero/shared/widgets/main_bottom_nav.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class ListMainPage extends StatefulWidget {
   const ListMainPage({super.key, required this.listName});
@@ -34,12 +34,10 @@ class _ListMainPageState extends State<ListMainPage> {
   @override
   void initState() {
     super.initState();
-    // Recordamos esta lista como última pantalla visitada, para restaurarla al reabrir la app.
     context.read<SessionProvider>().setLastRoute(
       route: 'listMain',
       listName: widget.listName,
     );
-    // Sincronización instantánea al entrar, sin esperar el debounce de 5s.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<ShoppingProvider>().syncNow();
     });
@@ -119,7 +117,8 @@ class _ListMainPageState extends State<ListMainPage> {
         elevation: 2,
         shadowColor: themeProvider.cardShadowColor,
         leading: BackButton(
-          onPressed: () {
+          onPressed: () async {
+            await context.read<ShoppingProvider>().saveToStorage(mergeCloud: false);
             if (context.mounted) {
               Navigator.pushReplacement(
                 context,
@@ -168,7 +167,6 @@ class _ListMainPageState extends State<ListMainPage> {
       ),
       body: Stack(
         children: [
-          // IMAGEN DE FONDO FIJA: Usa el tamaño total del dispositivo e ignora los cambios del viewport
           SizedBox.expand(
             child: OverflowBox(
               alignment: Alignment.topCenter,
@@ -186,8 +184,6 @@ class _ListMainPageState extends State<ListMainPage> {
               ),
             ),
           ),
-
-          // CONTENIDO PRINCIPAL
           RefreshIndicator(
             color: themeProvider.primaryColor,
             onRefresh: shoppingProvider.refreshFromCloud,
@@ -207,7 +203,6 @@ class _ListMainPageState extends State<ListMainPage> {
           ),
         ],
       ),
-      // 3. PADDING DIRECTO: Se sincroniza milisegundo a milisegundo con el teclado
       bottomNavigationBar: Padding(
         padding: EdgeInsets.only(bottom: viewInsetsBottom),
         child: _selectedIndex == 0
@@ -219,7 +214,7 @@ class _ListMainPageState extends State<ListMainPage> {
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadiusDirectional.vertical(
+                        borderRadius: const BorderRadiusDirectional.vertical(
                           top: Radius.circular(18),
                         ),
                         color: themeProvider.isDarkMode
@@ -253,7 +248,7 @@ class _ListMainPageState extends State<ListMainPage> {
                               decoration: InputDecoration(
                                 hintText: 'Me hace falta...',
                                 counterText: '',
-                                contentPadding: EdgeInsets.symmetric(
+                                contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 12,
                                 ),
                                 filled: true,
@@ -296,7 +291,7 @@ class _ListMainPageState extends State<ListMainPage> {
                               heightFactor: 0.9,
                               widthFactor: 0,
                               child: Padding(
-                                padding: EdgeInsets.only(bottom: 4.5),
+                                padding: const EdgeInsets.only(bottom: 4.5),
                                 child: Text(
                                   '+',
                                   style: TextStyle(
@@ -362,7 +357,14 @@ class _ListMainPageState extends State<ListMainPage> {
                   else
                     const SizedBox(width: 18),
                   const SizedBox(width: 8),
-                  Text(option.label,style: TextStyle(color: themeProvider.textStrongColor, fontSize: 15, fontWeight: FontWeight(600)),),
+                  Text(
+                    option.label,
+                    style: TextStyle(
+                      color: themeProvider.textStrongColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -373,9 +375,10 @@ class _ListMainPageState extends State<ListMainPage> {
         decoration: BoxDecoration(
           color: themeProvider.surface,
           borderRadius: BorderRadius.circular(14),
-            border: Border.symmetric(
-              horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
-              vertical: BorderSide(color: themeProvider.borderColor, width: 5),)
+          border: Border.symmetric(
+            horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
+            vertical: BorderSide(color: themeProvider.borderColor, width: 5),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -387,7 +390,7 @@ class _ListMainPageState extends State<ListMainPage> {
               style: TextStyle(
                 fontSize: 13,
                 color: themeProvider.textStrongColor,
-                fontWeight: FontWeight(600)
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(width: 4),
@@ -422,16 +425,15 @@ class _ListMainPageState extends State<ListMainPage> {
       padding: const EdgeInsets.only(left: 8, right: 8),
       child: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: 8)),
+          const SliverToBoxAdapter(child: SizedBox(height: 8)),
           SliverToBoxAdapter(
             child: Align(
               alignment: Alignment.centerRight,
               child: _buildSortButton(shoppingProvider, themeProvider),
             ),
           ),
-          SliverToBoxAdapter(child: SizedBox(height: 6)),
+          const SliverToBoxAdapter(child: SizedBox(height: 6)),
           SliverGrid.builder(
-            // ------------------------ ][ PRODUCTOS ACTIVOS ][ ------------------------ //
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               crossAxisSpacing: 2,
@@ -462,7 +464,6 @@ class _ListMainPageState extends State<ListMainPage> {
           ),
           if (frequentProducts.isNotEmpty)
             SliverToBoxAdapter(
-              // ------------------------ ][ PRODUCTOS FRECUENTES ][ ------------------------ //
               child: Padding(
                 padding: const EdgeInsets.only(
                   top: 30,
@@ -477,7 +478,7 @@ class _ListMainPageState extends State<ListMainPage> {
                     borderRadius: BorderRadius.circular(20),
                     border: Border.symmetric(
                       horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
-                      vertical: BorderSide(color: themeProvider.borderColor, width: 5)
+                      vertical: BorderSide(color: themeProvider.borderColor, width: 5),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -499,13 +500,12 @@ class _ListMainPageState extends State<ListMainPage> {
                       children: [
                         Text(
                           'Productos Frecuentes',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.black,
                             fontSize: 20,
                             letterSpacing: 1.0,
                             wordSpacing: 5.0,
                             fontWeight: FontWeight(700),
-                            // shadows: themeProvider.shadowsMid
                           ),
                         ),
                         Text(
@@ -516,7 +516,6 @@ class _ListMainPageState extends State<ListMainPage> {
                             letterSpacing: 1.0,
                             wordSpacing: 5.0,
                             fontWeight: FontWeight(700),
-                            // shadows: themeProvider.shadowsMid
                           ),
                         ),
                       ],
@@ -555,21 +554,6 @@ class _ListMainPageState extends State<ListMainPage> {
                 );
               },
             ),
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Text('Otro elemento'),
-                  // SizedBox(height: 10),
-                  // Text('Otro elemento'),
-                  // SizedBox(height: 10),
-                  // Text('Otro elemento'),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -582,7 +566,7 @@ class _ListMainPageState extends State<ListMainPage> {
     shoppingProvider.addActiveProductToList(
       widget.listName,
       name,
-    ); // Lista Actualizada: Active + Frequent
+    );
     _productNameController.clear();
   }
 
@@ -633,21 +617,13 @@ class _ListMainPageState extends State<ListMainPage> {
         builder: (modalContext) {
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setModalState) {
-              // Obtener la lista de categorías actual de la lista seleccionada
-              final availableCategories = shoppingProvider.availableCategories;
+              final availableCategories = shoppingProvider.categoriesForList(widget.listName);
 
-              // Si la categoría del producto ya no existe en la lista, fallback a 'Genérico'
               if (!availableCategories.contains(selectedCategory)) {
                 selectedCategory = 'Genérico';
               }
 
               return Container(
-                // margin: EdgeInsets.only(
-                //   left: 8,
-                //   right: 8,
-                //   bottom: MediaQuery.of(context).viewInsets.bottom + 8,
-                //   top: 10,
-                // ),
                 padding: EdgeInsets.only(
                   left: 20,
                   right: 20,
@@ -656,16 +632,14 @@ class _ListMainPageState extends State<ListMainPage> {
                 ),
                 decoration: BoxDecoration(
                   color: themeProvider.surface,
-                  // borderRadius: BorderRadius.circular(20),
-                  borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-                  // border: Border.symmetric(
-                  //   horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
-                  //   vertical: BorderSide(color: themeProvider.borderColor, width: 10),
-                  // ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
                   border: Border(
-                    top: BorderSide(color: themeProvider.borderColor, width: 1),
-                    left: BorderSide(color: themeProvider.borderColor, width: 10),
-                    right: BorderSide(color: themeProvider.borderColor, width: 10),
+                    top: BorderSide(color: themeProvider.borderColor, width: 3),
+                    left: BorderSide(color: themeProvider.borderColor, width: 1),
+                    right: BorderSide(color: themeProvider.borderColor, width: 1),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -696,7 +670,7 @@ class _ListMainPageState extends State<ListMainPage> {
                         decoration: InputDecoration(
                           labelText: 'Nombre',
                           counterText: '',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
                           labelStyle: TextStyle(color: themeProvider.textMutedColor),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -709,32 +683,21 @@ class _ListMainPageState extends State<ListMainPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // --------------------------------------------------------
-                      // CAMPO SELECTOR DE CATEGORÍA (REEMPLAZO SEGURO DEL DROPDOWN)
-                      // --------------------------------------------------------
                       Row(
                         children: [
                           Expanded(
                             child: InkWell(
                               onTap: () async {
-                                // 1. Desenfocar cualquier TextField activo globalmente antes de abrir el diálogo
                                 FocusManager.instance.primaryFocus?.unfocus();
 
-                                // 2. Abrir diálogo asegurando un descarte (dismiss) seguro
                                 final selectedResult = await showDialog<String>(
                                   context: context,
-                                  barrierDismissible:
-                                      true, // Permite tocar fuera sin bloquear la app
+                                  barrierDismissible: true,
                                   builder: (dialogContext) {
                                     return StatefulBuilder(
                                       builder: (context, setDialogState) {
-                                        final currentCategories =
-                                            shoppingProvider
-                                                .availableCategories;
-
-                                        // Evaluamos si hay al menos 2 categorías personalizadas (excluyendo 'Genérico')
-                                        final customCategoriesCount = shoppingProvider.availableCategories
+                                        final currentCategories = shoppingProvider.categoriesForList(widget.listName);
+                                        final customCategoriesCount = currentCategories
                                             .where((cat) => cat != 'Genérico')
                                             .length;
                                         final canReorder = customCategoriesCount > 1;
@@ -747,12 +710,10 @@ class _ListMainPageState extends State<ListMainPage> {
                                             borderRadius: BorderRadius.circular(16),
                                             side: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                           ),
-                                          // insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-                                          // contentPadding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
-                                          title: Center(
-                                            child: const Text(
+                                          title: const Center(
+                                            child: Text(
                                               'Seleccionar Categoría',
-                                              style: TextStyle(fontWeight: FontWeight(500)),
+                                              style: TextStyle(fontWeight: FontWeight.w500),
                                             ),
                                           ),
                                           content: SizedBox(
@@ -761,12 +722,8 @@ class _ListMainPageState extends State<ListMainPage> {
                                               child: Column(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  // --------------------------------------------------------
-                                                  // API MODERNA DE FLUTTER: RadioGroup engloba los RadioListTile
-                                                  // --------------------------------------------------------
                                                   RadioGroup<String>(
-                                                    groupValue:
-                                                        selectedCategory,
+                                                    groupValue: selectedCategory,
                                                     onChanged: (String? val) {
                                                       if (val != null) {
                                                         Navigator.pop(
@@ -776,47 +733,33 @@ class _ListMainPageState extends State<ListMainPage> {
                                                       }
                                                     },
                                                     child: Column(
-                                                      children: currentCategories.map((
-                                                        cat,
-                                                      ) {
-                                                        return RadioListTile<
-                                                          String
-                                                        >(
-                                                          title: Text(cat, style: TextStyle(color: themeProvider.textStrongColor, fontWeight: FontWeight(500)),),
-                                                          value:
-                                                              cat, // Solo necesita su propio valor
-                                                          secondary:
-                                                              cat != 'Genérico'
+                                                      children: currentCategories.map((cat) {
+                                                        return RadioListTile<String>(
+                                                          title: Text(
+                                                            cat,
+                                                            style: TextStyle(
+                                                              color: themeProvider.textStrongColor,
+                                                              fontWeight: FontWeight.w500,
+                                                            ),
+                                                          ),
+                                                          value: cat,
+                                                          secondary: cat != 'Genérico'
                                                               ? IconButton(
                                                                   icon: const Icon(
-                                                                    Icons
-                                                                        .delete,
-                                                                    color: Colors
-                                                                        .red,
+                                                                    Icons.delete,
+                                                                    color: Colors.red,
                                                                   ),
                                                                   onPressed: () {
-                                                                    shoppingProvider
-                                                                        .removeCategoryFromSelectedList(
-                                                                          cat,
-                                                                        );
-                                                                    if (selectedCategory ==
-                                                                        cat) {
-                                                                      selectedCategory =
-                                                                          'Genérico';
+                                                                    shoppingProvider.removeCategoryFromList(widget.listName, cat);
+                                                                    if (selectedCategory == cat) {
+                                                                      selectedCategory = 'Genérico';
                                                                     }
-                                                                    setDialogState(
-                                                                      () {},
-                                                                    );
-                                                                    setModalState(
-                                                                      () {},
-                                                                    );
+                                                                    setDialogState(() {});
+                                                                    setModalState(() {});
                                                                   },
                                                                 )
                                                               : null,
-                                                          contentPadding:
-                                                              const EdgeInsets.symmetric(
-                                                                horizontal: 8,
-                                                              ),
+                                                          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                                                         );
                                                       }).toList(),
                                                     ),
@@ -831,61 +774,47 @@ class _ListMainPageState extends State<ListMainPage> {
                                                       'Crear categoría',
                                                       style: TextStyle(
                                                         color: Colors.blue,
-                                                        fontWeight: FontWeight(500)
+                                                        fontWeight: FontWeight.w500,
                                                       ),
                                                     ),
                                                     onTap: () async {
-                                                      final newCatController =
-                                                          TextEditingController();
+                                                      final newCatController = TextEditingController();
                                                       final newCat = await showDialog<String>(
-                                                        context: dialogContext,
-                                                        barrierDismissible:
-                                                            true,
+                                                        context: context,
+                                                        barrierDismissible: true,
                                                         builder: (ctx) => AlertDialog(
-                                                          title: const Text(
-                                                            'Nueva Categoría',
-                                                          ),
+                                                          title: const Text('Nueva Categoría'),
                                                           content: TextField(
-                                                            controller:
-                                                                newCatController,
+                                                            controller: newCatController,
                                                             autofocus: true,
                                                           ),
                                                           actions: [
                                                             TextButton(
-                                                              onPressed: () =>
-                                                                  Navigator.pop(
-                                                                    ctx,
-                                                                  ),
-                                                              child: const Text(
-                                                                'Cancelar',
-                                                              ),
+                                                              onPressed: () => Navigator.pop(ctx),
+                                                              child: const Text('Cancelar'),
                                                             ),
                                                             TextButton(
-                                                              onPressed: () =>
-                                                                  Navigator.pop(
-                                                                    ctx,
-                                                                    newCatController
-                                                                        .text
-                                                                        .trim(),
-                                                                  ),
-                                                              child: const Text(
-                                                                'Añadir',
+                                                              onPressed: () => Navigator.pop(
+                                                                ctx,
+                                                                newCatController.text.trim(),
                                                               ),
+                                                              child: const Text('Añadir'),
                                                             ),
                                                           ],
                                                         ),
                                                       );
 
-                                                      if (newCat != null &&
-                                                          newCat.isNotEmpty) {
-                                                        shoppingProvider
-                                                            .addCategoryToSelectedList(
-                                                              newCat,
-                                                            );
-                                                        selectedCategory =
-                                                            newCat;
-                                                        setDialogState(() {});
-                                                        setModalState(() {});
+                                                      if (newCat != null && newCat.isNotEmpty) {
+                                                        // 1. Añadimos la categoría al provider
+                                                        shoppingProvider.addCategoryToList(widget.listName, newCat);
+                                                        
+                                                        // 2. Actualizamos ambos estados (diálogo y modal bottom sheet)
+                                                        setDialogState(() {
+                                                          selectedCategory = newCat;
+                                                        });
+                                                        setModalState(() {
+                                                          selectedCategory = newCat;
+                                                        });
                                                       }
                                                     },
                                                   ),
@@ -900,7 +829,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                                       'Reordenar categorías',
                                                       style: TextStyle(
                                                         color: canReorder ? Colors.orange : Colors.grey,
-                                                        fontWeight: FontWeight(500)
+                                                        fontWeight: FontWeight.w500,
                                                       ),
                                                     ),
                                                     onTap: canReorder
@@ -908,9 +837,10 @@ class _ListMainPageState extends State<ListMainPage> {
                                                             await _showReorderCategoriesDialog(
                                                               dialogContext,
                                                               shoppingProvider,
+                                                              widget.listName,
                                                             );
-                                                            setDialogState(() {}); // Actualiza el diálogo de categorías
-                                                            setModalState(() {});  // Actualiza el modal del producto
+                                                            setDialogState(() {});
+                                                            setModalState(() {});
                                                           }
                                                         : null,
                                                   ),
@@ -924,7 +854,6 @@ class _ListMainPageState extends State<ListMainPage> {
                                   },
                                 );
 
-                                // 3. Si el usuario seleccionó una categoría (no tocó fuera), actualizamos la variable local
                                 if (selectedResult != null) {
                                   setModalState(() {
                                     selectedCategory = selectedResult;
@@ -934,7 +863,7 @@ class _ListMainPageState extends State<ListMainPage> {
                               child: InputDecorator(
                                 decoration: InputDecoration(
                                   labelText: 'Categoría',
-                                  border: OutlineInputBorder(),
+                                  border: const OutlineInputBorder(),
                                   labelStyle: TextStyle(color: themeProvider.textMutedColor),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -942,8 +871,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                   ),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(selectedCategory),
                                     const Icon(Icons.arrow_drop_down),
@@ -953,8 +881,6 @@ class _ListMainPageState extends State<ListMainPage> {
                             ),
                           ),
                           const SizedBox(width: 12),
-
-                          // 2. Selector de Icono
                           Expanded(
                             child: InkWell(
                               onTap: () async {
@@ -972,7 +898,6 @@ class _ListMainPageState extends State<ListMainPage> {
                                           child: Column(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
-                                              // Opción para no llevar ningún icono
                                               ListTile(
                                                 leading: const Icon(
                                                   Icons.block,
@@ -991,32 +916,22 @@ class _ListMainPageState extends State<ListMainPage> {
                                                 ),
                                               ),
                                               const Divider(),
-                                              // Lista estática de iconos
-                                              ...themeProvider
-                                                  .availableIconsSvg
-                                                  .entries
-                                                  .map((entry) {
-                                                    return ListTile(
-                                                      leading: SvgPicture.asset(
-                                                        entry.value,
-                                                      ), //Icon(entry.value),
-                                                      title: Text(entry.key),
-                                                      trailing:
-                                                          selectedIcon ==
-                                                              entry.key
-                                                          ? const Icon(
-                                                              Icons.check,
-                                                              color:
-                                                                  Colors.blue,
-                                                            )
-                                                          : null,
-                                                      onTap: () =>
-                                                          Navigator.pop(
-                                                            dialogContext,
-                                                            entry.key,
-                                                          ),
-                                                    );
-                                                  }),
+                                              ...themeProvider.availableIconsSvg.entries.map((entry) {
+                                                return ListTile(
+                                                  leading: SvgPicture.asset(entry.value),
+                                                  title: Text(entry.key),
+                                                  trailing: selectedIcon == entry.key
+                                                      ? const Icon(
+                                                          Icons.check,
+                                                          color: Colors.blue,
+                                                        )
+                                                      : null,
+                                                  onTap: () => Navigator.pop(
+                                                    dialogContext,
+                                                    entry.key,
+                                                  ),
+                                                );
+                                              }),
                                             ],
                                           ),
                                         ),
@@ -1027,16 +942,14 @@ class _ListMainPageState extends State<ListMainPage> {
 
                                 if (chosenIcon != null) {
                                   setModalState(() {
-                                    selectedIcon = chosenIcon == 'CLEAR'
-                                        ? null
-                                        : chosenIcon;
+                                    selectedIcon = chosenIcon == 'CLEAR' ? null : chosenIcon;
                                   });
                                 }
                               },
                               child: InputDecorator(
                                 decoration: InputDecoration(
                                   labelText: 'Icono',
-                                  border: OutlineInputBorder(),
+                                  border: const OutlineInputBorder(),
                                   labelStyle: TextStyle(color: themeProvider.textMutedColor),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
@@ -1044,21 +957,14 @@ class _ListMainPageState extends State<ListMainPage> {
                                   ),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       children: [
                                         if (selectedIcon != null &&
-                                            themeProvider.availableIconsSvg
-                                                .containsKey(selectedIcon))
-                                          // Icon(
-                                          //   availableIcons[selectedIcon],
-                                          //   size: 20,
-                                          // )
+                                            themeProvider.availableIconsSvg.containsKey(selectedIcon))
                                           SvgPicture.asset(
-                                            themeProvider
-                                                .availableIconsSvg[selectedIcon]!,
+                                            themeProvider.availableIconsSvg[selectedIcon]!,
                                             width: 25,
                                             height: 25,
                                             fit: BoxFit.fitHeight,
@@ -1066,9 +972,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                         else
                                           const Text(
                                             'Ninguno',
-                                            style: TextStyle(
-                                              color: Colors.grey,
-                                            ),
+                                            style: TextStyle(color: Colors.grey),
                                           ),
                                       ],
                                     ),
@@ -1081,8 +985,6 @@ class _ListMainPageState extends State<ListMainPage> {
                         ],
                       ),
                       const SizedBox(height: 12),
-
-                      // CAMPO DE FRECUENCIA, CANTIDAD, PRECIO y PRECIOKILO
                       Row(
                         children: [
                           Expanded(
@@ -1091,21 +993,15 @@ class _ListMainPageState extends State<ListMainPage> {
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'Frecuencia',
-                                floatingLabelBehavior:
-                                    FloatingLabelBehavior.always,
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                border: const OutlineInputBorder(),
                                 labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                                 enabledBorder: OutlineInputBorder(
-                                  // borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  // borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                                 ),
                               ),
@@ -1118,21 +1014,15 @@ class _ListMainPageState extends State<ListMainPage> {
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'Cantidad',
-                                floatingLabelBehavior:
-                                    FloatingLabelBehavior.always,
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                border: const OutlineInputBorder(),
                                 labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                                 enabledBorder: OutlineInputBorder(
-                                  // borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  // borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                                 ),
                               ),
@@ -1144,29 +1034,19 @@ class _ListMainPageState extends State<ListMainPage> {
                               textAlign: TextAlign.center,
                               controller: priceController,
                               maxLength: 7,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                               decoration: InputDecoration(
                                 labelText: 'Precio',
-                                alignLabelWithHint: false,
                                 counterText: '',
-                                floatingLabelBehavior:
-                                    FloatingLabelBehavior.always,
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                border: const OutlineInputBorder(),
                                 labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                                 enabledBorder: OutlineInputBorder(
-                                  // borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  // borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                                 ),
                               ),
@@ -1178,29 +1058,19 @@ class _ListMainPageState extends State<ListMainPage> {
                               textAlign: TextAlign.center,
                               controller: pricePerKiloController,
                               maxLength: 7,
-                              keyboardType:
-                                  const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                               decoration: InputDecoration(
                                 labelText: 'Precio/Kg',
-                                alignLabelWithHint: false,
                                 counterText: '',
-                                floatingLabelBehavior:
-                                    FloatingLabelBehavior.always,
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
                                 isDense: true,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 2,
-                                  vertical: 12,
-                                ),
-                                border: OutlineInputBorder(),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                border: const OutlineInputBorder(),
                                 labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                                 enabledBorder: OutlineInputBorder(
-                                  // borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  // borderRadius: BorderRadius.circular(12),
                                   borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                                 ),
                               ),
@@ -1214,40 +1084,28 @@ class _ListMainPageState extends State<ListMainPage> {
                         keyboardType: TextInputType.url,
                         decoration: InputDecoration(
                           labelText: 'URL de imagen',
-                          border: OutlineInputBorder(),
+                          border: const OutlineInputBorder(),
                           labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                           enabledBorder: OutlineInputBorder(
-                            // borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            // borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                           ),
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      // BOTONES DE ACCIÓN
                       Row(
                         children: [
                           Expanded(
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(elevation: 10),
-                              onPressed: () {
+                              onPressed: () async {
                                 final name = nameController.text.trim();
-                                final frequency = int.tryParse(
-                                  frequencyController.text.trim(),
-                                );
-                                final amount = int.tryParse(
-                                  amountController.text.trim(),
-                                );
+                                final frequency = int.tryParse(frequencyController.text.trim());
+                                final amount = int.tryParse(amountController.text.trim());
 
-                                if (name.isEmpty ||
-                                    frequency == null ||
-                                    amount == null) {
-                                  return;
-                                }
+                                if (name.isEmpty || frequency == null || amount == null) return;
 
                                 shoppingProvider.updateProduct(
                                   widget.listName,
@@ -1258,7 +1116,10 @@ class _ListMainPageState extends State<ListMainPage> {
                                   category: selectedCategory,
                                   icon: selectedIcon,
                                 );
-                                Navigator.of(context).pop();
+
+                                await shoppingProvider.saveToStorage(mergeCloud: false);
+
+                                if (context.mounted) Navigator.of(context).pop();
                               },
                               child: const Text('Guardar'),
                             ),
@@ -1270,12 +1131,15 @@ class _ListMainPageState extends State<ListMainPage> {
                                 elevation: 10,
                                 backgroundColor: Colors.red,
                               ),
-                              onPressed: () {
+                              onPressed: () async {
                                 shoppingProvider.deleteProduct(
                                   widget.listName,
                                   product.id,
                                 );
-                                Navigator.of(context).pop();
+
+                                await shoppingProvider.saveToStorage(mergeCloud: false);
+
+                                if (context.mounted) Navigator.of(context).pop();
                               },
                               child: const Text(
                                 'Borrar',
@@ -1306,14 +1170,15 @@ class _ListMainPageState extends State<ListMainPage> {
   Future<void> _showReorderCategoriesDialog(
     BuildContext context,
     ShoppingProvider shoppingProvider,
+    String listName,
   ) async {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            // Excluimos 'Genérico' del listado reordenable ya que siempre se mantiene al final
-            final categories = shoppingProvider.availableCategories
+            final categories = shoppingProvider
+                .categoriesForList(listName)
                 .where((cat) => cat != 'Genérico')
                 .toList();
 
@@ -1328,8 +1193,9 @@ class _ListMainPageState extends State<ListMainPage> {
                       )
                     : ReorderableListView.builder(
                         itemCount: categories.length,
-                        onReorder: (oldIndex, newIndex) {
-                          shoppingProvider.reorderCategoriesForSelectedList(
+                        onReorderItem: (oldIndex, newIndex) {
+                          shoppingProvider.reorderCategoriesForList(
+                            listName,
                             oldIndex,
                             newIndex,
                           );
