@@ -54,23 +54,21 @@ class SessionProvider extends ChangeNotifier {
 
     if (_box == null) return;
 
-    // Restaurar datos guardados de sesión local
+    // Restaurar estado de sesión local
     _uid = _box!.get('uid') as String?;
     _email = _box!.get('email', defaultValue: '') as String;
-    
-    // LEER DE HIVE SI EXISTE UN NOMBRE GUARDADO
-    final savedName = _box!.get('displayName') as String?;
-    if (savedName != null && savedName.isNotEmpty) {
-      _displayName = savedName;
-    } else {
-      _displayName = _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
-    }
-
     _isOffline = _box!.get('isOffline', defaultValue: true) as bool;
     _isLoggedIn = _box!.get('isLoggedIn', defaultValue: false) as bool;
     _hasActiveSession = _box!.get('hasActiveSession', defaultValue: false) as bool;
     _lastRoute = _box!.get('lastRoute', defaultValue: 'login') as String;
     _lastListName = _box!.get('lastListName') as String?;
+
+    // Cargar nombre dependiendo de si es Online u Offline
+    if (_isOffline) {
+      _displayName = _box!.get('offlineDisplayName', defaultValue: 'Shopping Hero') as String;
+    } else {
+      _displayName = _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
+    }
 
     notifyListeners();
   }
@@ -86,17 +84,22 @@ class SessionProvider extends ChangeNotifier {
     if (_box != null) {
       await _box!.put('uid', _uid);
       await _box!.put('email', _email);
-      await _box!.put('displayName', _displayName);
       await _box!.put('isOffline', _isOffline);
       await _box!.put('isLoggedIn', _isLoggedIn);
       await _box!.put('hasActiveSession', _hasActiveSession);
       await _box!.put('lastRoute', _lastRoute);
       await _box!.put('lastListName', _lastListName);
+
+      // Guardamos en claves separadas para evitar contaminación entre perfiles
+      if (_isOffline) {
+        await _box!.put('offlineDisplayName', _displayName);
+      } else {
+        await _box!.put('displayName', _displayName);
+      }
     }
   }
 
-  /// Recuerda la última pantalla visitada (ListManager o ListMainPage) para
-  /// restaurarla al reabrir la app, tanto en sesión online como offline.
+  /// Recuerda la última pantalla visitada para restaurarla al reabrir la app
   Future<void> setLastRoute({required String route, String? listName}) async {
     _lastRoute = route;
     _lastListName = listName;
@@ -203,21 +206,20 @@ class SessionProvider extends ChangeNotifier {
 
       _uid = null;
       _email = '';
+      _isOffline = true;
+      _isLoggedIn = false;
+      _hasActiveSession = true;
 
-      // Si ya existe un nombre personalizado guardado en Hive, lo conservamos.
-      // De lo contrario, usamos el parámetro o 'Shopping Hero'.
-      final savedName = _box?.get('displayName') as String?;
-      if (savedName != null && savedName.trim().isNotEmpty) {
-        _displayName = savedName;
+      // Recuperamos la clave dedicada para offline
+      final savedOfflineName = _box?.get('offlineDisplayName') as String?;
+      if (savedOfflineName != null && savedOfflineName.trim().isNotEmpty) {
+        _displayName = savedOfflineName;
       } else if (displayName.trim().isNotEmpty) {
         _displayName = displayName.trim();
       } else {
         _displayName = 'Shopping Hero';
       }
 
-      _isOffline = true;
-      _isLoggedIn = false;
-      _hasActiveSession = true;
       _isLoading = false;
       _errorMessage = null;
 
@@ -232,7 +234,7 @@ class SessionProvider extends ChangeNotifier {
     }
   }
 
-  /// Cierra sesión y limpia datos
+  /// Cierra sesión y restablece el perfil al usuario Offline
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
@@ -244,7 +246,6 @@ class SessionProvider extends ChangeNotifier {
 
       _uid = null;
       _email = '';
-      _displayName = 'Shopping Hero';
       _isOffline = true;
       _isLoggedIn = false;
       _hasActiveSession = false;
@@ -253,10 +254,11 @@ class SessionProvider extends ChangeNotifier {
       _errorMessage = null;
       _isLoading = false;
 
+      // Al hacer logout recuperamos el nombre asignado al modo offline
       await _ensureInitialized();
-      if (_box != null) {
-        await _box!.clear();
-      }
+      _displayName = _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero') as String;
+
+      await _saveSessionToStorage();
 
       notifyListeners();
     } catch (e) {
@@ -287,7 +289,7 @@ class SessionProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Cambia el nombre visible del usuario, persistiéndolo en Firestore si hay sesión online.
+  /// Cambia el nombre visible del usuario, actualizándolo localmente o en Firestore
   Future<bool> updateDisplayName(String newDisplayName) async {
     final trimmed = newDisplayName.trim();
 
@@ -304,7 +306,7 @@ class SessionProvider extends ChangeNotifier {
 
       _displayName = trimmed;
       _errorMessage = null;
-      await _saveSessionToStorage();
+      await _saveSessionToStorage(); // Guarda automáticamente en 'offlineDisplayName' o 'displayName' según _isOffline
       notifyListeners();
       return true;
     } catch (e) {
@@ -314,8 +316,7 @@ class SessionProvider extends ChangeNotifier {
     }
   }
 
-  /// Borra la cuenta por completo: datos en Firestore, desvinculación de listas compartidas,
-  /// registro en Firebase Authentication y sesión/caché local en Hive.
+  /// Borra la cuenta por completo y regresa al modo offline por defecto
   Future<bool> deleteAccount() async {
     if (_isOffline || _uid == null) {
       _errorMessage = 'No hay ninguna cuenta online activa';
@@ -329,15 +330,11 @@ class SessionProvider extends ChangeNotifier {
     try {
       final uid = _uid!;
 
-      // Firestore exige request.auth.uid == uid: si se borrase Authentication antes,
-      // el token dejaría de ser válido y el borrado en Firestore fallaría con permission-denied
-      // dejando los datos huérfanos sin forma de volver a autenticarse para limpiarlos.
       await _userRepository.deleteUserAccountData(uid);
       await _authService.deleteAccount();
 
       _uid = null;
       _email = '';
-      _displayName = 'Shopping Hero';
       _isOffline = true;
       _isLoggedIn = false;
       _hasActiveSession = false;
@@ -347,9 +344,10 @@ class SessionProvider extends ChangeNotifier {
       _isLoading = false;
 
       await _ensureInitialized();
-      if (_box != null) {
-        await _box!.clear();
-      }
+      // Restauramos nombre de offline
+      _displayName = _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero') as String;
+
+      await _saveSessionToStorage();
 
       notifyListeners();
       return true;
@@ -363,29 +361,23 @@ class SessionProvider extends ChangeNotifier {
 
   // ---------------------------------------------- ][ INTEGRACIÓN CON FIRESTORE ][ ---------------------------------------------- //
 
-  /// Carga las listas de compra del usuario desde Firestore a Hive (caché online)
   Future<void> syncShoppingListsFromFirestore() async {
     if (_uid == null || _isOffline) return;
 
     try {
-      // Obtener listas desde Firestore
       await _userRepository.getShoppingLists(_uid!);
-      // Esta sincronización se maneja desde ShoppingProvider
-      // Aquí solo notificamos que los datos están listos
     } catch (e) {
       _errorMessage = 'Error sincronizando listas: $e';
       notifyListeners();
     }
   }
 
-  /// Guarda las listas de compra del usuario a Firestore
   Future<void> saveShoppingListsToFirestore(
     Map<String, Map<String, dynamic>> shoppingLists,
   ) async {
     if (_uid == null || _isOffline) return;
 
     try {
-      // Convertir a formato esperado por userRepository
       // Se maneja desde ShoppingProvider
     } catch (e) {
       _errorMessage = 'Error guardando listas: $e';

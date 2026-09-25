@@ -5,12 +5,12 @@ import 'package:shopping_hero/core/models/user_model.dart';
 // --------------------------------------------------- ][ ACCESO A FIRESTORE ][ --------------------------------------------------- //
 
 // Se encarga de:
-//  - crear el perfil del usuario
-//  - leerlo
-//  - actualizarlo
-//  - guardar listas con productos
-//  - recuperar listas con productos
-//  - eliminar listas
+// - crear el perfil del usuario
+// - leerlo
+// - actualizarlo
+// - guardar listas con productos
+// - recuperar listas con productos
+// - eliminar listas
 
 class UserRepository {
   UserRepository({FirebaseFirestore? firestore})
@@ -24,7 +24,7 @@ class UserRepository {
   DocumentReference<Map<String, dynamic>> _userDoc(String uid) =>
       _usersCollection.doc(uid);
 
-    CollectionReference<Map<String, dynamic>> get _sharedListsCollection =>
+  CollectionReference<Map<String, dynamic>> get _sharedListsCollection =>
       _firestore.collection('sharedShoppingLists');
 
   Future<void> createUserProfile({
@@ -116,6 +116,7 @@ class UserRepository {
       'ownerUid': ownerUid,
       'name': listName,
       'memberUids': finalMembers,
+      'categories': listData['categories'] is List ? List<String>.from(listData['categories'] as List) : <String>[],
       'updatedAt': listData['updatedAt'] ?? Timestamp.now(),
     }, SetOptions(merge: true));
 
@@ -137,6 +138,9 @@ class UserRepository {
         doc.id: {
           ...doc.data(),
           'listId': doc.id,
+          'categories': doc.data()['categories'] is List
+              ? List<String>.from(doc.data()['categories'] as List)
+              : <String>[],
         },
     };
   }
@@ -147,6 +151,7 @@ class UserRepository {
     required List<Product> active,
     required List<Product> frequent,
     required DateTime updatedAt,
+    List<String>? categories,
     Map<String, DateTime>? deletedProductTimestamps,
   }) async {
     final docRef = _sharedListsCollection.doc(listId);
@@ -181,16 +186,25 @@ class UserRepository {
         mergedDeletedProducts,
       );
 
+      // Si vienen categorías desde la invocación, se guardan; si no, se conservan las existentes en la nube
+      final cloudCategories = cloudData['categories'] is List
+          ? List<String>.from(cloudData['categories'] as List)
+          : <String>[];
+      final finalCategories = (categories != null && categories.isNotEmpty)
+          ? categories
+          : cloudCategories;
+
       transaction.set(
         docRef,
         {
           'name': name,
-            'active': mergedCategories['active']!
+          'active': mergedCategories['active']!
               .map((product) => product.toMap())
               .toList(),
-            'frequent': mergedCategories['frequent']!
+          'frequent': mergedCategories['frequent']!
               .map((product) => product.toMap())
               .toList(),
+          'categories': finalCategories,
           'updatedAt': Timestamp.fromDate(mergedUpdatedAt),
           'deletedProductTimestamps': {
             for (final entry in mergedDeletedProducts.entries)
@@ -331,7 +345,6 @@ class UserRepository {
     }
   }
 
-  /// Borra el perfil, las listas propias/compartidas y desvincula al usuario de las listas de otros.
   Future<void> deleteUserAccountData(String uid) async {
     final batch = _firestore.batch();
 
@@ -375,6 +388,7 @@ class UserRepository {
   Future<void> saveShoppingLists({
     required String uid,
     required Map<String, Map<String, List<Product>>> shoppingLists,
+    Map<String, List<String>>? listCategories,
     Map<String, DateTime>? listUpdatedAt,
     Map<String, String>? listIds,
     Map<String, DateTime>? deletedLists,
@@ -382,7 +396,6 @@ class UserRepository {
     final collection = _userDoc(uid).collection('shoppingLists');
     final batch = _firestore.batch();
 
-    // Se guardan también las listas vacías: deben existir en Firestore desde el momento en que se crean.
     final sanitizedLists = <String, Map<String, List<Product>>>{};
     for (final entry in shoppingLists.entries) {
       final activeProducts = entry.value['active'] ?? <Product>[];
@@ -395,7 +408,6 @@ class UserRepository {
     }
 
     final currentDocs = await collection.get();
-    // El ID de documento debe ser el listId estable, no el nombre: si no, renombrar crea un documento duplicado.
     final stableIdsToKeep = <String>{
       for (final listName in sanitizedLists.keys)
         listIds?[listName] ?? _buildDocId(listName),
@@ -428,6 +440,7 @@ class UserRepository {
           .toList();
 
       final timestamp = listUpdatedAt?[listName] ?? DateTime.now();
+      final categories = listCategories?[listName] ?? <String>[];
 
       batch.set(
         collection.doc(stableId),
@@ -436,6 +449,7 @@ class UserRepository {
           'listId': stableId,
           'active': activeProducts,
           'frequent': frequentProducts,
+          'categories': categories,
           'updatedAt': Timestamp.fromDate(timestamp),
         },
         SetOptions(merge: true),
@@ -492,18 +506,16 @@ class UserRepository {
     return result;
   }
 
-  Future<Map<String, Map<String, List<Product>>>> getShoppingLists(
+  Future<Map<String, Map<String, dynamic>>> getShoppingListsWithCategories(
     String uid,
   ) async {
     final snapshot = await _userDoc(uid).collection('shoppingLists').get();
-
-    final result = <String, Map<String, List<Product>>>{};
+    final result = <String, Map<String, dynamic>>{};
 
     for (final doc in snapshot.docs) {
       final data = doc.data();
-
       final listName = (data['name'] ?? doc.id).toString();
-      
+
       final active = (data['active'] as List<dynamic>? ?? <dynamic>[])
           .asMap()
           .entries
@@ -532,19 +544,37 @@ class UserRepository {
           .whereType<Product>()
           .toList();
 
+      final categories = data['categories'] is List
+          ? List<String>.from(data['categories'] as List)
+          : <String>[];
+
       result[listName] = {
         'active': active,
         'frequent': frequent,
+        'categories': categories,
       };
     }
 
     return result;
   }
 
+  Future<Map<String, Map<String, List<Product>>>> getShoppingLists(
+    String uid,
+  ) async {
+    final listsWithCategories = await getShoppingListsWithCategories(uid);
+    return listsWithCategories.map(
+      (key, value) => MapEntry(key, {
+        'active': value['active'] as List<Product>,
+        'frequent': value['frequent'] as List<Product>,
+      }),
+    );
+  }
+
   Future<void> addOrUpdateShoppingList({
     required String uid,
     required String listName,
     required Map<String, List<Product>> items,
+    List<String>? categories,
   }) async {
     final docId = _buildDocId(listName);
 
@@ -555,18 +585,21 @@ class UserRepository {
         .map((p) => p.toMap())
         .toList();
 
+    final dataToSet = <String, dynamic>{
+      'name': listName,
+      'active': activeProducts,
+      'frequent': frequentProducts,
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+
+    if (categories != null) {
+      dataToSet['categories'] = categories;
+    }
+
     await _userDoc(uid)
         .collection('shoppingLists')
         .doc(docId)
-        .set(
-          {
-            'name': listName,
-            'active': activeProducts,
-            'frequent': frequentProducts,
-            'updatedAt': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true),
-        );
+        .set(dataToSet, SetOptions(merge: true));
   }
 
   Future<void> deleteShoppingList({
@@ -586,7 +619,7 @@ class UserRepository {
     final sanitized = cleaned
         .toLowerCase()
         .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'^_+|_+4d?'), '');
+        .replaceAll(RegExp(r'^_+|_+'), '');
 
     return sanitized.isEmpty ? 'list_${DateTime.now().millisecondsSinceEpoch}' : sanitized;
   }

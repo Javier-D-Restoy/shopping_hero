@@ -63,12 +63,24 @@ class _ListManagerState extends State<ListManager> {
               onPressed: () async {
                 final session = context.read<SessionProvider>();
                 final shopping = context.read<ShoppingProvider>();
-            
+                final navigator = Navigator.of(context);
+
+                // Limpiamos la caché local de Hive, la sesión y ejecutamos el logout en segundo plano.
+                // Si el usuario estaba con sesión online iniciada, limpiamos la caché online
+                // para que un Usuario B no vea residuos.
+                // Si estaba en modo offline (invitado), NO se borra nada.
+                if (session.isLoggedIn) {
+                  await shopping.clearLocalShoppingCache();
+                }
+
+                // Guardamos seguridad tras el await por si el widget se desmontó
+                if (!mounted) return;
+
                 // Reemplazamos la ruta al instante eliminando todo el historial previo.
                 // Al no haber 'await' previo, no se requiere la comprobación de context.mounted.
-                Navigator.of(context).pushAndRemoveUntil(
+                navigator.pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (route) => false, // Elimina todas las rutas anteriores
+                  (route) => false,
                 );
             
                 // Limpiamos los datos y ejecutamos el logout en segundo plano.

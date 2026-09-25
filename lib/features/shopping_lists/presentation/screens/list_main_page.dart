@@ -589,6 +589,8 @@ class _ListMainPageState extends State<ListMainPage> {
     ThemeProvider themeProvider,
     Product product,
   ) async {
+    final isShared = shoppingProvider.isSharedList(widget.listName);
+    
     final nameController = TextEditingController(text: product.name);
     final frequencyController = TextEditingController(
       text: product.frequency.toString(),
@@ -606,7 +608,7 @@ class _ListMainPageState extends State<ListMainPage> {
       text: product.imageUrl ?? '',
     );
 
-    String selectedCategory = product.category;
+    String selectedCategory = product.getCategory(isShared: isShared);
     String? selectedIcon = product.icon;
 
     try {
@@ -805,10 +807,8 @@ class _ListMainPageState extends State<ListMainPage> {
                                                       );
 
                                                       if (newCat != null && newCat.isNotEmpty) {
-                                                        // 1. Añadimos la categoría al provider
                                                         shoppingProvider.addCategoryToList(widget.listName, newCat);
                                                         
-                                                        // 2. Actualizamos ambos estados (diálogo y modal bottom sheet)
                                                         setDialogState(() {
                                                           selectedCategory = newCat;
                                                         });

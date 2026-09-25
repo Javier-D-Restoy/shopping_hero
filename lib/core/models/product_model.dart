@@ -10,8 +10,11 @@ class Product {
   final String? imageUrl;
   final DateTime lastAdded;
 
-  /// Categoría asignada al producto. Valor por defecto 'Genérico'.
+  /// Categoría asignada al producto en listas personales. Valor por defecto 'Genérico'.
   final String category;
+
+  /// Categoría asignada al producto en listas compartidas. Valor por defecto 'Genérico'.
+  final String categoryShared;
 
   /// Identificador o nombre del icono/símbolo/imagen del producto.
   final String? icon;
@@ -26,8 +29,12 @@ class Product {
     this.imageUrl,
     required this.lastAdded,
     this.category = 'Genérico',
+    this.categoryShared = 'Genérico',
     this.icon,
   });
+
+  /// Devuelve la categoría correspondiente según el contexto de la lista.
+  String getCategory({required bool isShared}) => isShared ? categoryShared : category;
 
   Product copyWith({
     String? id,
@@ -39,6 +46,7 @@ class Product {
     String? imageUrl,
     DateTime? lastAdded,
     String? category,
+    String? categoryShared,
     String? icon,
     bool clearIcon = false,
   }) {
@@ -52,6 +60,7 @@ class Product {
       imageUrl: imageUrl ?? this.imageUrl,
       lastAdded: lastAdded ?? this.lastAdded,
       category: category ?? this.category,
+      categoryShared: categoryShared ?? this.categoryShared,
       icon: clearIcon ? null : (icon ?? this.icon),
     );
   }
@@ -60,10 +69,9 @@ class Product {
     final lastAddedValue = map['lastAdded'];
     final storedId = (map['id'] ?? id).toString();
 
-    // Parseo defensivo para migrar si antes era una lista o un valor nulo
+    // Parseo defensivo para la categoría personal
     final rawCategory = map['category'];
     String parsedCategory = 'Genérico';
-
     if (rawCategory is String && rawCategory.isNotEmpty) {
       parsedCategory = rawCategory;
     } else if (rawCategory is Iterable && rawCategory.isNotEmpty) {
@@ -72,6 +80,14 @@ class Product {
         orElse: () => 'Genérico',
       );
       parsedCategory = first.toString();
+    }
+
+    // Parseo para la categoría compartida: Si no existe en Firestore, 
+    // cae estrictamente a 'Genérico' para asegurar consistencia multi-dispositivo.
+    final rawCategoryShared = map['categoryShared'];
+    String parsedCategoryShared = 'Genérico';
+    if (rawCategoryShared is String && rawCategoryShared.isNotEmpty) {
+      parsedCategoryShared = rawCategoryShared;
     }
 
     return Product(
@@ -92,6 +108,7 @@ class Product {
                     map['lastAdded'] ?? DateTime.now().toIso8601String(),
                   )),
       category: parsedCategory,
+      categoryShared: parsedCategoryShared,
       icon: map['icon']?.toString(),
     );
   }
@@ -106,7 +123,8 @@ class Product {
       'pricePerKilo': pricePerKilo,
       'imageUrl': imageUrl,
       'lastAdded': Timestamp.fromDate(lastAdded),
-      'category': category,
+      'category': category.isEmpty ? 'Genérico' : category,
+      'categoryShared': categoryShared.isEmpty ? 'Genérico' : categoryShared,
       'icon': icon,
     };
   }
@@ -121,7 +139,8 @@ class Product {
       'pricePerKilo': pricePerKilo,
       'imageUrl': imageUrl,
       'lastAdded': lastAdded.toIso8601String(),
-      'category': category,
+      'category': category.isEmpty ? 'Genérico' : category,
+      'categoryShared': categoryShared.isEmpty ? 'Genérico' : categoryShared,
       'icon': icon,
     };
   }
@@ -129,7 +148,6 @@ class Product {
   factory Product.fromMapHive(Map<String, dynamic> map) {
     final rawCategory = map['category'];
     String parsedCategory = 'Genérico';
-
     if (rawCategory is String && rawCategory.isNotEmpty) {
       parsedCategory = rawCategory;
     } else if (rawCategory is Iterable && rawCategory.isNotEmpty) {
@@ -138,6 +156,12 @@ class Product {
         orElse: () => 'Genérico',
       );
       parsedCategory = first.toString();
+    }
+
+    final rawCategoryShared = map['categoryShared'];
+    String parsedCategoryShared = 'Genérico';
+    if (rawCategoryShared is String && rawCategoryShared.isNotEmpty) {
+      parsedCategoryShared = rawCategoryShared;
     }
 
     return Product(
@@ -156,6 +180,7 @@ class Product {
               map['lastAdded'] ?? DateTime.now().toIso8601String(),
             ),
       category: parsedCategory,
+      categoryShared: parsedCategoryShared,
       icon: map['icon']?.toString(),
     );
   }
@@ -173,5 +198,5 @@ class Product {
 
   @override
   String toString() =>
-      'Product(id: $id, name: $name, frequency: $frequency, amount: $amount, price: $price, pricePerKilo: $pricePerKilo, category: $category, icon: $icon)';
+      'Product(id: $id, name: $name, category: $category, categoryShared: $categoryShared)';
 }

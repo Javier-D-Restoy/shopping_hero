@@ -79,15 +79,14 @@ class ShoppingProvider extends ChangeNotifier {
   List<String> categoriesForList(String listName) {
     final categories = List<String>.from(_listCategories[listName] ?? []);
 
-    // Asegurar que siempre contenga al menos 'Genérico'
     if (!categories.contains('Genérico')) {
       categories.add('Genérico');
     }
 
-    // Extraer las categorías asociadas a productos existentes en la lista
+    final isShared = isSharedList(listName);
     final products = activeProductsForList(listName) + frequentProductsForList(listName);
     for (final product in products) {
-      final cat = product.category.trim();
+      final cat = product.getCategory(isShared: isShared).trim();
       if (cat.isNotEmpty && !categories.contains(cat)) {
         final genericIdx = categories.indexOf('Genérico');
         if (genericIdx != -1) {
@@ -194,17 +193,27 @@ class ShoppingProvider extends ChangeNotifier {
         continue;
       }
 
-      final existingTimestamp = existing.lastAdded;
-      final candidateTimestamp = product.lastAdded;
+      // Prevalece el timestamp más reciente
+      final existingIsNewer = existing.lastAdded.isAfter(product.lastAdded);
+      final newer = existingIsNewer ? existing : product;
+      final older = existingIsNewer ? product : existing;
 
-      final shouldReplace =
-          candidateTimestamp.isAfter(existingTimestamp) ||
-          (candidateTimestamp.isAtSameMomentAs(existingTimestamp) &&
-              product.frequency > existing.frequency);
-
-      if (shouldReplace) {
-        byName[key] = product;
-      }
+      // Fusionamos manteniendo lo más reciente, pero rescatando valores no genéricos/no nulos si el más reciente no los definió
+      byName[key] = newer.copyWith(
+        category: (newer.category != 'Genérico' && newer.category.isNotEmpty)
+            ? newer.category
+            : older.category,
+        categoryShared: (newer.categoryShared != 'Genérico' && newer.categoryShared.isNotEmpty)
+            ? newer.categoryShared
+            : older.categoryShared,
+        price: newer.price ?? older.price,
+        imageUrl: (newer.imageUrl != null && newer.imageUrl!.isNotEmpty)
+            ? newer.imageUrl
+            : older.imageUrl,
+        icon: (newer.icon != null && newer.icon!.isNotEmpty)
+            ? newer.icon
+            : older.icon,
+      );
     }
 
     final merged = byName.values.toList();
@@ -440,7 +449,6 @@ class ShoppingProvider extends ChangeNotifier {
       }
     }
 
-    // 1. Cargamos de Hive las categorías por lista persistidas
     if (storedListCategories is Map) {
       for (final entry in storedListCategories.entries) {
         if (entry.key is String && entry.value is List) {
@@ -558,14 +566,14 @@ class ShoppingProvider extends ChangeNotifier {
       );
     }
 
-    // 2. Extraemos categorías dinámicas de los productos restituidos y garantizamos 'Genérico'
     for (final listEntry in _shoppingLists.entries) {
       final listName = listEntry.key;
+      final isShared = isSharedList(listName);
       final listCategories = _listCategories.putIfAbsent(listName, () => ['Genérico']);
 
       for (final catMap in listEntry.value.values) {
         for (final product in catMap) {
-          final prodCat = product.category.trim();
+          final prodCat = product.getCategory(isShared: isShared).trim();
           if (prodCat.isNotEmpty && !listCategories.contains(prodCat)) {
             final genericIdx = listCategories.indexOf('Genérico');
             if (genericIdx != -1) {
@@ -639,9 +647,11 @@ class ShoppingProvider extends ChangeNotifier {
       _shoppingLists.entries.where((entry) => !isSharedList(entry.key)),
     );
     final sanitized = _sanitizeForCloud(ownedLists);
+
     await _userRepository.saveShoppingLists(
       uid: uid,
       shoppingLists: sanitized,
+      listCategories: _listCategories,
       listUpdatedAt: Map<String, DateTime>.from(_listUpdatedAt),
       listIds: Map<String, String>.from(_listIds),
       deletedLists: Map<String, DateTime>.from(_deletedLists),
@@ -656,6 +666,7 @@ class ShoppingProvider extends ChangeNotifier {
         active: list['active'] ?? <Product>[],
         frequent: list['frequent'] ?? <Product>[],
         updatedAt: _listUpdatedAt[entry.key] ?? DateTime.now(),
+        categories: _listCategories[entry.key],
         deletedProductTimestamps: _deletedSharedProducts[entry.value],
       );
     }
@@ -821,6 +832,10 @@ class ShoppingProvider extends ChangeNotifier {
       if (current == null || entry.value.isAfter(current)) {
         knownDeletedProducts[entry.key] = entry.value;
       }
+    }
+
+    if (data['categories'] is List) {
+      _listCategories[name] = List<String>.from(data['categories'] as List);
     }
 
     _deletedSharedProducts[listId] = knownDeletedProducts;
@@ -1014,7 +1029,23 @@ class ShoppingProvider extends ChangeNotifier {
           !_isOfflineMode &&
           _currentUid != null &&
           _currentUid!.isNotEmpty) {
-        final cloudLists = await _userRepository.getShoppingLists(_currentUid!);
+        final cloudListsWithCategories =
+            await _userRepository.getShoppingListsWithCategories(_currentUid!);
+
+        final cloudLists = cloudListsWithCategories.map(
+          (key, value) => MapEntry(key, {
+            'active': value['active'] as List<Product>,
+            'frequent': value['frequent'] as List<Product>,
+          }),
+        );
+
+        for (final entry in cloudListsWithCategories.entries) {
+          final cats = entry.value['categories'] as List<String>;
+          if (cats.isNotEmpty) {
+            _listCategories[entry.key] = cats;
+          }
+        }
+
         final cloudTs = await _userRepository.getShoppingListTimestamps(
           _currentUid!,
         );
@@ -1062,6 +1093,11 @@ class ShoppingProvider extends ChangeNotifier {
           final listId = sharedEntry.key;
           final cloudName = (data['name'] ?? listId).toString();
           final ownerUid = (data['ownerUid'] ?? '').toString();
+
+          if (data['categories'] is List) {
+            _listCategories[cloudName] =
+                List<String>.from(data['categories'] as List);
+          }
 
           final cloudUpdatedAt = (data['updatedAt'] is Timestamp)
               ? (data['updatedAt'] as Timestamp).toDate()
@@ -1140,7 +1176,6 @@ class ShoppingProvider extends ChangeNotifier {
           }
         }
 
-        // Asegurarnos de que toda lista en _shoppingLists tenga al menos 'Genérico' en _listCategories
         for (final listName in _shoppingLists.keys) {
           _listCategories[listName] ??= ['Genérico'];
           if (!_listCategories[listName]!.contains('Genérico')) {
@@ -1223,9 +1258,6 @@ class ShoppingProvider extends ChangeNotifier {
     _deletedLists.clear();
     _selectedListName = '';
 
-    if (Hive.isBoxOpen(_guestBoxName)) {
-      await Hive.box(_guestBoxName).clear();
-    }
     if (Hive.isBoxOpen(_onlineCacheBoxName)) {
       await Hive.box(_onlineCacheBoxName).clear();
     }
@@ -1249,14 +1281,15 @@ class ShoppingProvider extends ChangeNotifier {
   List<Product> activeProductsForList(String listName) {
     final products = getListAdd(listName)?['active'] ?? <Product>[];
     final categories = _listCategories[listName] ?? const ['Genérico'];
-    return _sortProducts(products, sortOptionForList(listName), categories);
+    return _sortProducts(products, sortOptionForList(listName), categories, isShared: isSharedList(listName));
   }
 
   static List<Product> _sortProducts(
     List<Product> products,
     ProductSortOption option,
-    List<String> listCategories,
-  ) {
+    List<String> listCategories, {
+    bool isShared = false,
+  }) {
     final sorted = List<Product>.from(products);
 
     switch (option) {
@@ -1270,8 +1303,8 @@ class ShoppingProvider extends ChangeNotifier {
         break;
       case ProductSortOption.category:
         sorted.sort((a, b) {
-          final catA = a.category.trim();
-          final catB = b.category.trim();
+          final catA = a.getCategory(isShared: isShared).trim();
+          final catB = b.getCategory(isShared: isShared).trim();
 
           if (catA == 'Genérico' && catB != 'Genérico') return 1;
           if (catA != 'Genérico' && catB == 'Genérico') return -1;
@@ -1294,8 +1327,8 @@ class ShoppingProvider extends ChangeNotifier {
 
       case ProductSortOption.categoryAlphabetical:
         sorted.sort((a, b) {
-          final catA = a.category.trim();
-          final catB = b.category.trim();
+          final catA = a.getCategory(isShared: isShared).trim();
+          final catB = b.getCategory(isShared: isShared).trim();
 
           if (catA == 'Genérico' && catB != 'Genérico') return 1;
           if (catA != 'Genérico' && catB == 'Genérico') return -1;
@@ -1328,10 +1361,7 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   // -------------------------------------------- ][ Gestión de Categorías de Lista ][ -------------------------------------------- //
-  
-  
 
-  /// Carga las categorías globales personalizadas al iniciar el Provider.
   Future<void> loadCategories() async {
     try {
       final box = await Hive.openBox('settings');
@@ -1347,7 +1377,6 @@ class ShoppingProvider extends ChangeNotifier {
     }
   }
 
-  /// Añade una nueva categoría global y la asigna a la lista activa actual si corresponde.
   Future<void> addCategory(String categoryName) async {
     final cleaned = categoryName.trim();
     if (cleaned.isEmpty) return;
@@ -1355,11 +1384,9 @@ class ShoppingProvider extends ChangeNotifier {
     if (!_customCategories.contains(cleaned)) {
       _customCategories.add(cleaned);
       
-      // Persistencia global en Hive
       final box = await Hive.openBox('settings');
       await box.put('custom_categories', _customCategories);
 
-      // Si hay una lista seleccionada, la vinculamos también a esa lista
       if (_selectedListName.isNotEmpty) {
         addCategoryToList(_selectedListName, cleaned);
       } else {
@@ -1376,7 +1403,7 @@ class ShoppingProvider extends ChangeNotifier {
       listName,
       () => ['Genérico'],
     );
-    
+
     if (!categories.contains(cleaned)) {
       final genericIdx = categories.indexOf('Genérico');
       if (genericIdx != -1) {
@@ -1400,14 +1427,18 @@ class ShoppingProvider extends ChangeNotifier {
     if (categories != null && categories.contains(category)) {
       categories.remove(category);
 
+      final isShared = isSharedList(listName);
       final list = _shoppingLists[listName];
       if (list != null) {
         for (final group in ['active', 'frequent']) {
           final products = list[group];
           if (products != null) {
             for (var i = 0; i < products.length; i++) {
-              if (products[i].category == category) {
-                products[i] = products[i].copyWith(category: 'Genérico');
+              final prod = products[i];
+              if (prod.getCategory(isShared: isShared) == category) {
+                products[i] = isShared
+                    ? prod.copyWith(categoryShared: 'Genérico')
+                    : prod.copyWith(category: 'Genérico');
               }
             }
           }
@@ -1749,6 +1780,8 @@ class ShoppingProvider extends ChangeNotifier {
     final list = _shoppingLists[listName];
     if (list == null) return;
 
+    final isShared = isSharedList(listName);
+
     for (final categoryKey in ['active', 'frequent']) {
       final products = list[categoryKey];
       if (products == null) continue;
@@ -1763,7 +1796,8 @@ class ShoppingProvider extends ChangeNotifier {
         price: price,
         pricePerKilo: pricePerKilo,
         imageUrl: imageUrl,
-        category: category,
+        category: isShared ? null : category,
+        categoryShared: isShared ? category : null,
         icon: icon,
         clearIcon: icon == null,
       );
