@@ -578,7 +578,7 @@ class _ListMainPageState extends State<ListMainPage> {
                           child: Stack(
                             children: [
                               Text(
-                                'Comprados', // 'Productos Frecuentes'
+                                'Comprados',
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontSize: 18,
@@ -602,7 +602,7 @@ class _ListMainPageState extends State<ListMainPage> {
                         ),
                       ),
                     ),
-                    Align( // En caso de querer tener la opción de ordenar en la misma fila
+                    Align(
                       alignment: Alignment.centerRight,
                       child: _buildFrequentSortButton(shoppingProvider, themeProvider),
                     ),
@@ -610,13 +610,6 @@ class _ListMainPageState extends State<ListMainPage> {
                 ),
               ),
             ),
-            // SliverToBoxAdapter(
-            //   child: Align(
-            //     alignment: Alignment.centerRight,
-            //     child: _buildFrequentSortButton(shoppingProvider, themeProvider),
-            //   ),
-            // ),
-            // const SliverToBoxAdapter(child: SizedBox(height: 6)),
           if (frequentProducts.isNotEmpty)
             SliverGrid.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -873,55 +866,69 @@ class _ListMainPageState extends State<ListMainPage> {
                                                             child: SingleChildScrollView(
                                                               controller: scrollController,
                                                               child: RadioGroup<String>(
-                                                                groupValue: selectedCategory,
+                                                                groupValue: selectedCategory, // <- Aquí debe ser groupValue en lugar de value
                                                                 onChanged: (String? val) {
                                                                   if (val != null) {
-                                                                    Navigator.pop(
-                                                                      dialogContext,
-                                                                      val,
-                                                                    );
+                                                                    Navigator.pop(dialogContext, val);
                                                                   }
                                                                 },
                                                                 child: Column(
                                                                   children: currentCategories.map((cat) {
-                                                                    return InkWell(
-                                                                      borderRadius: BorderRadius.circular(8),
-                                                                      onTap: () {
-                                                                        Navigator.pop(dialogContext, cat);
-                                                                      },
-                                                                      child: IgnorePointer(
-                                                                        child: RadioListTile<String>(
-                                                                          title: Text(
-                                                                            cat,
-                                                                            style: TextStyle(
-                                                                              color: themeProvider.textStrongColor,
-                                                                              fontWeight: FontWeight.w500,
+                                                                    return Padding(
+                                                                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                                                      child: Row(
+                                                                        children: [
+                                                                          Expanded(
+                                                                            child: InkWell(
+                                                                              borderRadius: BorderRadius.circular(8),
+                                                                              onTap: () {
+                                                                                Navigator.pop(dialogContext, cat);
+                                                                              },
+                                                                              child: Padding(
+                                                                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                                                                child: Row(
+                                                                                  children: [
+                                                                                    Radio<String>(
+                                                                                      value: cat,
+                                                                                    ),
+                                                                                    Expanded(
+                                                                                      child: Text(
+                                                                                        cat,
+                                                                                        style: TextStyle(
+                                                                                          color: themeProvider.textStrongColor,
+                                                                                          fontWeight: FontWeight.w500,
+                                                                                        ),
+                                                                                      ),
+                                                                                    ),
+                                                                                  ],
+                                                                                ),
+                                                                              ),
                                                                             ),
                                                                           ),
-                                                                          value: cat,
-                                                                          secondary: cat != 'Genérico'
-                                                                              ? IconButton(
-                                                                                  icon: const Icon(
-                                                                                    Icons.delete,
-                                                                                    color: Colors.red,
-                                                                                  ),
-                                                                                  onPressed: () {
-                                                                                    shoppingProvider.removeCategoryFromList(widget.listName, cat);
-                                                                                    if (selectedCategory == cat) {
-                                                                                      selectedCategory = 'Genérico';
-                                                                                    }
-                                                                                    setDialogState(() {});
-                                                                                    setModalState(() {});
-                                                                                  },
-                                                                                )
-                                                                              : null,
-                                                                          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                                                                        ),
+                                                                          if (cat != 'Genérico')
+                                                                            IconButton(
+                                                                              icon: const Icon(
+                                                                                Icons.delete,
+                                                                                color: Colors.red,
+                                                                              ),
+                                                                              onPressed: () {
+                                                                                shoppingProvider.removeCategoryFromList(
+                                                                                  widget.listName,
+                                                                                  cat,
+                                                                                );
+                                                                                if (selectedCategory == cat) {
+                                                                                  selectedCategory = 'Genérico';
+                                                                                }
+                                                                                setDialogState(() {});
+                                                                                setModalState(() {});
+                                                                              },
+                                                                            ),
+                                                                        ],
                                                                       ),
                                                                     );
                                                                   }).toList(),
                                                                 ),
-                                                              ),
+                                                              )
                                                             ),
                                                           ),
                                                           AnimatedOpacity(
