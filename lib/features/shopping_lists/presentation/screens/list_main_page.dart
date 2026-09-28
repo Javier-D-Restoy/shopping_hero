@@ -720,50 +720,57 @@ class _ListMainPageState extends State<ListMainPage> {
                                           ),
                                           content: SizedBox(
                                             width: double.maxFinite,
-                                            child: SingleChildScrollView(
+                                            child: ConstrainedBox(
+                                              constraints: BoxConstraints(
+                                                maxHeight: MediaQuery.of(context).size.height * 0.6,
+                                              ),
                                               child: Column(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  RadioGroup<String>(
-                                                    groupValue: selectedCategory,
-                                                    onChanged: (String? val) {
-                                                      if (val != null) {
-                                                        Navigator.pop(
-                                                          dialogContext,
-                                                          val,
-                                                        );
-                                                      }
-                                                    },
-                                                    child: Column(
-                                                      children: currentCategories.map((cat) {
-                                                        return RadioListTile<String>(
-                                                          title: Text(
-                                                            cat,
-                                                            style: TextStyle(
-                                                              color: themeProvider.textStrongColor,
-                                                              fontWeight: FontWeight.w500,
-                                                            ),
-                                                          ),
-                                                          value: cat,
-                                                          secondary: cat != 'Genérico'
-                                                              ? IconButton(
-                                                                  icon: const Icon(
-                                                                    Icons.delete,
-                                                                    color: Colors.red,
-                                                                  ),
-                                                                  onPressed: () {
-                                                                    shoppingProvider.removeCategoryFromList(widget.listName, cat);
-                                                                    if (selectedCategory == cat) {
-                                                                      selectedCategory = 'Genérico';
-                                                                    }
-                                                                    setDialogState(() {});
-                                                                    setModalState(() {});
-                                                                  },
-                                                                )
-                                                              : null,
-                                                          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                                                        );
-                                                      }).toList(),
+                                                  Flexible(
+                                                    child: SingleChildScrollView(
+                                                      child: RadioGroup<String>(
+                                                        groupValue: selectedCategory,
+                                                        onChanged: (String? val) {
+                                                          if (val != null) {
+                                                            Navigator.pop(
+                                                              dialogContext,
+                                                              val,
+                                                            );
+                                                          }
+                                                        },
+                                                        child: Column(
+                                                          children: currentCategories.map((cat) {
+                                                            return RadioListTile<String>(
+                                                              title: Text(
+                                                                cat,
+                                                                style: TextStyle(
+                                                                  color: themeProvider.textStrongColor,
+                                                                  fontWeight: FontWeight.w500,
+                                                                ),
+                                                              ),
+                                                              value: cat,
+                                                              secondary: cat != 'Genérico'
+                                                                  ? IconButton(
+                                                                      icon: const Icon(
+                                                                        Icons.delete,
+                                                                        color: Colors.red,
+                                                                      ),
+                                                                      onPressed: () {
+                                                                        shoppingProvider.removeCategoryFromList(widget.listName, cat);
+                                                                        if (selectedCategory == cat) {
+                                                                          selectedCategory = 'Genérico';
+                                                                        }
+                                                                        setDialogState(() {});
+                                                                        setModalState(() {});
+                                                                      },
+                                                                    )
+                                                                  : null,
+                                                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                                            );
+                                                          }).toList(),
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                   const Divider(),
@@ -810,10 +817,10 @@ class _ListMainPageState extends State<ListMainPage> {
                                                         shoppingProvider.addCategoryToList(widget.listName, newCat);
                                                         
                                                         setDialogState(() {
-                                                          selectedCategory = newCat;
+                                                          // selectedCategory = newCat; // Comentándolo evitamos que se autoasigne.
                                                         });
                                                         setModalState(() {
-                                                          selectedCategory = newCat;
+                                                          // selectedCategory = newCat; // Comentándolo evitamos que se autoasigne.
                                                         });
                                                       }
                                                     },
