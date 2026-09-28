@@ -531,12 +531,29 @@ class _ListMainPageState extends State<ListMainPage> {
             itemCount: activeProducts.length,
             itemBuilder: (context, index) {
               final product = activeProducts[index];
+
+              // 1. Obtener la lista ordenada de categorías y el estado compartido
+              final categories = shoppingProvider.categoriesForList(
+                widget.listName,
+              );
+              final isShared = shoppingProvider.isSharedList(widget.listName);
+
+              // 2. Obtener la categoría del producto actual
+              final cat = product.getCategory(isShared: isShared);
+
+              // 3. Asignar el color según el índice
+              final categoryColor = themeProvider.getCategoryColor(
+                cat,
+                categories,
+              );
+
               return ProductBubble(
                 key: ValueKey('${product.id}-active'),
                 label: product.name,
                 amount: product.amount,
                 icon: product.icon,
                 productAdd: ProductAdd.active,
+                categoryColor: categoryColor,
                 animateOnEntry: _shouldAnimateProduct(
                   product,
                   ProductAdd.active,
@@ -1912,6 +1929,7 @@ class _ListMainPageState extends State<ListMainPage> {
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            final allCategories = shoppingProvider.categoriesForList(listName);
             final categories = shoppingProvider
                 .categoriesForList(listName)
                 .where((cat) => cat != 'Genérico')
@@ -1955,13 +1973,37 @@ class _ListMainPageState extends State<ListMainPage> {
                         },
                         itemBuilder: (context, index) {
                           final cat = categories[index];
+                          final catColor = themeProvider.getCategoryColor(
+                            cat,
+                            allCategories,
+                          );
                           return ListTile(
                             key: ValueKey(cat),
-                            leading: Text(
-                              '${index + 1}.',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
+                            leading: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${index + 1}.',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: BoxDecoration(
+                                    color: catColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      width: 1,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             title: Text(cat),
                             trailing: const Icon(Icons.drag_handle),

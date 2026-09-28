@@ -121,6 +121,26 @@ class ThemeProvider extends ChangeNotifier {
           const Color(0xFFE7F4E1).withValues(alpha: 0.95),
         ];
 
+  // Paleta centralizada de colores para categorías
+  List<Color> get categoryColors => const [
+    Colors.blue,
+    Colors.purple,
+    Colors.teal,
+    Colors.deepOrange,
+    Colors.pink,
+    Colors.indigo,
+    Colors.amber,
+    Colors.brown,
+  ];
+
+  /// Devuelve el color asignado a una categoría según su posición en la lista.
+  Color getCategoryColor(String category, List<String> categories) {
+    final index = categories.indexOf(category);
+    if (index == -1) return Colors.grey;
+
+    return categoryColors[index % categoryColors.length];
+  }
+
   String get backgroundImagePath => _isDarkMode
       ? 'assets/images/background/Background_Dark_Image_1.jpg'
       : 'assets/images/background/Background_Image_1.jpg';

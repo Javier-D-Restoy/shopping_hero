@@ -19,6 +19,7 @@ class ProductBubble extends StatefulWidget {
     this.longPressDuration = const Duration(milliseconds: 400),
     required this.productAdd,
     this.animateOnEntry = false,
+    this.categoryColor,
   });
 
   final String label;
@@ -29,6 +30,7 @@ class ProductBubble extends StatefulWidget {
   final VoidCallback? onLongPress;
   final Duration longPressDuration;
   final bool animateOnEntry;
+  final Color? categoryColor;
 
   @override
   State<ProductBubble> createState() => _ProductBubbleState();
@@ -71,13 +73,17 @@ class _ProductBubbleState extends State<ProductBubble> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
+    final hasCategoryBorder =
+        widget.productAdd == ProductAdd.active && widget.categoryColor != null;
     final bubble = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: _handleTap,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.all(1),
+          padding: hasCategoryBorder
+              ? const EdgeInsets.all(2)
+              : const EdgeInsets.all(1), // antes en 1
           child: Container(
             width: 100,
             height: 100,
@@ -88,8 +94,24 @@ class _ProductBubbleState extends State<ProductBubble> {
                   ? Colors.green
                   : Colors.grey,
               borderRadius: BorderRadius.circular(10),
-              boxShadow: [BoxShadow(color: Colors.black, spreadRadius: 1.5)],
-              border: Border.all(color: Colors.black, width: 1.2),
+              border: Border.all(color: Colors.black, width: 1.3), // antes 1.2
+              boxShadow: hasCategoryBorder
+                  ? [
+                      // 2º Borde (Intermedio): Color Negro Contraste
+                      const BoxShadow(
+                        color: Colors.black,
+                        spreadRadius: 2.8, // antes 3.5
+                        blurRadius: 0,
+                      ),
+
+                      // 3er Borde (Exterior): Color de la categoría
+                      BoxShadow(
+                        color: widget.categoryColor!,
+                        spreadRadius: 2.5, // antes 2.0
+                        blurRadius: 0,
+                      ),
+                    ]
+                  : [const BoxShadow(color: Colors.black, spreadRadius: 1.5)],
             ),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -111,7 +133,10 @@ class _ProductBubbleState extends State<ProductBubble> {
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Text(
                             '${widget.amount}',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight(500)),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight(500),
+                            ),
                           ),
                         ),
                       ),
