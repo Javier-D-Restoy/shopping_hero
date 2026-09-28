@@ -82,7 +82,7 @@ class _ProductBubbleState extends State<ProductBubble> {
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: hasCategoryBorder
-              ? const EdgeInsets.all(2)
+              ? const EdgeInsets.all(4.2) // antes 2.5
               : const EdgeInsets.all(1), // antes en 1
           child: Container(
             width: 100,
@@ -94,20 +94,22 @@ class _ProductBubbleState extends State<ProductBubble> {
                   ? Colors.green
                   : Colors.grey,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.black, width: 1.3), // antes 1.2
+              border: hasCategoryBorder
+                  ? Border.all(color: Colors.black, width: 2.5) // antes 1.2
+                  : Border.all(color: Colors.black, width: 1.2),
               boxShadow: hasCategoryBorder
                   ? [
                       // 2º Borde (Intermedio): Color Negro Contraste
                       const BoxShadow(
                         color: Colors.black,
-                        spreadRadius: 2.8, // antes 3.5
+                        spreadRadius: 5.5, // antes 3.5
                         blurRadius: 0,
                       ),
 
                       // 3er Borde (Exterior): Color de la categoría
                       BoxShadow(
                         color: widget.categoryColor!,
-                        spreadRadius: 2.5, // antes 2.0
+                        spreadRadius: 3.5, // antes 2.0
                         blurRadius: 0,
                       ),
                     ]
@@ -125,6 +127,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                         decoration: BoxDecoration(
                           color: Colors.black87,
                           borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(8),
                             bottomRight: Radius.circular(8),
                           ),
                         ),

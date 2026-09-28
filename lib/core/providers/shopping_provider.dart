@@ -179,11 +179,33 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   Future<void> shareSelectedListWithEmail(String email) async {
+    // Antigua
     if (_currentUid == null || _isOfflineMode) {
       throw Exception('Necesitas iniciar sesión para compartir una lista');
     }
 
     final listName = _selectedListName;
+    final listId = await _userRepository.shareShoppingList(
+      ownerUid: _currentUid!,
+      listName: listName,
+      recipientEmail: email,
+    );
+
+    _sharedListIds[listName] = listId;
+    _sharedListOwners[listName] = _currentUid!;
+    _listIds.remove(listName);
+    _touchList(listName);
+    notifyListeners();
+    await saveToStorage(mergeCloud: false);
+    await _syncSharedListListeners();
+  }
+
+  Future<void> shareListWithEmail(String listName, String email) async {
+    // Nueva
+    if (_currentUid == null || _isOfflineMode) {
+      throw Exception('Necesitas iniciar sesión para compartir una lista');
+    }
+
     final listId = await _userRepository.shareShoppingList(
       ownerUid: _currentUid!,
       listName: listName,

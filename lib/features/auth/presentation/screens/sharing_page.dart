@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +20,9 @@ class _SharedMember {
 }
 
 class SharingPage extends StatefulWidget {
-  const SharingPage({super.key});
+  const SharingPage({super.key, required this.listName});
+
+  final String listName;
 
   @override
   State<SharingPage> createState() => _SharingPageState();
@@ -54,7 +57,7 @@ class _SharingPageState extends State<SharingPage> {
     if (!mounted) return;
 
     final shoppingProvider = context.read<ShoppingProvider>();
-    final listName = shoppingProvider.selectedListName;
+    final listName = widget.listName;
     final sharedListId = shoppingProvider.sharedListIdFor(listName);
     final currentUid = context.read<SessionProvider>().uid;
 
@@ -135,7 +138,7 @@ class _SharingPageState extends State<SharingPage> {
 
     setState(() => _isSharing = true);
     try {
-      await shoppingProvider.shareSelectedListWithEmail(email);
+      await shoppingProvider.shareListWithEmail(widget.listName, email);
       if (!mounted) return;
       _emailController.clear();
       await _loadSharedMembers();
@@ -157,7 +160,7 @@ class _SharingPageState extends State<SharingPage> {
   Future<void> _leaveSharedList() async {
     final shoppingProvider = context.read<ShoppingProvider>();
     final messenger = ScaffoldMessenger.maybeOf(context);
-    final listName = shoppingProvider.selectedListName;
+    final listName = widget.listName;
 
     try {
       await shoppingProvider.leaveSharedList(listName);
@@ -184,7 +187,7 @@ class _SharingPageState extends State<SharingPage> {
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
     final isDark = themeProvider.isDarkMode;
-    final listName = shoppingProvider.selectedListName;
+    final listName = widget.listName;
     final isOwner = shoppingProvider.canManageList(listName);
 
     final surface = themeProvider.surface;
@@ -212,7 +215,10 @@ class _SharingPageState extends State<SharingPage> {
                 ],
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: isDark ? border : border.withValues(alpha: 0.2), width: 1.6),
+        border: Border.all(
+          color: isDark ? border : border.withValues(alpha: 0.2),
+          width: 1.6,
+        ),
         boxShadow: [
           BoxShadow(
             color: cardShadow,
@@ -250,13 +256,61 @@ class _SharingPageState extends State<SharingPage> {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  'Compartir "$listName"',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: textStrong,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: themeProvider.primaryColor.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                        offset: Offset(0, 0),
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 4,
+                        offset: Offset(0, 0),
+                      ),
+                    ],
+                    border: BoxBorder.all(
+                      color: themeProvider.borderColor.withValues(alpha: 0.5),
+                      width: 1.5,
+                      // style: BorderStyle.solid,
+                    ),
+                  ),
+                  child: Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          ' Compartir',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? Colors.white.withAlpha(210)
+                                    : Colors.white.withAlpha(210),
+                              ),
+                        ),
+                        Center(
+                          child: AutoSizeText(
+                            '"$listName"',
+                            maxFontSize: 20,
+                            minFontSize: 15,
+                            maxLines: 1,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  // fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : Colors.white,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

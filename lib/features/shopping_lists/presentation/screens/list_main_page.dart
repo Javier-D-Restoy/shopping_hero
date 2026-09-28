@@ -199,7 +199,7 @@ class _ListMainPageState extends State<ListMainPage> {
                   themeProvider,
                 ),
                 const ProfilePage(),
-                const SharingPage(),
+                SharingPage(listName: widget.listName),
               ],
             ),
           ),
@@ -1883,17 +1883,96 @@ class _ListMainPageState extends State<ListMainPage> {
                                 backgroundColor: Colors.red,
                               ),
                               onPressed: () async {
-                                shoppingProvider.deleteProduct(
-                                  widget.listName,
-                                  product.id,
+                                // Mostrar diálogo de confirmación de eliminación de producto
+                                final confirmDelete = await showDialog<bool>(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  builder: (ctx) => AlertDialog(
+                                    backgroundColor: themeProvider.surface,
+                                    elevation: 10,
+                                    shadowColor: themeProvider.cardShadowColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                      side: BorderSide(
+                                        color: themeProvider.borderColor,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    titlePadding: const EdgeInsets.fromLTRB(
+                                      24,
+                                      20,
+                                      24,
+                                      10,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 24,
+                                      vertical: 10,
+                                    ),
+                                    title: const Center(
+                                      child: Text(
+                                        'Eliminar Producto',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                    content: Text(
+                                      '"${product.name}"',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: themeProvider.textStrongColor,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    actionsAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    actionsPadding: const EdgeInsets.only(
+                                      bottom: 12,
+                                      top: 8,
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, false),
+                                        child: const Text(
+                                          'Cancelar',
+                                          style: TextStyle(fontSize: 16),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, true),
+                                        child: const Text(
+                                          'Eliminar',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.red,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 );
 
-                                await shoppingProvider.saveToStorage(
-                                  mergeCloud: false,
-                                );
+                                // Si el usuario confirma la eliminación
+                                if (confirmDelete == true) {
+                                  shoppingProvider.deleteProduct(
+                                    widget.listName,
+                                    product.id,
+                                  );
 
-                                if (context.mounted) {
-                                  Navigator.of(context).pop();
+                                  await shoppingProvider.saveToStorage(
+                                    mergeCloud: false,
+                                  );
+
+                                  if (context.mounted) {
+                                    Navigator.of(
+                                      context,
+                                    ).pop(); // Cierra la hoja inferior (bottom sheet)
+                                  }
                                 }
                               },
                               child: const Text(
