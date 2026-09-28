@@ -927,8 +927,9 @@ class _ListMainPageState extends State<ListMainPage> {
                                                       void
                                                       updateScrollIndicators() {
                                                         if (!scrollController
-                                                            .hasClients)
+                                                            .hasClients) {
                                                           return;
+                                                        }
                                                         final maxScroll =
                                                             scrollController
                                                                 .position
@@ -1849,8 +1850,9 @@ class _ListMainPageState extends State<ListMainPage> {
 
                                 if (name.isEmpty ||
                                     frequency == null ||
-                                    amount == null)
+                                    amount == null) {
                                   return;
+                                }
 
                                 shoppingProvider.updateProduct(
                                   widget.listName,
@@ -1866,8 +1868,9 @@ class _ListMainPageState extends State<ListMainPage> {
                                   mergeCloud: false,
                                 );
 
-                                if (context.mounted)
+                                if (context.mounted) {
                                   Navigator.of(context).pop();
+                                }
                               },
                               child: const Text('Guardar'),
                             ),
@@ -1889,8 +1892,9 @@ class _ListMainPageState extends State<ListMainPage> {
                                   mergeCloud: false,
                                 );
 
-                                if (context.mounted)
+                                if (context.mounted) {
                                   Navigator.of(context).pop();
+                                }
                               },
                               child: const Text(
                                 'Borrar',
