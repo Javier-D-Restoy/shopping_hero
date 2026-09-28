@@ -45,6 +45,9 @@ class ShoppingProvider extends ChangeNotifier {
   /// Criterio de orden elegido para cada lista (preferencia puramente local).
   final Map<String, ProductSortOption> _sortOptionForList = {};
 
+  /// Criterio de orden elegido para productos frecuentes de cada lista.
+  final Map<String, FrequentSortOption> _frequentSortOptionForList = {};
+
   String _selectedListName = '';
 
   List<String> _customCategories = ['Genérico'];
@@ -67,11 +70,27 @@ class ShoppingProvider extends ChangeNotifier {
     unawaited(_persistSortOptions());
   }
 
+  FrequentSortOption frequentSortOptionForList(String listName) =>
+      _frequentSortOptionForList[listName] ?? FrequentSortOption.frequency;
+
+  FrequentSortOption get frequentSortOption =>
+      frequentSortOptionForList(_selectedListName);
+
+  void setFrequentSortOption(String listName, FrequentSortOption option) {
+    _frequentSortOptionForList[listName] = option;
+    notifyListeners();
+    unawaited(_persistSortOptions());
+  }
+
   Future<void> _persistSortOptions() async {
     if (_box == null) return;
     await _box!.put(
       'sort_options',
       _sortOptionForList.map((listName, option) => MapEntry(listName, option.name)),
+    );
+    await _box!.put(
+      'frequent_sort_options',
+      _frequentSortOptionForList.map((listName, option) => MapEntry(listName, option.name)),
     );
   }
 
@@ -193,12 +212,10 @@ class ShoppingProvider extends ChangeNotifier {
         continue;
       }
 
-      // Prevalece el timestamp más reciente
       final existingIsNewer = existing.lastAdded.isAfter(product.lastAdded);
       final newer = existingIsNewer ? existing : product;
       final older = existingIsNewer ? product : existing;
 
-      // Fusionamos manteniendo lo más reciente, pero rescatando valores no genéricos/no nulos si el más reciente no los definió
       byName[key] = newer.copyWith(
         category: (newer.category != 'Genérico' && newer.category.isNotEmpty)
             ? newer.category
@@ -429,6 +446,7 @@ class ShoppingProvider extends ChangeNotifier {
     final storedDeletedSharedProducts = _box!.get('deleted_shared_products');
     final storedListCategories = _box!.get('list_categories');
     final storedSortOptions = _box!.get('sort_options');
+    final storedFrequentSortOptions = _box!.get('frequent_sort_options');
 
     if (storedSortOptions is Map) {
       for (final entry in storedSortOptions.entries) {
@@ -438,6 +456,17 @@ class ShoppingProvider extends ChangeNotifier {
           orElse: () => ProductSortOption.dateDesc,
         );
         _sortOptionForList[entry.key as String] = option;
+      }
+    }
+
+    if (storedFrequentSortOptions is Map) {
+      for (final entry in storedFrequentSortOptions.entries) {
+        if (entry.key is! String || entry.value is! String) continue;
+        final option = FrequentSortOption.values.firstWhere(
+          (value) => value.name == entry.value,
+          orElse: () => FrequentSortOption.frequency,
+        );
+        _frequentSortOptionForList[entry.key as String] = option;
       }
     }
 
@@ -1356,7 +1385,17 @@ class ShoppingProvider extends ChangeNotifier {
   List<Product> frequentProductsForList(String listName) {
     final products = getListAdd(listName)?['frequent'] ?? <Product>[];
     final sorted = List<Product>.from(products);
-    sorted.sort((a, b) => b.frequency.compareTo(a.frequency));
+
+    final sortOption = frequentSortOptionForList(listName);
+    switch (sortOption) {
+      case FrequentSortOption.frequency:
+        sorted.sort((a, b) => b.frequency.compareTo(a.frequency));
+        break;
+      case FrequentSortOption.date:
+        sorted.sort((a, b) => b.lastAdded.compareTo(a.lastAdded));
+        break;
+    }
+
     return sorted;
   }
 

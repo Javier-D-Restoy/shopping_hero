@@ -405,6 +405,84 @@ class _ListMainPageState extends State<ListMainPage> {
     );
   }
 
+  Widget _buildFrequentSortButton(
+    ShoppingProvider shoppingProvider,
+    ThemeProvider themeProvider,
+  ) {
+    final currentOption = shoppingProvider.frequentSortOption;
+
+    return PopupMenuButton<FrequentSortOption>(
+      initialValue: currentOption,
+      tooltip: 'Ordenar productos frecuentes',
+      color: themeProvider.surfaceSoft,
+      elevation: 6,
+      shadowColor: themeProvider.cardShadowColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+      ),
+      onSelected: (option) {
+        shoppingProvider.setFrequentSortOption(widget.listName, option);
+      },
+      itemBuilder: (context) => FrequentSortOption.values
+          .map(
+            (option) => PopupMenuItem<FrequentSortOption>(
+              value: option,
+              child: Row(
+                children: [
+                  if (option == currentOption)
+                    Icon(Icons.check, size: 18, color: themeProvider.primaryColor)
+                  else
+                    const SizedBox(width: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    option.displayName,
+                    style: TextStyle(
+                      color: themeProvider.textStrongColor,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: themeProvider.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.symmetric(
+            horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
+            vertical: BorderSide(color: themeProvider.borderColor, width: 5),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.sort, size: 18, color: themeProvider.primaryColor),
+            const SizedBox(width: 6),
+            Text(
+              currentOption.displayName,
+              style: TextStyle(
+                fontSize: 13,
+                color: themeProvider.textStrongColor,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.arrow_drop_down,
+              size: 20,
+              color: themeProvider.textMutedColor,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildListContent(
     List<Product> activeProducts,
     List<Product> frequentProducts,
@@ -466,64 +544,79 @@ class _ListMainPageState extends State<ListMainPage> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.only(
-                  top: 30,
-                  bottom: 10,
+                  top: 20,
+                  bottom: 8,
                   left: 5,
                   right: 5,
                 ),
-                child: Container(
-                  width: 100,
-                  height: 35,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.symmetric(
-                      horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
-                      vertical: BorderSide(color: themeProvider.borderColor, width: 5),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: themeProvider.borderColor,
-                        spreadRadius: 1.5,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 35,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.symmetric(
+                            horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
+                            vertical: BorderSide(color: themeProvider.borderColor, width: 5),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: themeProvider.borderColor,
+                              spreadRadius: 1.5,
+                            ),
+                          ],
+                          color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: themeProvider.gradientColors2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Stack(
+                            children: [
+                              Text(
+                                'Comprados', // 'Productos Frecuentes'
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 18,
+                                  letterSpacing: 1.0,
+                                  wordSpacing: 3.0,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                'Comprados',
+                                style: TextStyle(
+                                  color: themeProvider.textStrongColor,
+                                  fontSize: 18,
+                                  letterSpacing: 1.0,
+                                  wordSpacing: 3.0,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ],
-                    color: themeProvider.isDarkMode
-                        ? Colors.black
-                        : Colors.white,
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: themeProvider.gradientColors2,
                     ),
-                  ),
-                  child: Center(
-                    child: Stack(
-                      children: [
-                        Text(
-                          'Productos Frecuentes',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 20,
-                            letterSpacing: 1.0,
-                            wordSpacing: 5.0,
-                            fontWeight: FontWeight(700),
-                          ),
-                        ),
-                        Text(
-                          'Productos Frecuentes',
-                          style: TextStyle(
-                            color: themeProvider.textStrongColor,
-                            fontSize: 20,
-                            letterSpacing: 1.0,
-                            wordSpacing: 5.0,
-                            fontWeight: FontWeight(700),
-                          ),
-                        ),
-                      ],
+                    Align( // En caso de querer tener la opción de ordenar en la misma fila
+                      alignment: Alignment.centerRight,
+                      child: _buildFrequentSortButton(shoppingProvider, themeProvider),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
+            // SliverToBoxAdapter(
+            //   child: Align(
+            //     alignment: Alignment.centerRight,
+            //     child: _buildFrequentSortButton(shoppingProvider, themeProvider),
+            //   ),
+            // ),
+            // const SliverToBoxAdapter(child: SizedBox(height: 6)),
           if (frequentProducts.isNotEmpty)
             SliverGrid.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -539,6 +632,7 @@ class _ListMainPageState extends State<ListMainPage> {
                   key: ValueKey('${product.id}-frequent'),
                   label: product.name,
                   amount: product.amount,
+                  icon: product.icon,
                   productAdd: ProductAdd.frequent,
                   animateOnEntry: _shouldAnimateProduct(
                     product,
@@ -688,6 +782,7 @@ class _ListMainPageState extends State<ListMainPage> {
                       Row(
                         children: [
                           Expanded(
+                            flex: 2,
                             child: InkWell(
                               onTap: () async {
                                 FocusManager.instance.primaryFocus?.unfocus();
@@ -712,10 +807,12 @@ class _ListMainPageState extends State<ListMainPage> {
                                             borderRadius: BorderRadius.circular(16),
                                             side: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                           ),
+                                          titlePadding: const EdgeInsets.fromLTRB(14, 24, 14, 0),
+                                          contentPadding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
                                           title: const Center(
                                             child: Text(
                                               'Seleccionar Categoría',
-                                              style: TextStyle(fontWeight: FontWeight.w500),
+                                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
                                             ),
                                           ),
                                           content: SizedBox(
@@ -724,134 +821,254 @@ class _ListMainPageState extends State<ListMainPage> {
                                               constraints: BoxConstraints(
                                                 maxHeight: MediaQuery.of(context).size.height * 0.6,
                                               ),
-                                              child: Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Flexible(
-                                                    child: SingleChildScrollView(
-                                                      child: RadioGroup<String>(
-                                                        groupValue: selectedCategory,
-                                                        onChanged: (String? val) {
-                                                          if (val != null) {
-                                                            Navigator.pop(
-                                                              dialogContext,
-                                                              val,
-                                                            );
-                                                          }
-                                                        },
-                                                        child: Column(
-                                                          children: currentCategories.map((cat) {
-                                                            return RadioListTile<String>(
-                                                              title: Text(
-                                                                cat,
-                                                                style: TextStyle(
-                                                                  color: themeProvider.textStrongColor,
-                                                                  fontWeight: FontWeight.w500,
+                                              child: Builder(
+                                                builder: (context) {
+                                                  final scrollController = ScrollController();
+                                                  bool canScrollUp = false;
+                                                  bool canScrollDown = false;
+
+                                                  return StatefulBuilder(
+                                                    builder: (context, setInnerState) {
+                                                      void updateScrollIndicators() {
+                                                        if (!scrollController.hasClients) return;
+                                                        final maxScroll = scrollController.position.maxScrollExtent;
+                                                        final currentScroll = scrollController.offset;
+
+                                                        final showUp = currentScroll > 5;
+                                                        final showDown = maxScroll > 0 && currentScroll < (maxScroll - 5);
+
+                                                        if (showUp != canScrollUp || showDown != canScrollDown) {
+                                                          setInnerState(() {
+                                                            canScrollUp = showUp;
+                                                            canScrollDown = showDown;
+                                                          });
+                                                        }
+                                                      }
+
+                                                      scrollController.addListener(updateScrollIndicators);
+
+                                                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                                                        updateScrollIndicators();
+                                                      });
+
+                                                      return Column(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          AnimatedOpacity(
+                                                            duration: const Duration(milliseconds: 200),
+                                                            opacity: canScrollUp ? 1.0 : 0.0,
+                                                            child: SizedBox(
+                                                              height: 22,
+                                                              child: Center(
+                                                                child: Icon(
+                                                                  Icons.keyboard_arrow_up,
+                                                                  size: 40,
+                                                                  color: themeProvider.primaryColor,
                                                                 ),
                                                               ),
-                                                              value: cat,
-                                                              secondary: cat != 'Genérico'
-                                                                  ? IconButton(
-                                                                      icon: const Icon(
-                                                                        Icons.delete,
-                                                                        color: Colors.red,
-                                                                      ),
-                                                                      onPressed: () {
-                                                                        shoppingProvider.removeCategoryFromList(widget.listName, cat);
-                                                                        if (selectedCategory == cat) {
-                                                                          selectedCategory = 'Genérico';
-                                                                        }
-                                                                        setDialogState(() {});
-                                                                        setModalState(() {});
-                                                                      },
-                                                                    )
-                                                                  : null,
-                                                              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                                                            );
-                                                          }).toList(),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  const Divider(),
-                                                  ListTile(
-                                                    leading: const Icon(
-                                                      Icons.add,
-                                                      color: Colors.blue,
-                                                    ),
-                                                    title: const Text(
-                                                      'Crear categoría',
-                                                      style: TextStyle(
-                                                        color: Colors.blue,
-                                                        fontWeight: FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                    onTap: () async {
-                                                      final newCatController = TextEditingController();
-                                                      final newCat = await showDialog<String>(
-                                                        context: context,
-                                                        barrierDismissible: true,
-                                                        builder: (ctx) => AlertDialog(
-                                                          title: const Text('Nueva Categoría'),
-                                                          content: TextField(
-                                                            controller: newCatController,
-                                                            autofocus: true,
+                                                            ),
                                                           ),
-                                                          actions: [
-                                                            TextButton(
-                                                              onPressed: () => Navigator.pop(ctx),
-                                                              child: const Text('Cancelar'),
-                                                            ),
-                                                            TextButton(
-                                                              onPressed: () => Navigator.pop(
-                                                                ctx,
-                                                                newCatController.text.trim(),
+                                                          const SizedBox(height: 10),
+                                                          Flexible(
+                                                            child: SingleChildScrollView(
+                                                              controller: scrollController,
+                                                              child: RadioGroup<String>(
+                                                                groupValue: selectedCategory,
+                                                                onChanged: (String? val) {
+                                                                  if (val != null) {
+                                                                    Navigator.pop(
+                                                                      dialogContext,
+                                                                      val,
+                                                                    );
+                                                                  }
+                                                                },
+                                                                child: Column(
+                                                                  children: currentCategories.map((cat) {
+                                                                    return InkWell(
+                                                                      borderRadius: BorderRadius.circular(8),
+                                                                      onTap: () {
+                                                                        Navigator.pop(dialogContext, cat);
+                                                                      },
+                                                                      child: IgnorePointer(
+                                                                        child: RadioListTile<String>(
+                                                                          title: Text(
+                                                                            cat,
+                                                                            style: TextStyle(
+                                                                              color: themeProvider.textStrongColor,
+                                                                              fontWeight: FontWeight.w500,
+                                                                            ),
+                                                                          ),
+                                                                          value: cat,
+                                                                          secondary: cat != 'Genérico'
+                                                                              ? IconButton(
+                                                                                  icon: const Icon(
+                                                                                    Icons.delete,
+                                                                                    color: Colors.red,
+                                                                                  ),
+                                                                                  onPressed: () {
+                                                                                    shoppingProvider.removeCategoryFromList(widget.listName, cat);
+                                                                                    if (selectedCategory == cat) {
+                                                                                      selectedCategory = 'Genérico';
+                                                                                    }
+                                                                                    setDialogState(() {});
+                                                                                    setModalState(() {});
+                                                                                  },
+                                                                                )
+                                                                              : null,
+                                                                          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                                                        ),
+                                                                      ),
+                                                                    );
+                                                                  }).toList(),
+                                                                ),
                                                               ),
-                                                              child: const Text('Añadir'),
                                                             ),
-                                                          ],
-                                                        ),
-                                                      );
+                                                          ),
+                                                          AnimatedOpacity(
+                                                            duration: const Duration(milliseconds: 200),
+                                                            opacity: canScrollDown ? 1.0 : 0.0,
+                                                            child: SizedBox(
+                                                              height: 22,
+                                                              child: Center(
+                                                                child: Icon(
+                                                                  Icons.keyboard_arrow_down,
+                                                                  size: 40,
+                                                                  color: themeProvider.primaryColor,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          const Divider(),
+                                                          ListTile(
+                                                            leading: const Icon(
+                                                              Icons.add,
+                                                              color: Colors.blue,
+                                                            ),
+                                                            title: const Text(
+                                                              'Crear categoría',
+                                                              style: TextStyle(
+                                                                color: Colors.blue,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                            ),
+                                                            onTap: () async {
+                                                              final newCatController = TextEditingController();
+                                                              final newCat = await showDialog<String>(
+                                                                context: context,
+                                                                barrierDismissible: true,
+                                                                builder: (ctx) => AlertDialog(
+                                                                  backgroundColor: themeProvider.surface,
+                                                                  elevation: 10,
+                                                                  shadowColor: themeProvider.cardShadowColor,
+                                                                  shape: RoundedRectangleBorder(
+                                                                    borderRadius: BorderRadius.circular(16),
+                                                                    side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                                                  ),
+                                                                  titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+                                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                                                                  title: const Center(child: Text('Nueva Categoría', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500))),
+                                                                  content: Padding(
+                                                                    padding: const EdgeInsets.only(bottom: 10),
+                                                                    child: TextField(
+                                                                      controller: newCatController,
+                                                                      autofocus: true,
+                                                                      maxLines: 1,
+                                                                      maxLength: 15,
+                                                                      decoration: InputDecoration(
+                                                                        counterText: '',
+                                                                        contentPadding: const EdgeInsets.symmetric(
+                                                                          horizontal: 12,
+                                                                        ),
+                                                                        filled: true,
+                                                                        fillColor: themeProvider.surface,
+                                                                        labelStyle: TextStyle(
+                                                                          color: themeProvider.textMutedColor,
+                                                                        ),
+                                                                        border: OutlineInputBorder(
+                                                                          borderRadius: BorderRadius.circular(14),
+                                                                          borderSide: BorderSide(
+                                                                            color: themeProvider.borderColor,
+                                                                          ),
+                                                                        ),
+                                                                        enabledBorder: OutlineInputBorder(
+                                                                          borderRadius: BorderRadius.circular(14),
+                                                                          borderSide: BorderSide(
+                                                                            color: themeProvider.borderColor,
+                                                                            width: 1.5,
+                                                                          ),
+                                                                        ),
+                                                                        focusedBorder: OutlineInputBorder(
+                                                                          borderRadius: BorderRadius.circular(14),
+                                                                          borderSide: BorderSide(
+                                                                            color: themeProvider.primaryColor,
+                                                                            width: 1.8,
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  actions: [
+                                                                    Row(
+                                                                      mainAxisAlignment: MainAxisAlignment.center,
+                                                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                                                      children: [
+                                                                        TextButton(
+                                                                          onPressed: () => Navigator.pop(ctx),
+                                                                          child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+                                                                        ),
+                                                                        const SizedBox(width: 10),
+                                                                        TextButton(
+                                                                          onPressed: () => Navigator.pop(
+                                                                            ctx,
+                                                                            newCatController.text.trim(),
+                                                                          ),
+                                                                          child: const Text('Añadir', style: TextStyle(fontSize: 16)),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              );
 
-                                                      if (newCat != null && newCat.isNotEmpty) {
-                                                        shoppingProvider.addCategoryToList(widget.listName, newCat);
-                                                        
-                                                        setDialogState(() {
-                                                          // selectedCategory = newCat; // Comentándolo evitamos que se autoasigne.
-                                                        });
-                                                        setModalState(() {
-                                                          // selectedCategory = newCat; // Comentándolo evitamos que se autoasigne.
-                                                        });
-                                                      }
+                                                              if (newCat != null && newCat.isNotEmpty) {
+                                                                shoppingProvider.addCategoryToList(widget.listName, newCat);
+                                                                setDialogState(() {});
+                                                                setModalState(() {});
+                                                              }
+                                                            },
+                                                          ),
+                                                          const Divider(),
+                                                          ListTile(
+                                                            enabled: canReorder,
+                                                            leading: Icon(
+                                                              Icons.swap_vert,
+                                                              color: canReorder ? Colors.orange : Colors.grey,
+                                                            ),
+                                                            title: Text(
+                                                              'Reordenar categorías',
+                                                              style: TextStyle(
+                                                                color: canReorder ? Colors.orange : Colors.grey,
+                                                                fontWeight: FontWeight.w500,
+                                                              ),
+                                                            ),
+                                                            onTap: canReorder
+                                                                ? () async {
+                                                                    await _showReorderCategoriesDialog(
+                                                                      dialogContext,
+                                                                      shoppingProvider,
+                                                                      themeProvider,
+                                                                      widget.listName,
+                                                                    );
+                                                                    setDialogState(() {});
+                                                                    setModalState(() {});
+                                                                  }
+                                                                : null,
+                                                          ),
+                                                        ],
+                                                      );
                                                     },
-                                                  ),
-                                                  const Divider(),
-                                                  ListTile(
-                                                    enabled: canReorder,
-                                                    leading: Icon(
-                                                      Icons.swap_vert,
-                                                      color: canReorder ? Colors.orange : Colors.grey,
-                                                    ),
-                                                    title: Text(
-                                                      'Reordenar categorías',
-                                                      style: TextStyle(
-                                                        color: canReorder ? Colors.orange : Colors.grey,
-                                                        fontWeight: FontWeight.w500,
-                                                      ),
-                                                    ),
-                                                    onTap: canReorder
-                                                        ? () async {
-                                                            await _showReorderCategoriesDialog(
-                                                              dialogContext,
-                                                              shoppingProvider,
-                                                              widget.listName,
-                                                            );
-                                                            setDialogState(() {});
-                                                            setModalState(() {});
-                                                          }
-                                                        : null,
-                                                  ),
-                                                ],
+                                                  );
+                                                },
                                               ),
                                             ),
                                           ),
@@ -880,7 +1097,12 @@ class _ListMainPageState extends State<ListMainPage> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(selectedCategory),
+                                    AutoSizeText(
+                                      selectedCategory,
+                                      maxFontSize: 15,
+                                      minFontSize: 8,
+                                      maxLines: 1,
+                                    ),
                                     const Icon(Icons.arrow_drop_down),
                                   ],
                                 ),
@@ -889,6 +1111,7 @@ class _ListMainPageState extends State<ListMainPage> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(
+                            flex: 1,
                             child: InkWell(
                               onTap: () async {
                                 FocusManager.instance.primaryFocus?.unfocus();
@@ -898,7 +1121,20 @@ class _ListMainPageState extends State<ListMainPage> {
                                   barrierDismissible: true,
                                   builder: (dialogContext) {
                                     return AlertDialog(
-                                      title: const Text('Seleccionar Icono'),
+                                      backgroundColor: themeProvider.surface,
+                                      elevation: 10,
+                                      shadowColor: themeProvider.cardShadowColor,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                        side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                                      title: const Center(
+                                        child: Text(
+                                          'Seleccionar Icono',
+                                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+                                        ),
+                                      ),
                                       content: SizedBox(
                                         width: double.maxFinite,
                                         child: SingleChildScrollView(
@@ -977,9 +1213,14 @@ class _ListMainPageState extends State<ListMainPage> {
                                             fit: BoxFit.fitHeight,
                                           )
                                         else
-                                          const Text(
-                                            'Ninguno',
-                                            style: TextStyle(color: Colors.grey),
+                                          const Center(
+                                            child: AutoSizeText(
+                                              'No',
+                                              maxFontSize: 16,
+                                              minFontSize: 10,
+                                              maxLines: 1,
+                                              style: TextStyle(color: Colors.grey),
+                                            ),
                                           ),
                                       ],
                                     ),
@@ -1177,6 +1418,7 @@ class _ListMainPageState extends State<ListMainPage> {
   Future<void> _showReorderCategoriesDialog(
     BuildContext context,
     ShoppingProvider shoppingProvider,
+    ThemeProvider themeProvider,
     String listName,
   ) async {
     await showDialog<void>(
@@ -1190,7 +1432,21 @@ class _ListMainPageState extends State<ListMainPage> {
                 .toList();
 
             return AlertDialog(
-              title: const Text('Reordenar Categorías'),
+              backgroundColor: themeProvider.surface,
+              elevation: 10,
+              shadowColor: themeProvider.cardShadowColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+              title: const Center(
+                child: Text(
+                  'Reordenar Categorías',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+                ),
+              ),
               content: SizedBox(
                 width: double.maxFinite,
                 height: 300,
