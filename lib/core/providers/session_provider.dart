@@ -59,15 +59,19 @@ class SessionProvider extends ChangeNotifier {
     _email = _box!.get('email', defaultValue: '') as String;
     _isOffline = _box!.get('isOffline', defaultValue: true) as bool;
     _isLoggedIn = _box!.get('isLoggedIn', defaultValue: false) as bool;
-    _hasActiveSession = _box!.get('hasActiveSession', defaultValue: false) as bool;
+    _hasActiveSession =
+        _box!.get('hasActiveSession', defaultValue: false) as bool;
     _lastRoute = _box!.get('lastRoute', defaultValue: 'login') as String;
     _lastListName = _box!.get('lastListName') as String?;
 
     // Cargar nombre dependiendo de si es Online u Offline
     if (_isOffline) {
-      _displayName = _box!.get('offlineDisplayName', defaultValue: 'Shopping Hero') as String;
+      _displayName =
+          _box!.get('offlineDisplayName', defaultValue: 'Shopping Hero')
+              as String;
     } else {
-      _displayName = _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
+      _displayName =
+          _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
     }
 
     notifyListeners();
@@ -132,6 +136,7 @@ class SessionProvider extends ChangeNotifier {
         _isOffline = false;
         _isLoggedIn = true;
         _hasActiveSession = true;
+        _lastRoute = 'listManager';
         _isLoading = false;
         _errorMessage = null;
 
@@ -153,19 +158,13 @@ class SessionProvider extends ChangeNotifier {
   }
 
   /// Inicia sesión con email y contraseña
-  Future<bool> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<bool> login({required String email, required String password}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final user = await _authService.login(
-        email: email,
-        password: password,
-      );
+      final user = await _authService.login(email: email, password: password);
 
       if (user != null) {
         _uid = user.uid;
@@ -174,6 +173,7 @@ class SessionProvider extends ChangeNotifier {
         _isOffline = false;
         _isLoggedIn = true;
         _hasActiveSession = true;
+        _lastRoute = 'listManager';
         _isLoading = false;
         _errorMessage = null;
 
@@ -194,9 +194,7 @@ class SessionProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> continueOffline({
-    required String displayName,
-  }) async {
+  Future<bool> continueOffline({required String displayName}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -209,6 +207,7 @@ class SessionProvider extends ChangeNotifier {
       _isOffline = true;
       _isLoggedIn = false;
       _hasActiveSession = true;
+      _lastRoute = 'listManager';
 
       // Recuperamos la clave dedicada para offline
       final savedOfflineName = _box?.get('offlineDisplayName') as String?;
@@ -256,7 +255,9 @@ class SessionProvider extends ChangeNotifier {
 
       // Al hacer logout recuperamos el nombre asignado al modo offline
       await _ensureInitialized();
-      _displayName = _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero') as String;
+      _displayName =
+          _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero')
+              as String;
 
       await _saveSessionToStorage();
 
@@ -301,12 +302,15 @@ class SessionProvider extends ChangeNotifier {
 
     try {
       if (!_isOffline && _uid != null) {
-        await _userRepository.updateUserProfile(uid: _uid!, displayName: trimmed);
+        await _userRepository.updateUserProfile(
+          uid: _uid!,
+          displayName: trimmed,
+        );
       }
 
       _displayName = trimmed;
       _errorMessage = null;
-      await _saveSessionToStorage(); // Guarda automáticamente en 'offlineDisplayName' o 'displayName' según _isOffline
+      await _saveSessionToStorage();
       notifyListeners();
       return true;
     } catch (e) {
@@ -344,8 +348,9 @@ class SessionProvider extends ChangeNotifier {
       _isLoading = false;
 
       await _ensureInitialized();
-      // Restauramos nombre de offline
-      _displayName = _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero') as String;
+      _displayName =
+          _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero')
+              as String;
 
       await _saveSessionToStorage();
 

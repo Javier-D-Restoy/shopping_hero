@@ -33,7 +33,10 @@ class ShoppingProvider extends ChangeNotifier {
   Timer? _automaticSharedSyncTimer;
   bool _automaticSharedSyncInProgress = false;
   final Map<String, Map<String, dynamic>> _pendingSharedSnapshots = {};
-  Timer? _pendingSaveTimer;
+
+  /// Temporizador exclusivo para el guardado diferido en Firestore (Debounce)
+  Timer? _pendingFirestoreTimer;
+
   ShoppingSyncStatus _syncStatus = ShoppingSyncStatus.offline;
   DateTime? _lastSyncedAt;
 
@@ -86,11 +89,15 @@ class ShoppingProvider extends ChangeNotifier {
     if (_box == null) return;
     await _box!.put(
       'sort_options',
-      _sortOptionForList.map((listName, option) => MapEntry(listName, option.name)),
+      _sortOptionForList.map(
+        (listName, option) => MapEntry(listName, option.name),
+      ),
     );
     await _box!.put(
       'frequent_sort_options',
-      _frequentSortOptionForList.map((listName, option) => MapEntry(listName, option.name)),
+      _frequentSortOptionForList.map(
+        (listName, option) => MapEntry(listName, option.name),
+      ),
     );
   }
 
@@ -103,7 +110,8 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     final isShared = isSharedList(listName);
-    final products = activeProductsForList(listName) + frequentProductsForList(listName);
+    final products =
+        activeProductsForList(listName) + frequentProductsForList(listName);
     for (final product in products) {
       final cat = product.getCategory(isShared: isShared).trim();
       if (cat.isNotEmpty && !categories.contains(cat)) {
@@ -122,7 +130,7 @@ class ShoppingProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    _pendingSaveTimer?.cancel();
+    _pendingFirestoreTimer?.cancel();
     _automaticSharedSyncTimer?.cancel();
     for (final subscription in _sharedListSubscriptions.values) {
       unawaited(subscription.cancel());
@@ -133,7 +141,9 @@ class ShoppingProvider extends ChangeNotifier {
 
   Future<void> leaveSharedList(String listName) async {
     if (_currentUid == null) {
-      throw Exception('Necesitas iniciar sesión para desvincularte de la lista');
+      throw Exception(
+        'Necesitas iniciar sesión para desvincularte de la lista',
+      );
     }
 
     final cleanedName = listName.trim();
@@ -220,7 +230,9 @@ class ShoppingProvider extends ChangeNotifier {
         category: (newer.category != 'Genérico' && newer.category.isNotEmpty)
             ? newer.category
             : older.category,
-        categoryShared: (newer.categoryShared != 'Genérico' && newer.categoryShared.isNotEmpty)
+        categoryShared:
+            (newer.categoryShared != 'Genérico' &&
+                newer.categoryShared.isNotEmpty)
             ? newer.categoryShared
             : older.categoryShared,
         price: newer.price ?? older.price,
@@ -418,7 +430,7 @@ class ShoppingProvider extends ChangeNotifier {
     return result;
   }
 
-  // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE ][ ---------------------------------------------- //
+  // ---------------------------------------------- ][ ALMACENAMIENTO EN HIVE / PERSISTENCIA ][ ---------------------------------------------- //
 
   Future<void> init({bool isOffline = true}) async {
     _isOfflineMode = isOffline;
@@ -598,7 +610,10 @@ class ShoppingProvider extends ChangeNotifier {
     for (final listEntry in _shoppingLists.entries) {
       final listName = listEntry.key;
       final isShared = isSharedList(listName);
-      final listCategories = _listCategories.putIfAbsent(listName, () => ['Genérico']);
+      final listCategories = _listCategories.putIfAbsent(
+        listName,
+        () => ['Genérico'],
+      );
 
       for (final catMap in listEntry.value.values) {
         for (final product in catMap) {
@@ -705,17 +720,81 @@ class ShoppingProvider extends ChangeNotifier {
     _listUpdatedAt[listName] = DateTime.now();
   }
 
-  void _scheduleSave() {
-    _pendingSaveTimer?.cancel();
-    _pendingSaveTimer = Timer(const Duration(seconds: 5), () {
-      _pendingSaveTimer = null;
-      unawaited(saveToStorage());
+  /// Método central de persistencia: guarda en Hive INMEDIATAMENTE
+  /// y programa la subida a Firestore tras 5 segundos de inactividad.
+  void _persistState() {
+    // 1. Guardado local inmediato en Hive
+    unawaited(_persistHiveCache());
+
+    // 2. Programar subida diferida a Firestore (Debounce 5s)
+    _scheduleFirestoreSave();
+  }
+
+  /// Escribe la caché de Hive en memoria de forma inmediata.
+  Future<void> _persistHiveCache() async {
+    if (_box == null || !_box!.isOpen) return;
+
+    try {
+      final dataToSave = <String, Map<String, List<Map<String, dynamic>>>>{};
+      for (final entry in _shoppingLists.entries) {
+        dataToSave[entry.key] = {
+          for (final category in entry.value.entries)
+            category.key: category.value
+                .map((product) => product.toMapHive())
+                .toList(),
+        };
+      }
+
+      for (final listName in _shoppingLists.keys) {
+        _listCategories[listName] ??= ['Genérico'];
+        if (!_listCategories[listName]!.contains('Genérico')) {
+          _listCategories[listName]!.add('Genérico');
+        }
+      }
+
+      await _box!.put('shopping_lists', dataToSave);
+      await _box!.put('list_categories', _listCategories);
+      await _box!.put('selected_list_name', _selectedListName);
+      await _box!.put('shared_list_ids', _sharedListIds);
+      await _box!.put('shared_list_owners', _sharedListOwners);
+      await _box!.put('shopping_list_ids', _listIds);
+      await _box!.put(
+        'deleted_lists',
+        _deletedLists.map(
+          (key, value) => MapEntry(key, value.millisecondsSinceEpoch),
+        ),
+      );
+      await _box!.put(
+        'deleted_shared_products',
+        _deletedSharedProducts.map(
+          (listId, products) => MapEntry(
+            listId,
+            products.map(
+              (productId, deletedAt) =>
+                  MapEntry(productId, deletedAt.millisecondsSinceEpoch),
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error guardando en Hive: $e');
+    }
+  }
+
+  /// Maneja el temporizador de 5s para Firestore.
+  void _scheduleFirestoreSave() {
+    _pendingFirestoreTimer?.cancel();
+    _pendingFirestoreTimer = Timer(const Duration(seconds: 5), () {
+      _pendingFirestoreTimer = null;
+      if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
+        unawaited(_saveListsToFirestore(_currentUid!));
+      }
     });
   }
 
   Future<void> syncNow() async {
-    _pendingSaveTimer?.cancel();
-    _pendingSaveTimer = null;
+    _pendingFirestoreTimer?.cancel();
+    _pendingFirestoreTimer = null;
     await refreshFromCloud();
   }
 
@@ -883,45 +962,6 @@ class ShoppingProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _persistHiveCache() async {
-    if (_box == null) return;
-
-    final dataToSave = <String, Map<String, List<Map<String, dynamic>>>>{};
-    for (final entry in _shoppingLists.entries) {
-      dataToSave[entry.key] = {
-        for (final category in entry.value.entries)
-          category.key: category.value
-              .map((product) => product.toMapHive())
-              .toList(),
-      };
-    }
-
-    for (final listName in _shoppingLists.keys) {
-      _listCategories[listName] ??= ['Genérico'];
-      if (!_listCategories[listName]!.contains('Genérico')) {
-        _listCategories[listName]!.add('Genérico');
-      }
-    }
-
-    await _box!.put('shopping_lists', dataToSave);
-    await _box!.put('list_categories', _listCategories);
-    await _box!.put('selected_list_name', _selectedListName);
-    await _box!.put('shared_list_ids', _sharedListIds);
-    await _box!.put('shared_list_owners', _sharedListOwners);
-    await _box!.put(
-      'deleted_shared_products',
-      _deletedSharedProducts.map(
-        (listId, products) => MapEntry(
-          listId,
-          products.map(
-            (productId, deletedAt) =>
-                MapEntry(productId, deletedAt.millisecondsSinceEpoch),
-          ),
-        ),
-      ),
-    );
-  }
-
   List<Product> _productsFromFirestore(String listName, dynamic rawProducts) {
     if (rawProducts is! List) return <Product>[];
     final result = <Product>[];
@@ -1047,6 +1087,9 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   Future<void> saveToStorage({bool mergeCloud = true}) async {
+    _pendingFirestoreTimer?.cancel();
+    _pendingFirestoreTimer = null;
+
     await _ensureInitialized();
 
     if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
@@ -1058,8 +1101,8 @@ class ShoppingProvider extends ChangeNotifier {
           !_isOfflineMode &&
           _currentUid != null &&
           _currentUid!.isNotEmpty) {
-        final cloudListsWithCategories =
-            await _userRepository.getShoppingListsWithCategories(_currentUid!);
+        final cloudListsWithCategories = await _userRepository
+            .getShoppingListsWithCategories(_currentUid!);
 
         final cloudLists = cloudListsWithCategories.map(
           (key, value) => MapEntry(key, {
@@ -1124,8 +1167,9 @@ class ShoppingProvider extends ChangeNotifier {
           final ownerUid = (data['ownerUid'] ?? '').toString();
 
           if (data['categories'] is List) {
-            _listCategories[cloudName] =
-                List<String>.from(data['categories'] as List);
+            _listCategories[cloudName] = List<String>.from(
+              data['categories'] as List,
+            );
           }
 
           final cloudUpdatedAt = (data['updatedAt'] is Timestamp)
@@ -1186,50 +1230,7 @@ class ShoppingProvider extends ChangeNotifier {
         }
       }
 
-      if (_box != null) {
-        final dataToSave = <String, Map<String, List<Map<String, dynamic>>>>{};
-
-        for (final entry in _shoppingLists.entries) {
-          final listName = entry.key;
-          final categories = entry.value;
-
-          dataToSave[listName] = {};
-
-          for (final catEntry in categories.entries) {
-            final categoryName = catEntry.key;
-            final products = catEntry.value;
-
-            dataToSave[listName]![categoryName] = products
-                .map((p) => p.toMapHive())
-                .toList();
-          }
-        }
-
-        for (final listName in _shoppingLists.keys) {
-          _listCategories[listName] ??= ['Genérico'];
-          if (!_listCategories[listName]!.contains('Genérico')) {
-            _listCategories[listName]!.add('Genérico');
-          }
-        }
-
-        await _box!.put('shopping_lists', dataToSave);
-        await _box!.put('list_categories', _listCategories);
-        await _box!.put('selected_list_name', _selectedListName);
-        await _box!.put('shared_list_ids', _sharedListIds);
-        await _box!.put('shared_list_owners', _sharedListOwners);
-        await _box!.put(
-          'deleted_shared_products',
-          _deletedSharedProducts.map(
-            (listId, products) => MapEntry(
-              listId,
-              products.map(
-                (productId, deletedAt) =>
-                    MapEntry(productId, deletedAt.millisecondsSinceEpoch),
-              ),
-            ),
-          ),
-        );
-      }
+      await _persistHiveCache();
 
       if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
         for (final entry in _shoppingLists.entries) {
@@ -1242,13 +1243,6 @@ class ShoppingProvider extends ChangeNotifier {
           }
         }
 
-        await _box!.put('shopping_list_ids', _listIds);
-        await _box!.put(
-          'deleted_lists',
-          _deletedLists.map(
-            (key, value) => MapEntry(key, value.millisecondsSinceEpoch),
-          ),
-        );
         await _saveListsToFirestore(_currentUid!);
         _setSyncStatus(ShoppingSyncStatus.synced, syncedAt: DateTime.now());
       } else if (_isOfflineMode) {
@@ -1310,7 +1304,12 @@ class ShoppingProvider extends ChangeNotifier {
   List<Product> activeProductsForList(String listName) {
     final products = getListAdd(listName)?['active'] ?? <Product>[];
     final categories = _listCategories[listName] ?? const ['Genérico'];
-    return _sortProducts(products, sortOptionForList(listName), categories, isShared: isSharedList(listName));
+    return _sortProducts(
+      products,
+      sortOptionForList(listName),
+      categories,
+      isShared: isSharedList(listName),
+    );
   }
 
   static List<Product> _sortProducts(
@@ -1422,7 +1421,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     if (!_customCategories.contains(cleaned)) {
       _customCategories.add(cleaned);
-      
+
       final box = await Hive.openBox('settings');
       await box.put('custom_categories', _customCategories);
 
@@ -1452,10 +1451,9 @@ class ShoppingProvider extends ChangeNotifier {
         categories.add('Genérico');
       }
 
-      _box?.put('list_categories', _listCategories);
       _touchList(listName);
       notifyListeners();
-      unawaited(saveToStorage(mergeCloud: false));
+      _persistState();
     }
   }
 
@@ -1486,7 +1484,7 @@ class ShoppingProvider extends ChangeNotifier {
 
       _touchList(listName);
       notifyListeners();
-      unawaited(saveToStorage(mergeCloud: false));
+      _persistState();
     }
   }
 
@@ -1513,7 +1511,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _touchList(listName);
     notifyListeners();
-    unawaited(saveToStorage(mergeCloud: false));
+    _persistState();
   }
 
   // -------------------------------------------- ][ Selección/gestión de Listas ][ -------------------------------------------- //
@@ -1525,7 +1523,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _selectedListName = listName;
     notifyListeners();
-    _scheduleSave();
+    _persistState();
   }
 
   void createList({String? name}) {
@@ -1551,7 +1549,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _selectedListName = uniqueName;
     notifyListeners();
-    _scheduleSave();
+    _persistState();
   }
 
   void renameList(String oldName, String newName) {
@@ -1624,7 +1622,7 @@ class ShoppingProvider extends ChangeNotifier {
     _listUpdatedAt.remove(oldName);
 
     notifyListeners();
-    _scheduleSave();
+    _persistState();
   }
 
   String _getUniqueListName(String baseName) {
@@ -1682,7 +1680,7 @@ class ShoppingProvider extends ChangeNotifier {
         ),
       );
       notifyListeners();
-      _scheduleSave();
+      _persistState();
       return;
     }
 
@@ -1705,7 +1703,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     notifyListeners();
-    _scheduleSave();
+    _persistState();
   }
 
   void addFrequentProductToList(
@@ -1752,7 +1750,7 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     notifyListeners();
-    _scheduleSave();
+    _persistState();
   }
 
   void moveActiveProductToFrequent(String listName, String productId) {
@@ -1775,7 +1773,7 @@ class ShoppingProvider extends ChangeNotifier {
     frequentList.add(product.copyWith(lastAdded: DateTime.now()));
     _touchList(listName);
     notifyListeners();
-    _scheduleSave();
+    _persistState();
   }
 
   void moveFrequentProductToActive(String listName, String productId) {
@@ -1801,7 +1799,7 @@ class ShoppingProvider extends ChangeNotifier {
     );
     _touchList(listName);
     notifyListeners();
-    _scheduleSave();
+    _persistState();
   }
 
   void updateProduct(
@@ -1842,7 +1840,7 @@ class ShoppingProvider extends ChangeNotifier {
       );
       _touchList(listName);
       notifyListeners();
-      _scheduleSave();
+      _persistState();
       return;
     }
   }
@@ -1874,7 +1872,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     _touchList(listName);
     notifyListeners();
-    _scheduleSave();
+    _persistState();
   }
 
   void removeList(String listName) {
@@ -1911,6 +1909,6 @@ class ShoppingProvider extends ChangeNotifier {
     _listUpdatedAt.remove(cleanedName);
 
     notifyListeners();
-    _scheduleSave();
+    _persistState();
   }
 }

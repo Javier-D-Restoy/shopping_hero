@@ -118,7 +118,9 @@ class _ListMainPageState extends State<ListMainPage> {
         shadowColor: themeProvider.cardShadowColor,
         leading: BackButton(
           onPressed: () async {
-            await context.read<ShoppingProvider>().saveToStorage(mergeCloud: false);
+            await context.read<ShoppingProvider>().saveToStorage(
+              mergeCloud: false,
+            );
             if (context.mounted) {
               Navigator.pushReplacement(
                 context,
@@ -353,7 +355,11 @@ class _ListMainPageState extends State<ListMainPage> {
               child: Row(
                 children: [
                   if (option == currentOption)
-                    Icon(Icons.check, size: 18, color: themeProvider.primaryColor)
+                    Icon(
+                      Icons.check,
+                      size: 18,
+                      color: themeProvider.primaryColor,
+                    )
                   else
                     const SizedBox(width: 18),
                   const SizedBox(width: 8),
@@ -431,7 +437,11 @@ class _ListMainPageState extends State<ListMainPage> {
               child: Row(
                 children: [
                   if (option == currentOption)
-                    Icon(Icons.check, size: 18, color: themeProvider.primaryColor)
+                    Icon(
+                      Icons.check,
+                      size: 18,
+                      color: themeProvider.primaryColor,
+                    )
                   else
                     const SizedBox(width: 18),
                   const SizedBox(width: 8),
@@ -558,8 +568,14 @@ class _ListMainPageState extends State<ListMainPage> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           border: Border.symmetric(
-                            horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
-                            vertical: BorderSide(color: themeProvider.borderColor, width: 5),
+                            horizontal: BorderSide(
+                              color: themeProvider.borderColor,
+                              width: 1,
+                            ),
+                            vertical: BorderSide(
+                              color: themeProvider.borderColor,
+                              width: 5,
+                            ),
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -567,34 +583,54 @@ class _ListMainPageState extends State<ListMainPage> {
                               spreadRadius: 1.5,
                             ),
                           ],
-                          color: themeProvider.isDarkMode ? Colors.black : Colors.white,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: themeProvider.gradientColors2,
-                          ),
+                          color: themeProvider.surface,
+                          // gradient: LinearGradient(
+                          //   begin: Alignment.topLeft,
+                          //   end: Alignment.bottomRight,
+                          //   colors: themeProvider.gradientColors2,
+                          // ),
                         ),
                         child: Center(
                           child: Stack(
                             children: [
                               Text(
-                                'Comprados',
-                                style: const TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 18,
+                                'Frecuentes',
+                                style: TextStyle(
+                                  // color: Colors.black,
+                                  fontSize: 20,
                                   letterSpacing: 1.0,
                                   wordSpacing: 3.0,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
+                                  foreground: Paint()
+                                    ..style = PaintingStyle.stroke
+                                    ..strokeWidth = 0.5
+                                    ..color = themeProvider.primaryColor,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                      blurRadius: 4,
+                                      offset: Offset(0, 0),
+                                    ),
+                                    Shadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      blurRadius: 2,
+                                      offset: Offset(0, 0),
+                                    ),
+                                  ],
                                 ),
                               ),
                               Text(
-                                'Comprados',
+                                'Frecuentes',
                                 style: TextStyle(
                                   color: themeProvider.textStrongColor,
-                                  fontSize: 18,
+                                  fontSize: 20,
                                   letterSpacing: 1.0,
                                   wordSpacing: 3.0,
-                                  fontWeight: FontWeight.w700,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -604,7 +640,10 @@ class _ListMainPageState extends State<ListMainPage> {
                     ),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: _buildFrequentSortButton(shoppingProvider, themeProvider),
+                      child: _buildFrequentSortButton(
+                        shoppingProvider,
+                        themeProvider,
+                      ),
                     ),
                   ],
                 ),
@@ -650,10 +689,7 @@ class _ListMainPageState extends State<ListMainPage> {
     final name = _productNameController.text.trim();
     if (name.isEmpty) return;
 
-    shoppingProvider.addActiveProductToList(
-      widget.listName,
-      name,
-    );
+    shoppingProvider.addActiveProductToList(widget.listName, name);
     _productNameController.clear();
   }
 
@@ -677,7 +713,7 @@ class _ListMainPageState extends State<ListMainPage> {
     Product product,
   ) async {
     final isShared = shoppingProvider.isSharedList(widget.listName);
-    
+
     final nameController = TextEditingController(text: product.name);
     final frequencyController = TextEditingController(
       text: product.frequency.toString(),
@@ -706,7 +742,9 @@ class _ListMainPageState extends State<ListMainPage> {
         builder: (modalContext) {
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setModalState) {
-              final availableCategories = shoppingProvider.categoriesForList(widget.listName);
+              final availableCategories = shoppingProvider.categoriesForList(
+                widget.listName,
+              );
 
               if (!availableCategories.contains(selectedCategory)) {
                 selectedCategory = 'Genérico';
@@ -727,8 +765,14 @@ class _ListMainPageState extends State<ListMainPage> {
                   ),
                   border: Border(
                     top: BorderSide(color: themeProvider.borderColor, width: 3),
-                    left: BorderSide(color: themeProvider.borderColor, width: 1),
-                    right: BorderSide(color: themeProvider.borderColor, width: 1),
+                    left: BorderSide(
+                      color: themeProvider.borderColor,
+                      width: 1,
+                    ),
+                    right: BorderSide(
+                      color: themeProvider.borderColor,
+                      width: 1,
+                    ),
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -746,10 +790,11 @@ class _ListMainPageState extends State<ListMainPage> {
                       Center(
                         child: Text(
                           'Editar producto',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: themeProvider.textStrongColor,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                color: themeProvider.textStrongColor,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -760,14 +805,22 @@ class _ListMainPageState extends State<ListMainPage> {
                           labelText: 'Nombre',
                           counterText: '',
                           border: const OutlineInputBorder(),
-                          labelStyle: TextStyle(color: themeProvider.textMutedColor),
+                          labelStyle: TextStyle(
+                            color: themeProvider.textMutedColor,
+                          ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                            borderSide: BorderSide(
+                              color: themeProvider.borderColor,
+                              width: 1.5,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                            borderSide: BorderSide(
+                              color: themeProvider.primaryColor,
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
@@ -786,109 +839,198 @@ class _ListMainPageState extends State<ListMainPage> {
                                   builder: (dialogContext) {
                                     return StatefulBuilder(
                                       builder: (context, setDialogState) {
-                                        final currentCategories = shoppingProvider.categoriesForList(widget.listName);
-                                        final customCategoriesCount = currentCategories
-                                            .where((cat) => cat != 'Genérico')
-                                            .length;
-                                        final canReorder = customCategoriesCount > 1;
+                                        final currentCategories =
+                                            shoppingProvider.categoriesForList(
+                                              widget.listName,
+                                            );
+                                        final customCategoriesCount =
+                                            currentCategories
+                                                .where(
+                                                  (cat) => cat != 'Genérico',
+                                                )
+                                                .length;
+                                        final canReorder =
+                                            customCategoriesCount > 1;
 
                                         return AlertDialog(
-                                          backgroundColor: themeProvider.surface,
+                                          backgroundColor:
+                                              themeProvider.surface,
                                           elevation: 10,
-                                          shadowColor: themeProvider.cardShadowColor,
+                                          shadowColor:
+                                              themeProvider.cardShadowColor,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(16),
-                                            side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            side: BorderSide(
+                                              color: themeProvider.borderColor,
+                                              width: 1.5,
+                                            ),
                                           ),
-                                          titlePadding: const EdgeInsets.fromLTRB(14, 24, 14, 0),
-                                          contentPadding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
+                                          titlePadding:
+                                              const EdgeInsets.fromLTRB(
+                                                14,
+                                                24,
+                                                14,
+                                                0,
+                                              ),
+                                          contentPadding: const EdgeInsets.only(
+                                            left: 14,
+                                            right: 14,
+                                            bottom: 14,
+                                          ),
                                           title: const Center(
                                             child: Text(
                                               'Seleccionar Categoría',
-                                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w500,
+                                              ),
                                             ),
                                           ),
                                           content: SizedBox(
                                             width: double.maxFinite,
                                             child: ConstrainedBox(
                                               constraints: BoxConstraints(
-                                                maxHeight: MediaQuery.of(context).size.height * 0.6,
+                                                maxHeight:
+                                                    MediaQuery.of(
+                                                      context,
+                                                    ).size.height *
+                                                    0.6,
                                               ),
                                               child: Builder(
                                                 builder: (context) {
-                                                  final scrollController = ScrollController();
+                                                  final scrollController =
+                                                      ScrollController();
                                                   bool canScrollUp = false;
                                                   bool canScrollDown = false;
 
                                                   return StatefulBuilder(
                                                     builder: (context, setInnerState) {
-                                                      void updateScrollIndicators() {
-                                                        if (!scrollController.hasClients) return;
-                                                        final maxScroll = scrollController.position.maxScrollExtent;
-                                                        final currentScroll = scrollController.offset;
+                                                      void
+                                                      updateScrollIndicators() {
+                                                        if (!scrollController
+                                                            .hasClients)
+                                                          return;
+                                                        final maxScroll =
+                                                            scrollController
+                                                                .position
+                                                                .maxScrollExtent;
+                                                        final currentScroll =
+                                                            scrollController
+                                                                .offset;
 
-                                                        final showUp = currentScroll > 5;
-                                                        final showDown = maxScroll > 0 && currentScroll < (maxScroll - 5);
+                                                        final showUp =
+                                                            currentScroll > 5;
+                                                        final showDown =
+                                                            maxScroll > 0 &&
+                                                            currentScroll <
+                                                                (maxScroll - 5);
 
-                                                        if (showUp != canScrollUp || showDown != canScrollDown) {
+                                                        if (showUp !=
+                                                                canScrollUp ||
+                                                            showDown !=
+                                                                canScrollDown) {
                                                           setInnerState(() {
-                                                            canScrollUp = showUp;
-                                                            canScrollDown = showDown;
+                                                            canScrollUp =
+                                                                showUp;
+                                                            canScrollDown =
+                                                                showDown;
                                                           });
                                                         }
                                                       }
 
-                                                      scrollController.addListener(updateScrollIndicators);
+                                                      scrollController.addListener(
+                                                        updateScrollIndicators,
+                                                      );
 
-                                                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                                                        updateScrollIndicators();
-                                                      });
+                                                      WidgetsBinding.instance
+                                                          .addPostFrameCallback((
+                                                            _,
+                                                          ) {
+                                                            updateScrollIndicators();
+                                                          });
 
                                                       return Column(
-                                                        mainAxisSize: MainAxisSize.min,
+                                                        mainAxisSize:
+                                                            MainAxisSize.min,
                                                         children: [
                                                           AnimatedOpacity(
-                                                            duration: const Duration(milliseconds: 200),
-                                                            opacity: canScrollUp ? 1.0 : 0.0,
+                                                            duration:
+                                                                const Duration(
+                                                                  milliseconds:
+                                                                      200,
+                                                                ),
+                                                            opacity: canScrollUp
+                                                                ? 1.0
+                                                                : 0.0,
                                                             child: SizedBox(
                                                               height: 22,
                                                               child: Center(
                                                                 child: Icon(
-                                                                  Icons.keyboard_arrow_up,
+                                                                  Icons
+                                                                      .keyboard_arrow_up,
                                                                   size: 40,
-                                                                  color: themeProvider.primaryColor,
+                                                                  color: themeProvider
+                                                                      .primaryColor,
                                                                 ),
                                                               ),
                                                             ),
                                                           ),
-                                                          const SizedBox(height: 10),
+                                                          const SizedBox(
+                                                            height: 10,
+                                                          ),
                                                           Flexible(
                                                             child: SingleChildScrollView(
-                                                              controller: scrollController,
+                                                              controller:
+                                                                  scrollController,
                                                               child: RadioGroup<String>(
-                                                                groupValue: selectedCategory, // <- Aquí debe ser groupValue en lugar de value
-                                                                onChanged: (String? val) {
-                                                                  if (val != null) {
-                                                                    Navigator.pop(dialogContext, val);
-                                                                  }
-                                                                },
+                                                                groupValue:
+                                                                    selectedCategory, // <- Aquí debe ser groupValue en lugar de value
+                                                                onChanged:
+                                                                    (
+                                                                      String?
+                                                                      val,
+                                                                    ) {
+                                                                      if (val !=
+                                                                          null) {
+                                                                        Navigator.pop(
+                                                                          dialogContext,
+                                                                          val,
+                                                                        );
+                                                                      }
+                                                                    },
                                                                 child: Column(
-                                                                  children: currentCategories.map((cat) {
+                                                                  children: currentCategories.map((
+                                                                    cat,
+                                                                  ) {
                                                                     return Padding(
-                                                                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                                                                      padding: const EdgeInsets.symmetric(
+                                                                        vertical:
+                                                                            2.0,
+                                                                      ),
                                                                       child: Row(
                                                                         children: [
                                                                           Expanded(
                                                                             child: InkWell(
-                                                                              borderRadius: BorderRadius.circular(8),
+                                                                              borderRadius: BorderRadius.circular(
+                                                                                8,
+                                                                              ),
                                                                               onTap: () {
-                                                                                Navigator.pop(dialogContext, cat);
+                                                                                Navigator.pop(
+                                                                                  dialogContext,
+                                                                                  cat,
+                                                                                );
                                                                               },
                                                                               child: Padding(
-                                                                                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                                                                padding: const EdgeInsets.symmetric(
+                                                                                  vertical: 4.0,
+                                                                                ),
                                                                                 child: Row(
                                                                                   children: [
-                                                                                    Radio<String>(
+                                                                                    Radio<
+                                                                                      String
+                                                                                    >(
                                                                                       value: cat,
                                                                                     ),
                                                                                     Expanded(
@@ -905,22 +1047,121 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                               ),
                                                                             ),
                                                                           ),
-                                                                          if (cat != 'Genérico')
+                                                                          if (cat !=
+                                                                              'Genérico')
                                                                             IconButton(
                                                                               icon: const Icon(
                                                                                 Icons.delete,
                                                                                 color: Colors.red,
                                                                               ),
-                                                                              onPressed: () {
-                                                                                shoppingProvider.removeCategoryFromList(
-                                                                                  widget.listName,
-                                                                                  cat,
-                                                                                );
-                                                                                if (selectedCategory == cat) {
-                                                                                  selectedCategory = 'Genérico';
+                                                                              onPressed: () async {
+                                                                                // Mostrar diálogo de confirmación
+                                                                                final confirmDelete =
+                                                                                    await showDialog<
+                                                                                      bool
+                                                                                    >(
+                                                                                      context: context,
+                                                                                      barrierDismissible: true,
+                                                                                      builder:
+                                                                                          (
+                                                                                            ctx,
+                                                                                          ) => AlertDialog(
+                                                                                            backgroundColor: themeProvider.surface,
+                                                                                            elevation: 10,
+                                                                                            shadowColor: themeProvider.cardShadowColor,
+                                                                                            shape: RoundedRectangleBorder(
+                                                                                              borderRadius: BorderRadius.circular(
+                                                                                                16,
+                                                                                              ),
+                                                                                              side: BorderSide(
+                                                                                                color: themeProvider.borderColor,
+                                                                                                width: 1.5,
+                                                                                              ),
+                                                                                            ),
+                                                                                            titlePadding: const EdgeInsets.fromLTRB(
+                                                                                              24,
+                                                                                              20,
+                                                                                              24,
+                                                                                              10,
+                                                                                            ),
+                                                                                            contentPadding: const EdgeInsets.symmetric(
+                                                                                              horizontal: 24,
+                                                                                              vertical: 10,
+                                                                                            ),
+                                                                                            title: const Center(
+                                                                                              child: Text(
+                                                                                                'Eliminar Categoría',
+                                                                                                style: TextStyle(
+                                                                                                  fontSize: 22,
+                                                                                                  fontWeight: FontWeight.w500,
+                                                                                                ),
+                                                                                              ),
+                                                                                            ),
+                                                                                            content: Text(
+                                                                                              '"$cat"',
+                                                                                              textAlign: TextAlign.center,
+                                                                                              style: TextStyle(
+                                                                                                fontSize: 16,
+                                                                                                color: themeProvider.textStrongColor,
+                                                                                                fontWeight: FontWeight(
+                                                                                                  600,
+                                                                                                ),
+                                                                                              ),
+                                                                                            ),
+                                                                                            actionsAlignment: MainAxisAlignment.spaceEvenly,
+                                                                                            actionsPadding: const EdgeInsets.only(
+                                                                                              bottom: 12,
+                                                                                              top: 8,
+                                                                                            ),
+                                                                                            actions: [
+                                                                                              TextButton(
+                                                                                                onPressed: () => Navigator.pop(
+                                                                                                  ctx,
+                                                                                                  false,
+                                                                                                ),
+                                                                                                child: const Text(
+                                                                                                  'Cancelar',
+                                                                                                  style: TextStyle(
+                                                                                                    fontSize: 16,
+                                                                                                  ),
+                                                                                                ),
+                                                                                              ),
+                                                                                              TextButton(
+                                                                                                onPressed: () => Navigator.pop(
+                                                                                                  ctx,
+                                                                                                  true,
+                                                                                                ),
+                                                                                                child: const Text(
+                                                                                                  'Eliminar',
+                                                                                                  style: TextStyle(
+                                                                                                    fontSize: 16,
+                                                                                                    color: Colors.red,
+                                                                                                    fontWeight: FontWeight.bold,
+                                                                                                  ),
+                                                                                                ),
+                                                                                              ),
+                                                                                            ],
+                                                                                          ),
+                                                                                    );
+
+                                                                                // Si el usuario confirma la eliminación
+                                                                                if (confirmDelete ==
+                                                                                    true) {
+                                                                                  shoppingProvider.removeCategoryFromList(
+                                                                                    widget.listName,
+                                                                                    cat,
+                                                                                  );
+                                                                                  if (selectedCategory ==
+                                                                                      cat) {
+                                                                                    selectedCategory = 'Genérico';
+                                                                                  }
+                                                                                  setDialogState(
+                                                                                    () {},
+                                                                                  );
+                                                                                  setModalState(
+                                                                                    () {},
+                                                                                  );
                                                                                 }
-                                                                                setDialogState(() {});
-                                                                                setModalState(() {});
                                                                               },
                                                                             ),
                                                                         ],
@@ -928,19 +1169,28 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                     );
                                                                   }).toList(),
                                                                 ),
-                                                              )
+                                                              ),
                                                             ),
                                                           ),
                                                           AnimatedOpacity(
-                                                            duration: const Duration(milliseconds: 200),
-                                                            opacity: canScrollDown ? 1.0 : 0.0,
+                                                            duration:
+                                                                const Duration(
+                                                                  milliseconds:
+                                                                      200,
+                                                                ),
+                                                            opacity:
+                                                                canScrollDown
+                                                                ? 1.0
+                                                                : 0.0,
                                                             child: SizedBox(
                                                               height: 22,
                                                               child: Center(
                                                                 child: Icon(
-                                                                  Icons.keyboard_arrow_down,
+                                                                  Icons
+                                                                      .keyboard_arrow_down,
                                                                   size: 40,
-                                                                  color: themeProvider.primaryColor,
+                                                                  color: themeProvider
+                                                                      .primaryColor,
                                                                 ),
                                                               ),
                                                             ),
@@ -949,66 +1199,131 @@ class _ListMainPageState extends State<ListMainPage> {
                                                           ListTile(
                                                             leading: const Icon(
                                                               Icons.add,
-                                                              color: Colors.blue,
+                                                              color:
+                                                                  Colors.blue,
                                                             ),
                                                             title: const Text(
                                                               'Crear categoría',
                                                               style: TextStyle(
-                                                                color: Colors.blue,
-                                                                fontWeight: FontWeight.w500,
+                                                                color:
+                                                                    Colors.blue,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
                                                               ),
                                                             ),
                                                             onTap: () async {
-                                                              final newCatController = TextEditingController();
+                                                              final newCatController =
+                                                                  TextEditingController();
                                                               final newCat = await showDialog<String>(
-                                                                context: context,
-                                                                barrierDismissible: true,
+                                                                context:
+                                                                    context,
+                                                                barrierDismissible:
+                                                                    true,
                                                                 builder: (ctx) => AlertDialog(
-                                                                  backgroundColor: themeProvider.surface,
+                                                                  backgroundColor:
+                                                                      themeProvider
+                                                                          .surface,
                                                                   elevation: 10,
-                                                                  shadowColor: themeProvider.cardShadowColor,
+                                                                  shadowColor:
+                                                                      themeProvider
+                                                                          .cardShadowColor,
                                                                   shape: RoundedRectangleBorder(
-                                                                    borderRadius: BorderRadius.circular(16),
-                                                                    side: BorderSide(color: themeProvider.borderColor, width: 1.5),
-                                                                  ),
-                                                                  titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
-                                                                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-                                                                  title: const Center(child: Text('Nueva Categoría', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500))),
-                                                                  content: Padding(
-                                                                    padding: const EdgeInsets.only(bottom: 10),
-                                                                    child: TextField(
-                                                                      controller: newCatController,
-                                                                      autofocus: true,
-                                                                      maxLines: 1,
-                                                                      maxLength: 15,
-                                                                      decoration: InputDecoration(
-                                                                        counterText: '',
-                                                                        contentPadding: const EdgeInsets.symmetric(
-                                                                          horizontal: 12,
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                          16,
                                                                         ),
-                                                                        filled: true,
-                                                                        fillColor: themeProvider.surface,
+                                                                    side: BorderSide(
+                                                                      color: themeProvider
+                                                                          .borderColor,
+                                                                      width:
+                                                                          1.5,
+                                                                    ),
+                                                                  ),
+                                                                  titlePadding:
+                                                                      const EdgeInsets.fromLTRB(
+                                                                        24,
+                                                                        20,
+                                                                        24,
+                                                                        20,
+                                                                      ),
+                                                                  contentPadding:
+                                                                      const EdgeInsets.symmetric(
+                                                                        horizontal:
+                                                                            14,
+                                                                        vertical:
+                                                                            0,
+                                                                      ),
+                                                                  title: const Center(
+                                                                    child: Text(
+                                                                      'Nueva Categoría',
+                                                                      style: TextStyle(
+                                                                        fontSize:
+                                                                            24,
+                                                                        fontWeight:
+                                                                            FontWeight.w500,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  content: Padding(
+                                                                    padding:
+                                                                        const EdgeInsets.only(
+                                                                          bottom:
+                                                                              10,
+                                                                        ),
+                                                                    child: TextField(
+                                                                      controller:
+                                                                          newCatController,
+                                                                      autofocus:
+                                                                          true,
+                                                                      maxLines:
+                                                                          1,
+                                                                      maxLength:
+                                                                          15,
+                                                                      decoration: InputDecoration(
+                                                                        counterText:
+                                                                            '',
+                                                                        contentPadding: const EdgeInsets.symmetric(
+                                                                          horizontal:
+                                                                              12,
+                                                                        ),
+                                                                        filled:
+                                                                            true,
+                                                                        fillColor:
+                                                                            themeProvider.surface,
                                                                         labelStyle: TextStyle(
-                                                                          color: themeProvider.textMutedColor,
+                                                                          color:
+                                                                              themeProvider.textMutedColor,
                                                                         ),
                                                                         border: OutlineInputBorder(
-                                                                          borderRadius: BorderRadius.circular(14),
+                                                                          borderRadius: BorderRadius.circular(
+                                                                            14,
+                                                                          ),
                                                                           borderSide: BorderSide(
-                                                                            color: themeProvider.borderColor,
+                                                                            color:
+                                                                                themeProvider.borderColor,
                                                                           ),
                                                                         ),
                                                                         enabledBorder: OutlineInputBorder(
-                                                                          borderRadius: BorderRadius.circular(14),
+                                                                          borderRadius: BorderRadius.circular(
+                                                                            14,
+                                                                          ),
                                                                           borderSide: BorderSide(
-                                                                            color: themeProvider.borderColor,
-                                                                            width: 1.5,
+                                                                            color:
+                                                                                themeProvider.borderColor,
+                                                                            width:
+                                                                                1.5,
                                                                           ),
                                                                         ),
                                                                         focusedBorder: OutlineInputBorder(
-                                                                          borderRadius: BorderRadius.circular(14),
+                                                                          borderRadius: BorderRadius.circular(
+                                                                            14,
+                                                                          ),
                                                                           borderSide: BorderSide(
-                                                                            color: themeProvider.primaryColor,
-                                                                            width: 1.8,
+                                                                            color:
+                                                                                themeProvider.primaryColor,
+                                                                            width:
+                                                                                1.8,
                                                                           ),
                                                                         ),
                                                                       ),
@@ -1016,20 +1331,39 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                   ),
                                                                   actions: [
                                                                     Row(
-                                                                      mainAxisAlignment: MainAxisAlignment.center,
-                                                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                                                      mainAxisAlignment:
+                                                                          MainAxisAlignment
+                                                                              .center,
+                                                                      crossAxisAlignment:
+                                                                          CrossAxisAlignment
+                                                                              .center,
                                                                       children: [
                                                                         TextButton(
-                                                                          onPressed: () => Navigator.pop(ctx),
-                                                                          child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+                                                                          onPressed: () => Navigator.pop(
+                                                                            ctx,
+                                                                          ),
+                                                                          child: const Text(
+                                                                            'Cancelar',
+                                                                            style: TextStyle(
+                                                                              fontSize: 16,
+                                                                            ),
+                                                                          ),
                                                                         ),
-                                                                        const SizedBox(width: 10),
+                                                                        const SizedBox(
+                                                                          width:
+                                                                              10,
+                                                                        ),
                                                                         TextButton(
                                                                           onPressed: () => Navigator.pop(
                                                                             ctx,
                                                                             newCatController.text.trim(),
                                                                           ),
-                                                                          child: const Text('Añadir', style: TextStyle(fontSize: 16)),
+                                                                          child: const Text(
+                                                                            'Añadir',
+                                                                            style: TextStyle(
+                                                                              fontSize: 16,
+                                                                            ),
+                                                                          ),
                                                                         ),
                                                                       ],
                                                                     ),
@@ -1037,10 +1371,22 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                 ),
                                                               );
 
-                                                              if (newCat != null && newCat.isNotEmpty) {
-                                                                shoppingProvider.addCategoryToList(widget.listName, newCat);
-                                                                setDialogState(() {});
-                                                                setModalState(() {});
+                                                              if (newCat !=
+                                                                      null &&
+                                                                  newCat
+                                                                      .isNotEmpty) {
+                                                                shoppingProvider
+                                                                    .addCategoryToList(
+                                                                      widget
+                                                                          .listName,
+                                                                      newCat,
+                                                                    );
+                                                                setDialogState(
+                                                                  () {},
+                                                                );
+                                                                setModalState(
+                                                                  () {},
+                                                                );
                                                               }
                                                             },
                                                           ),
@@ -1049,13 +1395,23 @@ class _ListMainPageState extends State<ListMainPage> {
                                                             enabled: canReorder,
                                                             leading: Icon(
                                                               Icons.swap_vert,
-                                                              color: canReorder ? Colors.orange : Colors.grey,
+                                                              color: canReorder
+                                                                  ? Colors
+                                                                        .orange
+                                                                  : Colors.grey,
                                                             ),
                                                             title: Text(
                                                               'Reordenar categorías',
                                                               style: TextStyle(
-                                                                color: canReorder ? Colors.orange : Colors.grey,
-                                                                fontWeight: FontWeight.w500,
+                                                                color:
+                                                                    canReorder
+                                                                    ? Colors
+                                                                          .orange
+                                                                    : Colors
+                                                                          .grey,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w500,
                                                               ),
                                                             ),
                                                             onTap: canReorder
@@ -1064,10 +1420,15 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                       dialogContext,
                                                                       shoppingProvider,
                                                                       themeProvider,
-                                                                      widget.listName,
+                                                                      widget
+                                                                          .listName,
                                                                     );
-                                                                    setDialogState(() {});
-                                                                    setModalState(() {});
+                                                                    setDialogState(
+                                                                      () {},
+                                                                    );
+                                                                    setModalState(
+                                                                      () {},
+                                                                    );
                                                                   }
                                                                 : null,
                                                           ),
@@ -1095,14 +1456,20 @@ class _ListMainPageState extends State<ListMainPage> {
                                 decoration: InputDecoration(
                                   labelText: 'Categoría',
                                   border: const OutlineInputBorder(),
-                                  labelStyle: TextStyle(color: themeProvider.textMutedColor),
+                                  labelStyle: TextStyle(
+                                    color: themeProvider.textMutedColor,
+                                  ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                    borderSide: BorderSide(
+                                      color: themeProvider.borderColor,
+                                      width: 1.5,
+                                    ),
                                   ),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     AutoSizeText(
                                       selectedCategory,
@@ -1130,16 +1497,27 @@ class _ListMainPageState extends State<ListMainPage> {
                                     return AlertDialog(
                                       backgroundColor: themeProvider.surface,
                                       elevation: 10,
-                                      shadowColor: themeProvider.cardShadowColor,
+                                      shadowColor:
+                                          themeProvider.cardShadowColor,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
-                                        side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                        side: BorderSide(
+                                          color: themeProvider.borderColor,
+                                          width: 1.5,
+                                        ),
                                       ),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 14,
+                                          ),
                                       title: const Center(
                                         child: Text(
                                           'Seleccionar Icono',
-                                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w500,
+                                          ),
                                         ),
                                       ),
                                       content: SizedBox(
@@ -1166,22 +1544,31 @@ class _ListMainPageState extends State<ListMainPage> {
                                                 ),
                                               ),
                                               const Divider(),
-                                              ...themeProvider.availableIconsSvg.entries.map((entry) {
-                                                return ListTile(
-                                                  leading: SvgPicture.asset(entry.value),
-                                                  title: Text(entry.key),
-                                                  trailing: selectedIcon == entry.key
-                                                      ? const Icon(
-                                                          Icons.check,
-                                                          color: Colors.blue,
-                                                        )
-                                                      : null,
-                                                  onTap: () => Navigator.pop(
-                                                    dialogContext,
-                                                    entry.key,
-                                                  ),
-                                                );
-                                              }),
+                                              ...themeProvider
+                                                  .availableIconsSvg
+                                                  .entries
+                                                  .map((entry) {
+                                                    return ListTile(
+                                                      leading: SvgPicture.asset(
+                                                        entry.value,
+                                                      ),
+                                                      title: Text(entry.key),
+                                                      trailing:
+                                                          selectedIcon ==
+                                                              entry.key
+                                                          ? const Icon(
+                                                              Icons.check,
+                                                              color:
+                                                                  Colors.blue,
+                                                            )
+                                                          : null,
+                                                      onTap: () =>
+                                                          Navigator.pop(
+                                                            dialogContext,
+                                                            entry.key,
+                                                          ),
+                                                    );
+                                                  }),
                                             ],
                                           ),
                                         ),
@@ -1192,7 +1579,9 @@ class _ListMainPageState extends State<ListMainPage> {
 
                                 if (chosenIcon != null) {
                                   setModalState(() {
-                                    selectedIcon = chosenIcon == 'CLEAR' ? null : chosenIcon;
+                                    selectedIcon = chosenIcon == 'CLEAR'
+                                        ? null
+                                        : chosenIcon;
                                   });
                                 }
                               },
@@ -1200,21 +1589,29 @@ class _ListMainPageState extends State<ListMainPage> {
                                 decoration: InputDecoration(
                                   labelText: 'Icono',
                                   border: const OutlineInputBorder(),
-                                  labelStyle: TextStyle(color: themeProvider.textMutedColor),
+                                  labelStyle: TextStyle(
+                                    color: themeProvider.textMutedColor,
+                                  ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                    borderSide: BorderSide(
+                                      color: themeProvider.borderColor,
+                                      width: 1.5,
+                                    ),
                                   ),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       children: [
                                         if (selectedIcon != null &&
-                                            themeProvider.availableIconsSvg.containsKey(selectedIcon))
+                                            themeProvider.availableIconsSvg
+                                                .containsKey(selectedIcon))
                                           SvgPicture.asset(
-                                            themeProvider.availableIconsSvg[selectedIcon]!,
+                                            themeProvider
+                                                .availableIconsSvg[selectedIcon]!,
                                             width: 25,
                                             height: 25,
                                             fit: BoxFit.fitHeight,
@@ -1226,7 +1623,9 @@ class _ListMainPageState extends State<ListMainPage> {
                                               maxFontSize: 16,
                                               minFontSize: 10,
                                               maxLines: 1,
-                                              style: TextStyle(color: Colors.grey),
+                                              style: TextStyle(
+                                                color: Colors.grey,
+                                              ),
                                             ),
                                           ),
                                       ],
@@ -1248,16 +1647,29 @@ class _ListMainPageState extends State<ListMainPage> {
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'Frecuencia',
-                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                floatingLabelBehavior:
+                                    FloatingLabelBehavior.always,
                                 isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                  vertical: 12,
+                                ),
                                 border: const OutlineInputBorder(),
-                                labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                                labelStyle: TextStyle(
+                                  fontSize: 14,
+                                  color: themeProvider.textMutedColor,
+                                ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                    color: themeProvider.borderColor,
+                                    width: 1.5,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                                  borderSide: BorderSide(
+                                    color: themeProvider.primaryColor,
+                                    width: 2,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1269,16 +1681,29 @@ class _ListMainPageState extends State<ListMainPage> {
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
                                 labelText: 'Cantidad',
-                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                floatingLabelBehavior:
+                                    FloatingLabelBehavior.always,
                                 isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                  vertical: 12,
+                                ),
                                 border: const OutlineInputBorder(),
-                                labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                                labelStyle: TextStyle(
+                                  fontSize: 14,
+                                  color: themeProvider.textMutedColor,
+                                ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                    color: themeProvider.borderColor,
+                                    width: 1.5,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                                  borderSide: BorderSide(
+                                    color: themeProvider.primaryColor,
+                                    width: 2,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1289,20 +1714,36 @@ class _ListMainPageState extends State<ListMainPage> {
                               textAlign: TextAlign.center,
                               controller: priceController,
                               maxLength: 7,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               decoration: InputDecoration(
                                 labelText: 'Precio',
                                 counterText: '',
-                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                floatingLabelBehavior:
+                                    FloatingLabelBehavior.always,
                                 isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                  vertical: 12,
+                                ),
                                 border: const OutlineInputBorder(),
-                                labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                                labelStyle: TextStyle(
+                                  fontSize: 14,
+                                  color: themeProvider.textMutedColor,
+                                ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                    color: themeProvider.borderColor,
+                                    width: 1.5,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                                  borderSide: BorderSide(
+                                    color: themeProvider.primaryColor,
+                                    width: 2,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1313,20 +1754,36 @@ class _ListMainPageState extends State<ListMainPage> {
                               textAlign: TextAlign.center,
                               controller: pricePerKiloController,
                               maxLength: 7,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
                               decoration: InputDecoration(
                                 labelText: 'Precio/Kg',
                                 counterText: '',
-                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                floatingLabelBehavior:
+                                    FloatingLabelBehavior.always,
                                 isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                  vertical: 12,
+                                ),
                                 border: const OutlineInputBorder(),
-                                labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                                labelStyle: TextStyle(
+                                  fontSize: 14,
+                                  color: themeProvider.textMutedColor,
+                                ),
                                 enabledBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                                  borderSide: BorderSide(
+                                    color: themeProvider.borderColor,
+                                    width: 1.5,
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
-                                  borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                                  borderSide: BorderSide(
+                                    color: themeProvider.primaryColor,
+                                    width: 2,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1340,12 +1797,21 @@ class _ListMainPageState extends State<ListMainPage> {
                         decoration: InputDecoration(
                           labelText: 'URL de imagen',
                           border: const OutlineInputBorder(),
-                          labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
+                          labelStyle: TextStyle(
+                            fontSize: 14,
+                            color: themeProvider.textMutedColor,
+                          ),
                           enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                            borderSide: BorderSide(
+                              color: themeProvider.borderColor,
+                              width: 1.5,
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
+                            borderSide: BorderSide(
+                              color: themeProvider.primaryColor,
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
@@ -1357,10 +1823,17 @@ class _ListMainPageState extends State<ListMainPage> {
                               style: ElevatedButton.styleFrom(elevation: 10),
                               onPressed: () async {
                                 final name = nameController.text.trim();
-                                final frequency = int.tryParse(frequencyController.text.trim());
-                                final amount = int.tryParse(amountController.text.trim());
+                                final frequency = int.tryParse(
+                                  frequencyController.text.trim(),
+                                );
+                                final amount = int.tryParse(
+                                  amountController.text.trim(),
+                                );
 
-                                if (name.isEmpty || frequency == null || amount == null) return;
+                                if (name.isEmpty ||
+                                    frequency == null ||
+                                    amount == null)
+                                  return;
 
                                 shoppingProvider.updateProduct(
                                   widget.listName,
@@ -1372,9 +1845,12 @@ class _ListMainPageState extends State<ListMainPage> {
                                   icon: selectedIcon,
                                 );
 
-                                await shoppingProvider.saveToStorage(mergeCloud: false);
+                                await shoppingProvider.saveToStorage(
+                                  mergeCloud: false,
+                                );
 
-                                if (context.mounted) Navigator.of(context).pop();
+                                if (context.mounted)
+                                  Navigator.of(context).pop();
                               },
                               child: const Text('Guardar'),
                             ),
@@ -1392,9 +1868,12 @@ class _ListMainPageState extends State<ListMainPage> {
                                   product.id,
                                 );
 
-                                await shoppingProvider.saveToStorage(mergeCloud: false);
+                                await shoppingProvider.saveToStorage(
+                                  mergeCloud: false,
+                                );
 
-                                if (context.mounted) Navigator.of(context).pop();
+                                if (context.mounted)
+                                  Navigator.of(context).pop();
                               },
                               child: const Text(
                                 'Borrar',
@@ -1447,7 +1926,10 @@ class _ListMainPageState extends State<ListMainPage> {
                 side: BorderSide(color: themeProvider.borderColor, width: 1.5),
               ),
               titlePadding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 0,
+              ),
               title: const Center(
                 child: Text(
                   'Reordenar Categorías',
@@ -1477,7 +1959,9 @@ class _ListMainPageState extends State<ListMainPage> {
                             key: ValueKey(cat),
                             leading: Text(
                               '${index + 1}.',
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             title: Text(cat),
                             trailing: const Icon(Icons.drag_handle),

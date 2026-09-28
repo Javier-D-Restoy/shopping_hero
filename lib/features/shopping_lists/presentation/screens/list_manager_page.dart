@@ -46,48 +46,38 @@ class _ListManagerState extends State<ListManager> {
         leading: Padding(
           padding: const EdgeInsets.all(2.0),
           child: Material(
-            // color: Colors.yellow,
             shape: const CircleBorder(),
             elevation: 8.0,
             shadowColor: themeProvider.cardShadowColor,
             child: IconButton(
               icon: Stack(
                 children: [
-                  Icon(Icons.logout,color: Colors.black,),
-                  Icon(Icons.logout,color: themeProvider.dangerColor,),
+                  const Icon(Icons.logout, color: Colors.black),
+                  Icon(Icons.logout, color: themeProvider.dangerColor),
                 ],
               ),
-              // color: Colors.red,
-              style: ButtonStyle(),
               tooltip: 'Cerrar Sesión',
               onPressed: () async {
                 final session = context.read<SessionProvider>();
                 final shopping = context.read<ShoppingProvider>();
                 final navigator = Navigator.of(context);
 
-                // Limpiamos la caché local de Hive, la sesión y ejecutamos el logout en segundo plano.
-                // Si el usuario estaba con sesión online iniciada, limpiamos la caché online
-                // para que un Usuario B no vea residuos.
-                // Si estaba en modo offline (invitado), NO se borra nada.
+                // 1. Limpiamos la caché si estaba en modo online
                 if (session.isLoggedIn) {
                   await shopping.clearLocalShoppingCache();
                 }
 
-                // Guardamos seguridad tras el await por si el widget se desmontó
+                // 2. Limpiamos los datos del usuario actual y reseteamos la sesión
+                shopping.clearCurrentUser();
+                await session.logout();
+
                 if (!mounted) return;
 
-                // Reemplazamos la ruta al instante eliminando todo el historial previo.
-                // Al no haber 'await' previo, no se requiere la comprobación de context.mounted.
+                // 3. Redirigimos de forma limpia a LoginPage una vez reseteado todo
                 navigator.pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const LoginPage()),
                   (route) => false,
                 );
-            
-                // Limpiamos los datos y ejecutamos el logout en segundo plano.
-                // Como ListManager ya fue desmontado del árbol de widgets,
-                // notifyListeners() no provocará ningún redibujado no deseado.
-                shopping.clearCurrentUser();
-                session.logout();
               },
             ),
           ),
@@ -98,7 +88,11 @@ class _ListManagerState extends State<ListManager> {
           minFontSize: 10,
           stepGranularity: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight(500), color: themeProvider.textStrongColor),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
+            color: themeProvider.textStrongColor,
+          ),
         ),
         centerTitle: true,
         actions: [
@@ -107,7 +101,7 @@ class _ListManagerState extends State<ListManager> {
               if (context.mounted) {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ConfigPage()),
+                  MaterialPageRoute(builder: (context) => const ConfigPage()),
                 );
               }
             },
@@ -117,12 +111,6 @@ class _ListManagerState extends State<ListManager> {
       ),
       body: Stack(
         children: [
-          // Positioned.fill(
-          //   child: Image.asset(
-          //     themeProvider.backgroundImagePath,
-          //     fit: BoxFit.cover,
-          //   ),
-          // ),
           SizedBox(
             width: screenSize.width,
             height: screenSize.height,
@@ -139,106 +127,118 @@ class _ListManagerState extends State<ListManager> {
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(12),
                 children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    if (listNames.isEmpty) ...[
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 24,
-                          horizontal: 4,
-                        ),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: themeProvider.gradientColors,
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      if (listNames.isEmpty) ...[
+                        Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.symmetric(
+                            vertical: 24,
+                            horizontal: 4,
                           ),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: themeProvider.borderColor,
-                            width: 1.6,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: themeProvider.gradientColors,
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: themeProvider.borderColor,
+                              width: 1.6,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: themeProvider.cardShadowColor,
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: themeProvider.cardShadowColor,
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: themeProvider.primaryColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.list_alt_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'No tienes ninguna lista de la compra.\nPulsa el botón de abajo para crear tu primera lista.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  color: themeProvider.textMutedColor,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        child: Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: themeProvider.primaryColor,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Icon(
-                                Icons.list_alt_rounded,
-                                color: Colors.white,
-                                size: 22,
-                              ),
+                      ] else ...[
+                        ...listNames.map((listName) {
+                          return ListBubble(
+                            isDark: isDark,
+                            listName: listName,
+                            productCount: shoppingProvider
+                                .activeProductsForList(listName)
+                                .length,
+                            canManageList: shoppingProvider.canManageList(
+                              listName,
                             ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'No tienes ninguna lista de la compra.\nPulsa el botón de abajo para crear tu primera lista.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 15,
-                                color: themeProvider.textMutedColor,
-                              ),
+                            isSharedList: shoppingProvider.isSharedList(
+                              listName,
                             ),
-                          ],
+                            onRename: (newName) {
+                              shoppingProvider.renameList(listName, newName);
+                            },
+                            onLeaveShared: () async {
+                              await shoppingProvider.leaveSharedList(listName);
+                            },
+                          );
+                        }),
+                      ],
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: 320,
+                        child: FilledButton.icon(
+                          onPressed: () {
+                            shoppingProvider.createList();
+                          },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: themeProvider.primaryColor,
+                            foregroundColor: isDark
+                                ? Colors.black
+                                : Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            side: BorderSide(
+                              color: themeProvider.borderColor.withValues(
+                                alpha: 0.3,
+                              ),
+                              width: 2,
+                            ),
+                          ),
+                          icon: const Icon(Icons.add, size: 19),
+                          label: const Text(
+                            'Crear lista',
+                            style: TextStyle(fontSize: 16),
+                          ),
                         ),
                       ),
-                    ] else ...[
-                      ...listNames.map((listName) {
-                        return ListBubble(
-                          isDark: isDark,
-                          listName: listName,
-                          productCount: shoppingProvider
-                              .activeProductsForList(listName)
-                              .length,
-                          canManageList: shoppingProvider.canManageList(
-                            listName,
-                          ),
-                          isSharedList: shoppingProvider.isSharedList(listName),
-                          onRename: (newName) {
-                            shoppingProvider.renameList(listName, newName);
-                          },
-                          onLeaveShared: () async {
-                            await shoppingProvider.leaveSharedList(listName);
-                          },
-                        );
-                      }),
                     ],
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: 320,
-                      child: FilledButton.icon(
-                        onPressed: () {
-                          shoppingProvider.createList();
-                        },
-                        style: FilledButton.styleFrom(
-                          backgroundColor: themeProvider.primaryColor,
-                          foregroundColor: isDark ? Colors.black : Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          side: BorderSide(color: themeProvider.borderColor.withValues(alpha: 0.3), width: 2,)
-                        ),
-                        icon: const Icon(Icons.add, size: 19,),
-                        label: const Text('Crear lista', style: TextStyle(fontSize: 16),),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
                 ],
               ),
             ),
