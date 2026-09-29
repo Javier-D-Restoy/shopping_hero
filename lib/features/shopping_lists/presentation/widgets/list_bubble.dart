@@ -53,10 +53,20 @@ class _ListBubbleState extends State<ListBubble> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadSharedMembers());
   }
 
+  // @override
+  // void didChangeDependencies() { // No usar
+  //   super.didChangeDependencies();
+  //   _loadSharedMembers();
+  // }
+
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadSharedMembers();
+  void didUpdateWidget(covariant ListBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Solo recargamos si cambió el nombre de la lista o el estado de si es compartida
+    if (oldWidget.listName != widget.listName ||
+        oldWidget.isSharedList != widget.isSharedList) {
+      _loadSharedMembers();
+    }
   }
 
   @override
@@ -203,26 +213,72 @@ class _ListBubbleState extends State<ListBubble> {
   }
 
   Future<void> _showLeaveSharedListDialog() async {
+    final themeProvider = context.read<ThemeProvider>();
+    final listName = widget.listName;
+
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Desvincularte de la lista'),
-          content: Text(
-            '¿Quieres dejar de tener acceso a la lista "${widget.listName}"?',
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: themeProvider.surface,
+        elevation: 10,
+        shadowColor: themeProvider.cardShadowColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: themeProvider.borderColor,
+            width: 1.5,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
+        ),
+        titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 10,
+        ),
+        title: const Center(
+          child: Text(
+            'Desvincular Lista',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Sí, quitarme'),
+          ),
+        ),
+        content: Text(
+          '¿Seguro que quieres desvincularte de\n"$listName"?',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            color: themeProvider.textStrongColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.spaceEvenly,
+        actionsPadding: const EdgeInsets.only(
+          bottom: 12,
+          top: 8,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(fontSize: 16),
             ),
-          ],
-        );
-      },
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Desvincularme',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
 
     if (confirmed == true && mounted) {

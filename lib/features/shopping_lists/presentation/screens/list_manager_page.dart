@@ -62,18 +62,20 @@ class _ListManagerState extends State<ListManager> {
                 final shopping = context.read<ShoppingProvider>();
                 final navigator = Navigator.of(context);
 
-                // 1. Limpiamos la caché si estaba en modo online
+                // 1. Limpiamos los listeners de Firestore y temporizadores activos
+                await shopping.clearCurrentUser();
+
+                // 2. Limpiamos la caché local de Hive si estaba en modo online
                 if (session.isLoggedIn) {
                   await shopping.clearLocalShoppingCache();
                 }
 
-                // 2. Limpiamos los datos del usuario actual y reseteamos la sesión
-                shopping.clearCurrentUser();
+                // 3. Reseteamos la sesión en SessionProvider
                 await session.logout();
 
                 if (!mounted) return;
 
-                // 3. Redirigimos de forma limpia a LoginPage una vez reseteado todo
+                // 4. Redirigimos a LoginPage
                 navigator.pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const LoginPage()),
                   (route) => false,
@@ -202,7 +204,35 @@ class _ListManagerState extends State<ListManager> {
                               shoppingProvider.renameList(listName, newName);
                             },
                             onLeaveShared: () async {
-                              await shoppingProvider.leaveSharedList(listName);
+                              try {
+                                await context
+                                    .read<ShoppingProvider>()
+                                    .leaveSharedList(listName);
+
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Te has desvinculado de "$listName"',
+                                      ),
+                                      backgroundColor:
+                                          themeProvider.primaryColor,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Error al desvincularse: ${e.toString().replaceAll('Exception: ', '')}',
+                                      ),
+                                      backgroundColor:
+                                          themeProvider.dangerColor,
+                                    ),
+                                  );
+                                }
+                              }
                             },
                           );
                         }),

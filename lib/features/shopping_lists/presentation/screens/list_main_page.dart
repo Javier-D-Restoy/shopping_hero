@@ -100,6 +100,32 @@ class _ListMainPageState extends State<ListMainPage> {
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
 
+    // Validación de existencia de la lista actual
+    if (!shoppingProvider.shoppingLists.containsKey(widget.listName)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        // 1. Mostrar un aviso informativo al usuario
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('La lista "${widget.listName}" ha sido eliminada por el propietario.'),
+            backgroundColor: themeProvider.dangerColor,
+          ),
+        );
+
+        // 2. Redirigir hacia ListManager reemplazando la ruta actual
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ListManager()),
+        );
+      });
+
+      // Retornar un Scaffold temporal mientras se procesa el callback de navegación
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final activeProducts2 = shoppingProvider.activeProductsForList(
       widget.listName,
     );

@@ -159,18 +159,99 @@ class _SharingPageState extends State<SharingPage> {
 
   Future<void> _leaveSharedList() async {
     final shoppingProvider = context.read<ShoppingProvider>();
+    final sessionProvider = context.read<SessionProvider>();
+    final themeProvider = context.read<ThemeProvider>();
     final messenger = ScaffoldMessenger.maybeOf(context);
+    final navigator = Navigator.of(context);
     final listName = widget.listName;
 
+    // 1. Mostrar diálogo de confirmación y esperar su resultado
+    final confirmLeave = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: themeProvider.surface,
+        elevation: 10,
+        shadowColor: themeProvider.cardShadowColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: themeProvider.borderColor,
+            width: 1.5,
+          ),
+        ),
+        titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 10,
+        ),
+        title: const Center(
+          child: Text(
+            'Desvincular Lista',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        content: Text(
+          '¿Seguro que quieres desvincularte de\n"$listName"?',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            color: themeProvider.textStrongColor,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.spaceEvenly,
+        actionsPadding: const EdgeInsets.only(
+          bottom: 12,
+          top: 8,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(fontSize: 16),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text(
+              'Desvincularme',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Si el usuario cancela o cierra el diálogo sin confirmar, salimos
+    if (confirmLeave != true) return;
+
+    // 2. Una vez que el diálogo ha sido CERRADO completamente, ejecutamos la desvinculación
     try {
+      // Cambiamos la ruta primero
+      await sessionProvider.setLastRoute(route: 'listManager');
+      
+      // Eliminamos la lista del provider
       await shoppingProvider.leaveSharedList(listName);
+
       if (!mounted) return;
+
       messenger?.showSnackBar(
         const SnackBar(content: Text('Te has desvinculado de la lista')),
       );
-      Navigator.pushReplacement(
-        context,
+
+      // 3. Redirigimos limpiamente a ListManager reemplazando la pila de navegación
+      navigator.pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const ListManager()),
+        (route) => false,
       );
     } catch (error) {
       if (!mounted) return;
@@ -280,37 +361,35 @@ class _SharingPageState extends State<SharingPage> {
                       // style: BorderStyle.solid,
                     ),
                   ),
-                  child: Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          ' Compartir',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ' Compartir',
+                        style: Theme.of(context).textTheme.titleLarge
+                            ?.copyWith(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? Colors.white.withAlpha(210)
+                                  : Colors.white.withAlpha(210),
+                            ),
+                      ),
+                      Center(
+                        child: AutoSizeText(
+                          '"$listName"',
+                          maxFontSize: 20,
+                          minFontSize: 15,
+                          maxLines: 1,
                           style: Theme.of(context).textTheme.titleLarge
                               ?.copyWith(
-                                fontSize: 20,
+                                // fontSize: 20,
                                 fontWeight: FontWeight.w700,
-                                color: isDark
-                                    ? Colors.white.withAlpha(210)
-                                    : Colors.white.withAlpha(210),
+                                color: isDark ? Colors.white : Colors.white,
                               ),
                         ),
-                        Center(
-                          child: AutoSizeText(
-                            '"$listName"',
-                            maxFontSize: 20,
-                            minFontSize: 15,
-                            maxLines: 1,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  // fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white : Colors.white,
-                                ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),

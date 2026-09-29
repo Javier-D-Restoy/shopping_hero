@@ -139,6 +139,45 @@ class ShoppingProvider extends ChangeNotifier {
     super.dispose();
   }
 
+  // Future<void> leaveSharedList(String listName) async {  // Antigua
+  //   if (_currentUid == null) {
+  //     throw Exception(
+  //       'Necesitas iniciar sesión para desvincularte de la lista',
+  //     );
+  //   }
+
+  //   final cleanedName = listName.trim();
+  //   final sharedListId = _sharedListIds[cleanedName];
+
+  //   if (sharedListId == null) return;
+
+  //   if (_sharedListOwners[cleanedName] == _currentUid) {
+  //     throw Exception('El propietario no puede desvincularse de la lista');
+  //   }
+
+  //   await _userRepository.removeMemberFromSharedList(
+  //     listId: sharedListId,
+  //     uid: _currentUid!,
+  //   );
+
+  //   _shoppingLists.remove(cleanedName);
+  //   _listCategories.remove(cleanedName);
+  //   _sharedListIds.remove(cleanedName);
+  //   _sharedListOwners.remove(cleanedName);
+  //   _deletedSharedProducts.remove(sharedListId);
+  //   _listUpdatedAt.remove(cleanedName);
+  //   _listIds.remove(cleanedName);
+
+  //   if (_selectedListName == cleanedName) {
+  //     _selectedListName = _shoppingLists.keys.isNotEmpty
+  //         ? _shoppingLists.keys.first
+  //         : '';
+  //   }
+
+  //   notifyListeners();
+  //   await saveToStorage(mergeCloud: false);
+  // }
+
   Future<void> leaveSharedList(String listName) async {
     if (_currentUid == null) {
       throw Exception(
@@ -155,11 +194,20 @@ class ShoppingProvider extends ChangeNotifier {
       throw Exception('El propietario no puede desvincularse de la lista');
     }
 
+    // 1. Cancelar el listener de Firestore de esta lista compartida inmediatamente
+    final subscription = _sharedListSubscriptions.remove(sharedListId);
+    if (subscription != null) {
+      await subscription.cancel();
+    }
+    _pendingSharedSnapshots.remove(sharedListId);
+
+    // 2. Eliminar al usuario del documento en Firestore
     await _userRepository.removeMemberFromSharedList(
       listId: sharedListId,
       uid: _currentUid!,
     );
 
+    // 3. Limpiar todas las referencias locales
     _shoppingLists.remove(cleanedName);
     _listCategories.remove(cleanedName);
     _sharedListIds.remove(cleanedName);
@@ -175,8 +223,10 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     notifyListeners();
-    await saveToStorage(mergeCloud: false);
-  }
+
+    // 4. Persistir los cambios localmente en Hive inmediatamente
+    await _persistHiveCache();
+  }  
 
   Future<void> shareSelectedListWithEmail(String email) async {
     // Antigua
@@ -888,10 +938,39 @@ class ShoppingProvider extends ChangeNotifier {
     _sharedListSubscriptions.clear();
   }
 
-  void _onSharedListSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot) {
-    if (!snapshot.exists || snapshot.data() == null || _isOfflineMode) return;
+  // Antigua funcion
+  // void _onSharedListSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot) {
+  //   if (!snapshot.exists || snapshot.data() == null || _isOfflineMode) return;
 
-    _pendingSharedSnapshots[snapshot.id] = snapshot.data()!;
+  //   _pendingSharedSnapshots[snapshot.id] = snapshot.data()!;
+
+  //   final now = DateTime.now();
+  //   final lastSync = _lastAutomaticSharedSync;
+  //   if (lastSync != null &&
+  //       now.difference(lastSync) < const Duration(seconds: 5)) {
+  //     _automaticSharedSyncTimer ??= Timer(
+  //       const Duration(seconds: 5),
+  //       _runAutomaticSharedSync,
+  //     );
+  //     return;
+  //   }
+
+  //   unawaited(_runAutomaticSharedSync());
+  // }
+
+  // Nueva funcion
+  void _onSharedListSnapshot(DocumentSnapshot<Map<String, dynamic>> snapshot) {
+    if (_isOfflineMode) return;
+
+    final listId = snapshot.id;
+
+    // Si el documento ya no existe en Firestore, significa que el propietario eliminó la lista
+    if (!snapshot.exists || snapshot.data() == null) {
+      unawaited(_handleSharedListDeletedByOwner(listId));
+      return;
+    }
+
+    _pendingSharedSnapshots[listId] = snapshot.data()!;
 
     final now = DateTime.now();
     final lastSync = _lastAutomaticSharedSync;
@@ -905,6 +984,46 @@ class ShoppingProvider extends ChangeNotifier {
     }
 
     unawaited(_runAutomaticSharedSync());
+  }
+
+  /// Maneja la eliminación remota de una lista compartida cuando el propietario la elimina
+  Future<void> _handleSharedListDeletedByOwner(String listId) async {
+    // 1. Cancelar el listener de esta lista
+    final subscription = _sharedListSubscriptions.remove(listId);
+    if (subscription != null) {
+      await subscription.cancel();
+    }
+    _pendingSharedSnapshots.remove(listId);
+
+    // 2. Buscar el nombre local de la lista
+    String? listName;
+    for (final entry in _sharedListIds.entries) {
+      if (entry.value == listId) {
+        listName = entry.key;
+        break;
+      }
+    }
+
+    if (listName == null) return;
+
+    // 3. Limpiar referencias locales
+    _shoppingLists.remove(listName);
+    _listCategories.remove(listName);
+    _sharedListIds.remove(listName);
+    _sharedListOwners.remove(listName);
+    _deletedSharedProducts.remove(listId);
+    _listUpdatedAt.remove(listName);
+    _listIds.remove(listName);
+
+    if (_selectedListName == listName) {
+      _selectedListName =
+          _shoppingLists.keys.isNotEmpty ? _shoppingLists.keys.first : '';
+    }
+
+    notifyListeners();
+
+    // 4. Guardar cambios en Hive
+    await _persistHiveCache();
   }
 
   Future<void> _runAutomaticSharedSync() async {
@@ -1897,6 +2016,45 @@ class ShoppingProvider extends ChangeNotifier {
     _persistState();
   }
 
+  // Antigua Funcion
+  // void removeList(String listName) {
+  //   final cleanedName = listName.trim();
+  //   if (cleanedName.isEmpty || !_shoppingLists.containsKey(cleanedName)) {
+  //     return;
+  //   }
+
+  //   if (!canManageList(cleanedName)) return;
+
+  //   final sharedListId = _sharedListIds[cleanedName];
+  //   final deletedId = _listIds[cleanedName];
+
+  //   _shoppingLists.remove(cleanedName);
+  //   _listCategories.remove(cleanedName);
+
+  //   if (sharedListId != null && _currentUid != null) {
+  //     _sharedListIds.remove(cleanedName);
+  //     _sharedListOwners.remove(cleanedName);
+  //     unawaited(_userRepository.deleteSharedShoppingList(sharedListId));
+  //   }
+
+  //   if (deletedId != null) {
+  //     _deletedLists[deletedId] = DateTime.now();
+  //     _listIds.remove(cleanedName);
+  //   }
+
+  //   if (_selectedListName == cleanedName) {
+  //     _selectedListName = _shoppingLists.keys.isNotEmpty
+  //         ? _shoppingLists.keys.first
+  //         : '';
+  //   }
+
+  //   _listUpdatedAt.remove(cleanedName);
+
+  //   notifyListeners();
+  //   _persistState();
+  // }
+
+  // Nueva Funcion
   void removeList(String listName) {
     final cleanedName = listName.trim();
     if (cleanedName.isEmpty || !_shoppingLists.containsKey(cleanedName)) {
@@ -1908,12 +2066,24 @@ class ShoppingProvider extends ChangeNotifier {
     final sharedListId = _sharedListIds[cleanedName];
     final deletedId = _listIds[cleanedName];
 
+    // 1. Si es una lista compartida, cancelar el listener de tiempo real local primero
+    if (sharedListId != null) {
+      final subscription = _sharedListSubscriptions.remove(sharedListId);
+      if (subscription != null) {
+        unawaited(subscription.cancel());
+      }
+      _pendingSharedSnapshots.remove(sharedListId);
+    }
+
+    // 2. Limpiar estructuras locales de la lista
     _shoppingLists.remove(cleanedName);
     _listCategories.remove(cleanedName);
 
+    // 3. Si es compartida y somos el propietario, eliminar el documento en Firestore
     if (sharedListId != null && _currentUid != null) {
       _sharedListIds.remove(cleanedName);
       _sharedListOwners.remove(cleanedName);
+      _deletedSharedProducts.remove(sharedListId);
       unawaited(_userRepository.deleteSharedShoppingList(sharedListId));
     }
 
