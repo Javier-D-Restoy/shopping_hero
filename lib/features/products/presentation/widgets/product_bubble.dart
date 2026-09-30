@@ -127,7 +127,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                         decoration: BoxDecoration(
                           color: Colors.black87,
                           borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(8),
+                            topLeft: Radius.circular(4),
                             bottomRight: Radius.circular(8),
                           ),
                         ),

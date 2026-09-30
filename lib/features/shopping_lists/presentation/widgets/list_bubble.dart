@@ -8,10 +8,7 @@ import 'package:shopping_hero/features/shopping_lists/presentation/screens/list_
 import 'package:auto_size_text/auto_size_text.dart';
 
 class _ListMemberAvatar {
-  const _ListMemberAvatar({
-    required this.uid,
-    required this.displayName,
-  });
+  const _ListMemberAvatar({required this.uid, required this.displayName});
 
   final String uid;
   final String displayName;
@@ -98,11 +95,12 @@ class _ListBubbleState extends State<ListBubble> {
           .doc(sharedListId)
           .get();
 
-      final memberUids = (doc.data()?['memberUids'] as List<dynamic>? ?? const [])
-          .whereType<String>()
-          .where((uid) => uid.isNotEmpty && uid != currentUid)
-          .toSet()
-          .toList();
+      final memberUids =
+          (doc.data()?['memberUids'] as List<dynamic>? ?? const [])
+              .whereType<String>()
+              .where((uid) => uid.isNotEmpty && uid != currentUid)
+              .toSet()
+              .toList();
 
       if (memberUids.isEmpty) {
         if (mounted) setState(() => _sharedMembers = const []);
@@ -148,27 +146,71 @@ class _ListBubbleState extends State<ListBubble> {
 
   void _showRenameDialog() {
     _renameController.text = widget.listName;
+    final themeProvider = context.read<ThemeProvider>();
 
     showDialog<void>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Renombrar lista'),
-          content: TextField(
-            maxLength: 25,
-            controller: _renameController,
-            autofocus: true,
-            decoration: const InputDecoration(
-              hintText: 'Nuevo nombre de la lista',
-              counterText: '',
+          backgroundColor: themeProvider.surface,
+          elevation: 10,
+          shadowColor: themeProvider.cardShadowColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+          ),
+          // titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+          // contentPadding: const EdgeInsets.symmetric(
+          //   horizontal: 24,
+          //   vertical: 10,
+          // ),
+          title: Center(
+            child: Text(
+              'Renombrar Lista',
+              style: TextStyle(
+                color: themeProvider.textStrongColor,
+                fontWeight: FontWeight(500),
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
+          content: TextField(
+            maxLength: 25,
+            textAlign: TextAlign.center,
+            controller: _renameController,
+            textCapitalization: TextCapitalization.sentences,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Nuevo nombre de la lista',
+              counterText: '',
+              border: const OutlineInputBorder(),
+              labelStyle: TextStyle(color: themeProvider.textMutedColor),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: themeProvider.borderColor,
+                  width: 1.5,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: themeProvider.primaryColor,
+                  width: 2,
+                ),
+              ),
             ),
-            TextButton(
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(fontWeight: FontWeight(700)),
+              ),
+            ),
+            SizedBox(width: 4),
+            ElevatedButton(
               onPressed: () {
                 final newName = _renameController.text.trim();
                 if (newName.isNotEmpty) {
@@ -176,7 +218,13 @@ class _ListBubbleState extends State<ListBubble> {
                 }
                 Navigator.pop(context);
               },
-              child: const Text('Guardar'),
+              child: Text(
+                'Guardar',
+                style: TextStyle(
+                  color: themeProvider.primaryColor,
+                  fontWeight: FontWeight(700),
+                ),
+              ),
             ),
           ],
         );
@@ -185,22 +233,57 @@ class _ListBubbleState extends State<ListBubble> {
   }
 
   Future<void> _showDeleteConfirmationDialog() async {
+    final themeProvider = context.read<ThemeProvider>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Eliminar lista'),
-          content: Text(
-            '¿Estás seguro de que quieres eliminar la lista "${widget.listName}"?',
+          backgroundColor: themeProvider.surface,
+          elevation: 10,
+          shadowColor: themeProvider.cardShadowColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: themeProvider.borderColor, width: 1.5),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('No'),
+          // titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+          // contentPadding: const EdgeInsets.symmetric(
+          //   horizontal: 24,
+          //   vertical: 10,
+          // ),
+          title: Center(
+            child: Text(
+              'Eliminar Lista',
+              style: TextStyle(
+                color: themeProvider.textStrongColor,
+                fontWeight: FontWeight(500),
+              ),
             ),
-            TextButton(
+          ),
+          content: Text(
+            '"${widget.listName}"',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontWeight: FontWeight(500), fontSize: 20),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(fontWeight: FontWeight(700), fontSize: 16),
+              ),
+            ),
+            // SizedBox(width: 10),
+            ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Sí'),
+              child: const Text(
+                'Eliminar',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight(700),
+                  fontSize: 16,
+                ),
+              ),
             ),
           ],
         );
@@ -225,10 +308,7 @@ class _ListBubbleState extends State<ListBubble> {
         shadowColor: themeProvider.cardShadowColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: themeProvider.borderColor,
-            width: 1.5,
-          ),
+          side: BorderSide(color: themeProvider.borderColor, width: 1.5),
         ),
         titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
         contentPadding: const EdgeInsets.symmetric(
@@ -238,10 +318,7 @@ class _ListBubbleState extends State<ListBubble> {
         title: const Center(
           child: Text(
             'Desvincular Lista',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
           ),
         ),
         content: Text(
@@ -254,17 +331,11 @@ class _ListBubbleState extends State<ListBubble> {
           ),
         ),
         actionsAlignment: MainAxisAlignment.spaceEvenly,
-        actionsPadding: const EdgeInsets.only(
-          bottom: 12,
-          top: 8,
-        ),
+        actionsPadding: const EdgeInsets.only(bottom: 12, top: 8),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(fontSize: 16),
-            ),
+            child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -291,15 +362,17 @@ class _ListBubbleState extends State<ListBubble> {
     final shoppingProvider = context.read<ShoppingProvider>();
     final themeProvider = context.read<ThemeProvider>();
     final visibleMembers = _sharedMembers.take(4).toList();
-    final extraMembersCount = _sharedMembers.length > 4 ? _sharedMembers.length - 4 : 0;
+    final extraMembersCount = _sharedMembers.length > 4
+        ? _sharedMembers.length - 4
+        : 0;
     final isDark = widget.isDark;
 
     final primary = themeProvider.primaryColor;
     final primarySoft = themeProvider.primarySoftColor;
     final Color border;
     if (widget.isSharedList) {
-      border = widget.canManageList 
-          ? themeProvider.borderOwnerColor 
+      border = widget.canManageList
+          ? themeProvider.borderOwnerColor
           : themeProvider.borderSharedColor;
     } else {
       border = themeProvider.borderColor;
@@ -326,7 +399,8 @@ class _ListBubbleState extends State<ListBubble> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ListMainPage(listName: widget.listName),
+                        builder: (context) =>
+                            ListMainPage(listName: widget.listName),
                       ),
                     );
                   },
@@ -336,7 +410,10 @@ class _ListBubbleState extends State<ListBubble> {
                   hoverColor: primary.withValues(alpha: 0.08),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 120),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -369,7 +446,11 @@ class _ListBubbleState extends State<ListBubble> {
                                 color: primary,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Icon(Icons.list_alt_rounded, color: isDark ? Colors.black : Colors.white, size: 16),
+                              child: Icon(
+                                Icons.list_alt_rounded,
+                                color: isDark ? Colors.black : Colors.white,
+                                size: 16,
+                              ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -387,17 +468,17 @@ class _ListBubbleState extends State<ListBubble> {
                                 ),
                               ),
                             ),
-                            const Expanded(
-                              flex: 1,
-                              child: SizedBox(),
-                            )
+                            const Expanded(flex: 1, child: SizedBox()),
                           ],
                         ),
                         const Spacer(),
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4,
+                                horizontal: 8,
+                              ),
                               decoration: BoxDecoration(
                                 color: primary,
                                 borderRadius: BorderRadius.circular(14),
@@ -432,51 +513,76 @@ class _ListBubbleState extends State<ListBubble> {
                                             padding: const EdgeInsets.all(3.0),
                                             child: CircleAvatar(
                                               radius: 15,
-                                              backgroundColor: primarySoft.withValues(alpha: 0.35),
+                                              backgroundColor: primarySoft
+                                                  .withValues(alpha: 0.35),
                                               child: SizedBox(
                                                 width: 12,
                                                 height: 12,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2,
-                                                  color: primary,
-                                                ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: primary,
+                                                    ),
                                               ),
                                             ),
                                           )
                                         else ...[
-                                          ...visibleMembers.asMap().entries.map((entry) {
-                                            final index = entry.key;
-                                            final member = entry.value;
-                                            final initials = member.displayName.trim().isNotEmpty
-                                                ? member.displayName.trim().split(RegExp(r'\s+')).take(2).map((part) => part[0].toUpperCase()).join()
-                                                : 'U';
-                                    
-                                            return Padding(
-                                              padding: EdgeInsets.only(left: index == 0 ? 0 : 3.0, right: 3.0),
-                                              child: CircleAvatar(
-                                                radius: 15,
-                                                backgroundColor: primarySoft,
-                                                child: Text(
-                                                  initials,
-                                                  style: TextStyle(
-                                                    color: isDark ? Colors.black : Colors.white,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.w700,
+                                          ...visibleMembers.asMap().entries.map(
+                                            (entry) {
+                                              final index = entry.key;
+                                              final member = entry.value;
+                                              final initials =
+                                                  member.displayName
+                                                      .trim()
+                                                      .isNotEmpty
+                                                  ? member.displayName
+                                                        .trim()
+                                                        .split(RegExp(r'\s+'))
+                                                        .take(2)
+                                                        .map(
+                                                          (part) => part[0]
+                                                              .toUpperCase(),
+                                                        )
+                                                        .join()
+                                                  : 'U';
+
+                                              return Padding(
+                                                padding: EdgeInsets.only(
+                                                  left: index == 0 ? 0 : 3.0,
+                                                  right: 3.0,
+                                                ),
+                                                child: CircleAvatar(
+                                                  radius: 15,
+                                                  backgroundColor: primarySoft,
+                                                  child: Text(
+                                                    initials,
+                                                    style: TextStyle(
+                                                      color: isDark
+                                                          ? Colors.black
+                                                          : Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
                                                   ),
                                                 ),
-                                              ),
-                                            );
-                                          }),
+                                              );
+                                            },
+                                          ),
                                           if (extraMembersCount > 0)
                                             Padding(
-                                              padding: const EdgeInsets.only(left: 3.0),
+                                              padding: const EdgeInsets.only(
+                                                left: 3.0,
+                                              ),
                                               child: CircleAvatar(
                                                 radius: 15,
                                                 backgroundColor: primary,
                                                 child: Text(
                                                   '+$extraMembersCount',
                                                   style: TextStyle(
-                                                    color: isDark ? Colors.black : Colors.white,
+                                                    color: isDark
+                                                        ? Colors.black
+                                                        : Colors.white,
                                                     fontSize: 10,
                                                     fontWeight: FontWeight.w700,
                                                   ),

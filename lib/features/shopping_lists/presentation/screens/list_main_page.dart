@@ -33,7 +33,7 @@ class _ListMainPageState extends State<ListMainPage> {
 
   // Reference al Provider para el dispose seguro
   ShoppingProvider? _shoppingProvider;
-  
+
   // Bandera para evitar ejecuciones múltiples durante la redirección
   bool _isNavigatingAway = false;
 
@@ -66,7 +66,7 @@ class _ListMainPageState extends State<ListMainPage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    
+
     // Suscripción segura
     final provider = context.read<ShoppingProvider>();
     if (_shoppingProvider != provider) {
@@ -88,7 +88,7 @@ class _ListMainPageState extends State<ListMainPage> {
   void _checkIfListDeleted() {
     // Si el widget no está montado o ya se inició la navegación, salimos
     if (!mounted || _isNavigatingAway) return;
-    
+
     final shoppingProvider = _shoppingProvider;
     if (shoppingProvider == null) return;
 
@@ -104,7 +104,9 @@ class _ListMainPageState extends State<ListMainPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('La lista "${widget.listName}" ha sido eliminada por el propietario.'),
+            content: Text(
+              'La lista "${widget.listName}" ha sido eliminada por el propietario.',
+            ),
             backgroundColor: context.read<ThemeProvider>().dangerColor,
           ),
         );
@@ -203,9 +205,7 @@ class _ListMainPageState extends State<ListMainPage> {
     // Si la lista ya no existe mientras se construye el árbol, mostramos un loader
     // mientras `_checkIfListDeleted` se encarga de la redirección.
     if (!shoppingProvider.shoppingLists.containsKey(widget.listName)) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final activeProducts2 = shoppingProvider.activeProductsForList(
@@ -325,7 +325,7 @@ class _ListMainPageState extends State<ListMainPage> {
                     Container(
                       decoration: BoxDecoration(
                         borderRadius: const BorderRadiusDirectional.vertical(
-                          top: Radius.circular(18),
+                          top: Radius.circular(10),
                         ),
                         color: themeProvider.isDarkMode
                             ? Colors.black
@@ -618,7 +618,7 @@ class _ListMainPageState extends State<ListMainPage> {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(left: 8, right: 8),
+      padding: const EdgeInsets.only(left: 6, right: 6),
       child: CustomScrollView(
         slivers: [
           const SliverToBoxAdapter(child: SizedBox(height: 8)),
@@ -1398,8 +1398,14 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                               10,
                                                                         ),
                                                                     child: TextField(
+                                                                      textAlign:
+                                                                          TextAlign
+                                                                              .center,
                                                                       controller:
                                                                           newCatController,
+                                                                      textCapitalization:
+                                                                          TextCapitalization
+                                                                              .sentences,
                                                                       autofocus:
                                                                           true,
                                                                       maxLines:

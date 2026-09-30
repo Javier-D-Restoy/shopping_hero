@@ -140,9 +140,12 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 16),
           TextField(
             controller: _usernameController,
+            maxLength: 20,
+            maxLines: 1,
             style: TextStyle(color: textStrong),
             decoration: InputDecoration(
               labelText: 'Nombre de usuario',
+              counterText: '',
               filled: true,
               fillColor: surface,
               labelStyle: TextStyle(color: textMuted),

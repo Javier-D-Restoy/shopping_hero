@@ -175,10 +175,7 @@ class _SharingPageState extends State<SharingPage> {
         shadowColor: themeProvider.cardShadowColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: themeProvider.borderColor,
-            width: 1.5,
-          ),
+          side: BorderSide(color: themeProvider.borderColor, width: 1.5),
         ),
         titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
         contentPadding: const EdgeInsets.symmetric(
@@ -188,10 +185,7 @@ class _SharingPageState extends State<SharingPage> {
         title: const Center(
           child: Text(
             'Desvincular Lista',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
           ),
         ),
         content: Text(
@@ -204,17 +198,11 @@ class _SharingPageState extends State<SharingPage> {
           ),
         ),
         actionsAlignment: MainAxisAlignment.spaceEvenly,
-        actionsPadding: const EdgeInsets.only(
-          bottom: 12,
-          top: 8,
-        ),
+        actionsPadding: const EdgeInsets.only(bottom: 12, top: 8),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(fontSize: 16),
-            ),
+            child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
@@ -238,7 +226,7 @@ class _SharingPageState extends State<SharingPage> {
     try {
       // Cambiamos la ruta primero
       await sessionProvider.setLastRoute(route: 'listManager');
-      
+
       // Eliminamos la lista del provider
       await shoppingProvider.leaveSharedList(listName);
 
@@ -337,12 +325,12 @@ class _SharingPageState extends State<SharingPage> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 4),
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
                     color: themeProvider.primaryColor.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.4),
@@ -364,16 +352,30 @@ class _SharingPageState extends State<SharingPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        ' Compartir',
-                        style: Theme.of(context).textTheme.titleLarge
-                            ?.copyWith(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              color: isDark
-                                  ? Colors.white.withAlpha(210)
-                                  : Colors.white.withAlpha(210),
-                            ),
+                      Center(
+                        child: Text(
+                          'Compartir',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w700,
+                                color: isDark
+                                    ? Colors.white.withAlpha(210)
+                                    : Colors.white.withAlpha(210),
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 0),
+                                  ),
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 0),
+                                  ),
+                                ],
+                              ),
+                        ),
                       ),
                       Center(
                         child: AutoSizeText(
@@ -386,6 +388,18 @@ class _SharingPageState extends State<SharingPage> {
                                 // fontSize: 20,
                                 fontWeight: FontWeight.w700,
                                 color: isDark ? Colors.white : Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 0),
+                                  ),
+                                  Shadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 4,
+                                    offset: Offset(0, 0),
+                                  ),
+                                ],
                               ),
                         ),
                       ),
@@ -404,6 +418,7 @@ class _SharingPageState extends State<SharingPage> {
               decoration: InputDecoration(
                 labelText: 'Email del usuario',
                 hintText: 'usuario@ejemplo.com',
+                // counterText: '',
                 filled: true,
                 fillColor: surface,
                 labelStyle: TextStyle(color: textMuted),

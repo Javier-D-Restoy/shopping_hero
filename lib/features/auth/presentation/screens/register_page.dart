@@ -53,8 +53,11 @@ class RegisterPage extends StatelessWidget {
                                   children: [
                                     TextFormField(
                                       controller: displayNameController,
+                                      maxLength: 20,
+                                      maxLines: 1,
                                       decoration: const InputDecoration(
                                         labelText: 'Nombre',
+                                        counterText: '',
                                       ),
                                       onTapOutside: (event) {
                                         focusNode.unfocus();
@@ -70,8 +73,11 @@ class RegisterPage extends StatelessWidget {
                                     const SizedBox(height: 12),
                                     TextFormField(
                                       controller: emailController,
+                                      maxLength: 30,
+                                      maxLines: 1,
                                       decoration: const InputDecoration(
                                         labelText: 'Email',
+                                        counterText: '',
                                       ),
                                       keyboardType: TextInputType.emailAddress,
                                       onTapOutside: (event) {
