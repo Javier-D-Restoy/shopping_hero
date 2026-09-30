@@ -901,6 +901,36 @@ class ShoppingProvider extends ChangeNotifier {
     await _loadListsFromFirestore(_currentUid!);
   }
 
+  // Funcion Antigua
+  // Future<void> _syncSharedListListeners() async {
+  //   if (_isOfflineMode || _currentUid == null) {
+  //     await _cancelSharedListListeners();
+  //     return;
+  //   }
+
+  //   final activeIds = _sharedListIds.values.toSet();
+  //   for (final entry in _sharedListSubscriptions.entries.toList()) {
+  //     if (!activeIds.contains(entry.key)) {
+  //       await entry.value.cancel();
+  //       _sharedListSubscriptions.remove(entry.key);
+  //     }
+  //   }
+
+  //   for (final listId in activeIds) {
+  //     if (_sharedListSubscriptions.containsKey(listId)) continue;
+
+  //     try {
+  //       final subscription = FirebaseFirestore.instance
+  //           .collection('sharedShoppingLists')
+  //           .doc(listId)
+  //           .snapshots()
+  //           .listen(_onSharedListSnapshot);
+  //       _sharedListSubscriptions[listId] = subscription;
+  //     } catch (_) {}
+  //   }
+  // }
+
+  // Funcion Nueva
   Future<void> _syncSharedListListeners() async {
     if (_isOfflineMode || _currentUid == null) {
       await _cancelSharedListListeners();
@@ -923,7 +953,14 @@ class ShoppingProvider extends ChangeNotifier {
             .collection('sharedShoppingLists')
             .doc(listId)
             .snapshots()
-            .listen(_onSharedListSnapshot);
+            .listen(
+              _onSharedListSnapshot,
+              onError: (error) {
+                // Al eliminar el documento en Firestore, la regla de seguridad del cliente
+                // deniega el acceso y lanza un error. Esto desencadena la eliminación local.
+                unawaited(_handleSharedListDeletedByOwner(listId));
+              },
+            );
         _sharedListSubscriptions[listId] = subscription;
       } catch (_) {}
     }

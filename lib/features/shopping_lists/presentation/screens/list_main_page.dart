@@ -31,6 +31,25 @@ class _ListMainPageState extends State<ListMainPage> {
   final Map<String, ProductAdd> _productLocations = {};
   bool _initialProductsRegistered = false;
 
+  // Reference al Provider para el dispose seguro
+  ShoppingProvider? _shoppingProvider;
+  
+  // Bandera para evitar ejecuciones múltiples durante la redirección
+  bool _isNavigatingAway = false;
+
+  // Antiguo
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   context.read<SessionProvider>().setLastRoute(
+  //     route: 'listMain',
+  //     listName: widget.listName,
+  //   );
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     if (mounted) context.read<ShoppingProvider>().syncNow();
+  //   });
+  // }
+
   @override
   void initState() {
     super.initState();
@@ -38,9 +57,64 @@ class _ListMainPageState extends State<ListMainPage> {
       route: 'listMain',
       listName: widget.listName,
     );
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<ShoppingProvider>().syncNow();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Suscripción segura
+    final provider = context.read<ShoppingProvider>();
+    if (_shoppingProvider != provider) {
+      _shoppingProvider?.removeListener(_checkIfListDeleted);
+      _shoppingProvider = provider;
+      _shoppingProvider?.addListener(_checkIfListDeleted);
+    }
+  }
+
+  @override
+  void dispose() {
+    // Limpieza de listeners y controladores para evitar memory leaks
+    _shoppingProvider?.removeListener(_checkIfListDeleted);
+    _productNameController.dispose();
+    focusNode.dispose();
+    super.dispose();
+  }
+
+  void _checkIfListDeleted() {
+    // Si el widget no está montado o ya se inició la navegación, salimos
+    if (!mounted || _isNavigatingAway) return;
+    
+    final shoppingProvider = _shoppingProvider;
+    if (shoppingProvider == null) return;
+
+    if (!shoppingProvider.shoppingLists.containsKey(widget.listName)) {
+      // Marcamos inmediatamente que ya estamos en proceso de salida
+      _isNavigatingAway = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        // Limpiamos cualquier SnackBar previo antes de mostrar el nuevo
+        ScaffoldMessenger.of(context).clearSnackBars();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('La lista "${widget.listName}" ha sido eliminada por el propietario.'),
+            backgroundColor: context.read<ThemeProvider>().dangerColor,
+          ),
+        );
+
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const ListManager()),
+          (route) => false,
+        );
+      });
+    }
   }
 
   bool _shouldAnimateProduct(Product product, ProductAdd location) {
@@ -100,27 +174,35 @@ class _ListMainPageState extends State<ListMainPage> {
     final shoppingProvider = context.watch<ShoppingProvider>();
     final themeProvider = context.watch<ThemeProvider>();
 
-    // Validación de existencia de la lista actual
+    // Validación ANTIGUA de existencia de la lista actual
+    // if (!shoppingProvider.shoppingLists.containsKey(widget.listName)) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     if (!mounted) return;
+
+    //     // 1. Mostrar un aviso informativo al usuario
+    //     ScaffoldMessenger.of(context).showSnackBar(
+    //       SnackBar(
+    //         content: Text('La lista "${widget.listName}" ha sido eliminada por el propietario.'),
+    //         backgroundColor: themeProvider.dangerColor,
+    //       ),
+    //     );
+
+    //     // 2. Redirigir hacia ListManager reemplazando la ruta actual
+    //     Navigator.pushReplacement(
+    //       context,
+    //       MaterialPageRoute(builder: (context) => const ListManager()),
+    //     );
+    //   });
+
+    //   // Retornar un Scaffold temporal mientras se procesa el callback de navegación
+    //   return const Scaffold(
+    //     body: Center(child: CircularProgressIndicator()),
+    //   );
+    // }
+
+    // Si la lista ya no existe mientras se construye el árbol, mostramos un loader
+    // mientras `_checkIfListDeleted` se encarga de la redirección.
     if (!shoppingProvider.shoppingLists.containsKey(widget.listName)) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-
-        // 1. Mostrar un aviso informativo al usuario
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('La lista "${widget.listName}" ha sido eliminada por el propietario.'),
-            backgroundColor: themeProvider.dangerColor,
-          ),
-        );
-
-        // 2. Redirigir hacia ListManager reemplazando la ruta actual
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ListManager()),
-        );
-      });
-
-      // Retornar un Scaffold temporal mientras se procesa el callback de navegación
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
