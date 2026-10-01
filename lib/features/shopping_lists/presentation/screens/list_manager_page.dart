@@ -226,7 +226,7 @@ class _ListManagerState extends State<ListManager> {
                       size: 20,
                       color: Colors.orange,
                       weight: 30,
-                      shadows: themeProvider.shadowsMid,
+                      shadows: themeProvider.shadowsSoft,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -253,7 +253,7 @@ class _ListManagerState extends State<ListManager> {
                         size: 20,
                         color: themeProvider.primaryColor,
                         weight: 30,
-                        shadows: themeProvider.shadowsMid,
+                        shadows: themeProvider.shadowsSoft,
                       ),
                       const SizedBox(width: 8),
                       Text(
@@ -301,7 +301,7 @@ class _ListManagerState extends State<ListManager> {
                       size: 20,
                       color: Colors.blueGrey,
                       weight: 30,
-                      shadows: themeProvider.shadowsMid,
+                      shadows: themeProvider.shadowsSoft,
                     ),
                     const SizedBox(width: 8),
                     Text(
