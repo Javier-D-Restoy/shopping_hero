@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +8,7 @@ import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/providers/theme_provider.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/config_page.dart';
 import 'package:shopping_hero/features/auth/presentation/screens/login_page.dart';
+import 'package:shopping_hero/features/auth/presentation/screens/notifications_page.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/widgets/list_bubble.dart';
 
 class ListManager extends StatefulWidget {
@@ -16,6 +19,10 @@ class ListManager extends StatefulWidget {
 }
 
 class _ListManagerState extends State<ListManager> {
+  int _pendingNotificationCount = 0;
+  String? _observedInvitationUid;
+  StreamSubscription<int>? _invitationCountSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -25,6 +32,40 @@ class _ListManagerState extends State<ListManager> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<ShoppingProvider>().syncNow();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final sessionProvider = context.read<SessionProvider>();
+    final uid = sessionProvider.isLoggedIn ? sessionProvider.uid : null;
+    if (uid == _observedInvitationUid) return;
+
+    _observedInvitationUid = uid;
+    _invitationCountSubscription?.cancel();
+    _invitationCountSubscription = null;
+
+    if (uid == null) {
+      if (_pendingNotificationCount != 0) {
+        setState(() => _pendingNotificationCount = 0);
+      }
+      return;
+    }
+
+    _invitationCountSubscription = context
+        .read<ShoppingProvider>()
+        .watchPendingShareInvitationCount()
+        .listen((count) {
+          if (mounted && count != _pendingNotificationCount) {
+            setState(() => _pendingNotificationCount = count);
+          }
+        }, onError: (_) {});
+  }
+
+  @override
+  void dispose() {
+    _invitationCountSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -98,6 +139,60 @@ class _ListManagerState extends State<ListManager> {
         ),
         centerTitle: true,
         actions: [
+          if (sessionProvider.isLoggedIn)
+            IconButton(
+              tooltip: 'Notificaciones',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsPage(),
+                  ),
+                );
+              },
+              icon: SizedBox(
+                width: 32,
+                height: 32,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Center(child: Icon(Icons.notifications_outlined)),
+                    if (_pendingNotificationCount > 0)
+                      Positioned(
+                        right: -5,
+                        bottom: -4,
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 18,
+                            minHeight: 18,
+                          ),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.surface,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Text(
+                            _pendingNotificationCount > 99
+                                ? '99+'
+                                : '$_pendingNotificationCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              height: 1,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
           IconButton(
             onPressed: () {
               if (context.mounted) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -34,21 +36,40 @@ class _SharingPageState extends State<SharingPage> {
   bool _isSharing = false;
   bool _isLoadingMembers = false;
   List<_SharedMember> _sharedMembers = const [];
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+  _sharedListSubscription;
+  String? _subscribedSharedListId;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSharedMembers());
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final sharedListId = context.read<ShoppingProvider>().sharedListIdFor(
+      widget.listName,
+    );
+    if (sharedListId == _subscribedSharedListId) return;
+
+    _sharedListSubscription?.cancel();
+    _sharedListSubscription = null;
+    _subscribedSharedListId = sharedListId;
     _loadSharedMembers();
+
+    if (sharedListId != null) {
+      _sharedListSubscription = _firestore
+          .collection('sharedShoppingLists')
+          .doc(sharedListId)
+          .snapshots()
+          .listen((_) => _loadSharedMembers());
+    }
   }
 
   @override
   void dispose() {
+    _sharedListSubscription?.cancel();
     _emailController.dispose();
     super.dispose();
   }
@@ -138,12 +159,22 @@ class _SharingPageState extends State<SharingPage> {
 
     setState(() => _isSharing = true);
     try {
-      await shoppingProvider.shareListWithEmail(widget.listName, email);
+      await shoppingProvider
+          .shareListWithEmail(widget.listName, email)
+          .timeout(
+            const Duration(seconds: 20),
+            onTimeout: () => throw Exception(
+              'No se pudo confirmar el envío tras 20 segundos. Comprueba la conexión y si la invitación aparece antes de reintentar.',
+            ),
+          );
       if (!mounted) return;
       _emailController.clear();
-      await _loadSharedMembers();
       messenger?.showSnackBar(
-        const SnackBar(content: Text('Lista compartida correctamente')),
+        const SnackBar(
+          content: Text(
+            'Invitación enviada. La lista se compartirá al aceptarla.',
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) return;

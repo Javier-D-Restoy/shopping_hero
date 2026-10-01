@@ -10,6 +10,29 @@ service cloud.firestore {
       return signedIn() && request.auth.uid == uid;
     }
 
+    function shareInvitationPath(uid, listId) {
+      return /databases/$(database)/documents/users/$(uid)/sharingInvitations/$(listId);
+    }
+
+    function hasPendingShareInvitation(listId) {
+      let invitation = shareInvitationPath(request.auth.uid, listId);
+      return signedIn()
+        && exists(invitation)
+        && get(invitation).data.status == 'pending'
+        && get(invitation).data.listId == listId;
+    }
+
+    function isAcceptingShareInvitation(listId) {
+      let invitation = shareInvitationPath(request.auth.uid, listId);
+      return hasPendingShareInvitation(listId)
+        && get(invitation).data.ownerUid == resource.data.ownerUid
+        && getAfter(invitation).data.status == 'accepted'
+        && request.auth.uid in request.resource.data.memberUids
+        && request.resource.data.memberUids.hasAll(resource.data.memberUids)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberUids', 'updatedAt']);
+    }
+
     match /users/{uid} {
       allow get: if signedIn() && (
         request.auth.uid == uid ||
@@ -25,17 +48,54 @@ service cloud.firestore {
       match /shoppingListDeletes/{deleteId} {
         allow read, write: if isOwner(uid);
       }
+
+      match /sharingInvitations/{listId} {
+        allow get, list: if signedIn() && request.auth.uid == uid;
+        allow create: if signedIn()
+          && request.auth.uid == request.resource.data.ownerUid
+          && request.resource.data.recipientUid == uid
+          && request.resource.data.listId == listId
+          && getAfter(
+            /databases/$(database)/documents/sharedShoppingLists/$(listId)
+          ).data.ownerUid == request.auth.uid;
+        allow update: if signedIn() && (
+          (
+            resource.data.ownerUid == request.auth.uid
+            && request.resource.data.ownerUid == resource.data.ownerUid
+            && request.resource.data.recipientUid == uid
+            && request.resource.data.listId == listId
+            && getAfter(
+              /databases/$(database)/documents/sharedShoppingLists/$(listId)
+            ).data.ownerUid == request.auth.uid
+          ) || (
+            request.auth.uid == uid
+            && resource.data.recipientUid == uid
+            && resource.data.status == 'pending'
+            && request.resource.data.status in ['accepted', 'rejected']
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'respondedAt'])
+          )
+        );
+        allow delete: if false;
+      }
     }
 
     match /sharedShoppingLists/{listId} {
-      allow list: if signedIn();
-      allow get: if signedIn() && request.auth.uid in resource.data.memberUids;
+      allow list: if signedIn() && (
+        resource.data.ownerUid == request.auth.uid
+        || request.auth.uid in resource.data.memberUids
+      );
+      allow get: if signedIn() && (
+        resource.data.ownerUid == request.auth.uid
+        || request.auth.uid in resource.data.memberUids
+      );
       allow create: if signedIn()
         && request.resource.data.ownerUid == request.auth.uid
         && request.auth.uid in request.resource.data.memberUids;
       allow update: if signedIn() && (
         resource.data.ownerUid == request.auth.uid ||
-        request.auth.uid in resource.data.memberUids
+        request.auth.uid in resource.data.memberUids ||
+        isAcceptingShareInvitation(listId)
       );
       allow delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
     }

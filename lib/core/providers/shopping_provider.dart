@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shopping_hero/core/models/product_model.dart';
 import 'package:shopping_hero/core/models/product_sort_option.dart';
+import 'package:shopping_hero/core/models/share_invitation_model.dart';
 import 'package:shopping_hero/core/services/user_repository.dart';
 
 enum ShoppingSyncStatus { offline, syncing, synced, error }
@@ -231,37 +232,28 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   Future<void> shareSelectedListWithEmail(String email) async {
-    // Antigua
-    if (_currentUid == null || _isOfflineMode) {
-      throw Exception('Necesitas iniciar sesión para compartir una lista');
-    }
-
-    final listName = _selectedListName;
-    final listId = await _userRepository.shareShoppingList(
-      ownerUid: _currentUid!,
-      listName: listName,
-      recipientEmail: email,
-    );
-
-    _sharedListIds[listName] = listId;
-    _sharedListOwners[listName] = _currentUid!;
-    _listIds.remove(listName);
-    _touchList(listName);
-    notifyListeners();
-    await saveToStorage(mergeCloud: false);
-    await _syncSharedListListeners();
+    await shareListWithEmail(_selectedListName, email);
   }
 
   Future<void> shareListWithEmail(String listName, String email) async {
-    // Nueva
     if (_currentUid == null || _isOfflineMode) {
       throw Exception('Necesitas iniciar sesión para compartir una lista');
+    }
+
+    final list = _shoppingLists[listName];
+    if (list == null) {
+      throw Exception('No se encontró la lista seleccionada');
     }
 
     final listId = await _userRepository.shareShoppingList(
       ownerUid: _currentUid!,
       listName: listName,
       recipientEmail: email,
+      activeProducts: list['active'] ?? <Product>[],
+      frequentProducts: list['frequent'] ?? <Product>[],
+      categories: categoriesForList(listName),
+      localUpdatedAt: _listUpdatedAt[listName] ?? DateTime.now(),
+      preferredListId: _listIds[listName],
     );
 
     _sharedListIds[listName] = listId;
@@ -269,8 +261,45 @@ class ShoppingProvider extends ChangeNotifier {
     _listIds.remove(listName);
     _touchList(listName);
     notifyListeners();
-    await saveToStorage(mergeCloud: false);
+    await _persistHiveCache();
     await _syncSharedListListeners();
+  }
+
+  Future<List<ShareInvitation>> getPendingShareInvitations() async {
+    final uid = _currentUid;
+    if (_isOfflineMode || uid == null || uid.isEmpty) {
+      return <ShareInvitation>[];
+    }
+
+    return _userRepository.getPendingShareInvitations(uid);
+  }
+
+  Stream<int> watchPendingShareInvitationCount() {
+    final uid = _currentUid;
+    if (_isOfflineMode || uid == null || uid.isEmpty) {
+      return Stream<int>.value(0);
+    }
+
+    return _userRepository.watchPendingShareInvitationCount(uid);
+  }
+
+  Future<void> respondToShareInvitation({
+    required String listId,
+    required bool accept,
+  }) async {
+    final uid = _currentUid;
+    if (_isOfflineMode || uid == null || uid.isEmpty) {
+      throw Exception('Necesitas iniciar sesión para responder');
+    }
+
+    await _userRepository.respondToShareInvitation(
+      uid: uid,
+      listId: listId,
+      accept: accept,
+    );
+    if (accept) {
+      await refreshFromCloud();
+    }
   }
 
   void _setSyncStatus(ShoppingSyncStatus status, {DateTime? syncedAt}) {

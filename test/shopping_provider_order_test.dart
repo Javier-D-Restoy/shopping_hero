@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shopping_hero/core/models/product_model.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
 import 'package:shopping_hero/core/services/user_repository.dart';
 
@@ -18,6 +19,11 @@ class FakeUserRepository extends UserRepository {
     required String ownerUid,
     required String listName,
     required String recipientEmail,
+    required List<Product> activeProducts,
+    required List<Product> frequentProducts,
+    required List<String> categories,
+    required DateTime localUpdatedAt,
+    String? preferredListId,
   }) async {
     emails.add(recipientEmail);
     return 'shared-$listName-${emails.length}';
