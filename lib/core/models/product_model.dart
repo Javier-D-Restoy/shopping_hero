@@ -34,7 +34,8 @@ class Product {
   });
 
   /// Devuelve la categoría correspondiente según el contexto de la lista.
-  String getCategory({required bool isShared}) => isShared ? categoryShared : category;
+  String getCategory({required bool isShared}) =>
+      isShared ? categoryShared : category;
 
   Product copyWith({
     String? id,
@@ -49,15 +50,20 @@ class Product {
     String? categoryShared,
     String? icon,
     bool clearIcon = false,
+    bool clearPrice = false,
+    bool clearPricePerKilo = false,
+    bool clearImageUrl = false,
   }) {
     return Product(
       id: id ?? this.id,
       name: name ?? this.name,
       frequency: frequency ?? this.frequency,
       amount: amount ?? this.amount,
-      price: price ?? this.price,
-      pricePerKilo: pricePerKilo ?? this.pricePerKilo,
-      imageUrl: imageUrl ?? this.imageUrl,
+      price: clearPrice ? null : (price ?? this.price),
+      pricePerKilo: clearPricePerKilo
+          ? null
+          : (pricePerKilo ?? this.pricePerKilo),
+      imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
       lastAdded: lastAdded ?? this.lastAdded,
       category: category ?? this.category,
       categoryShared: categoryShared ?? this.categoryShared,
@@ -82,7 +88,7 @@ class Product {
       parsedCategory = first.toString();
     }
 
-    // Parseo para la categoría compartida: Si no existe en Firestore, 
+    // Parseo para la categoría compartida: Si no existe en Firestore,
     // cae estrictamente a 'Genérico' para asegurar consistencia multi-dispositivo.
     final rawCategoryShared = map['categoryShared'];
     String parsedCategoryShared = 'Genérico';

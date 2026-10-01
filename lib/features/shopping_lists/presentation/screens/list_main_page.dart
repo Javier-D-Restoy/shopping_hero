@@ -1953,7 +1953,7 @@ class _ListMainPageState extends State<ListMainPage> {
                           Expanded(
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(elevation: 10),
-                              onPressed: () async {
+                              onPressed: () {
                                 final name = nameController.text.trim();
                                 final frequency = int.tryParse(
                                   frequencyController.text.trim(),
@@ -1961,10 +1961,29 @@ class _ListMainPageState extends State<ListMainPage> {
                                 final amount = int.tryParse(
                                   amountController.text.trim(),
                                 );
+                                final priceText = priceController.text
+                                    .trim()
+                                    .replaceAll(',', '.');
+                                final price = priceText.isEmpty
+                                    ? null
+                                    : double.tryParse(priceText);
+                                final pricePerKiloText = pricePerKiloController
+                                    .text
+                                    .trim()
+                                    .replaceAll(',', '.');
+                                final pricePerKilo = pricePerKiloText.isEmpty
+                                    ? null
+                                    : double.tryParse(pricePerKiloText);
+                                final imageUrl = imageUrlController.text.trim();
 
                                 if (name.isEmpty ||
                                     frequency == null ||
-                                    amount == null) {
+                                    amount == null ||
+                                    (priceText.isNotEmpty &&
+                                        (price == null || price < 0)) ||
+                                    (pricePerKiloText.isNotEmpty &&
+                                        (pricePerKilo == null ||
+                                            pricePerKilo < 0))) {
                                   return;
                                 }
 
@@ -1974,12 +1993,14 @@ class _ListMainPageState extends State<ListMainPage> {
                                   name: name,
                                   frequency: frequency,
                                   amount: amount,
+                                  price: price,
+                                  pricePerKilo: pricePerKilo,
+                                  imageUrl: imageUrl.isEmpty ? null : imageUrl,
                                   category: selectedCategory,
                                   icon: selectedIcon,
-                                );
-
-                                await shoppingProvider.saveToStorage(
-                                  mergeCloud: false,
+                                  clearPrice: price == null,
+                                  clearPricePerKilo: pricePerKilo == null,
+                                  clearImageUrl: imageUrl.isEmpty,
                                 );
 
                                 if (context.mounted) {
@@ -2076,10 +2097,6 @@ class _ListMainPageState extends State<ListMainPage> {
                                   shoppingProvider.deleteProduct(
                                     widget.listName,
                                     product.id,
-                                  );
-
-                                  await shoppingProvider.saveToStorage(
-                                    mergeCloud: false,
                                   );
 
                                   if (context.mounted) {

@@ -36,6 +36,8 @@ class ShoppingProvider extends ChangeNotifier {
 
   /// Temporizador exclusivo para el guardado diferido en Firestore (Debounce)
   Timer? _pendingFirestoreTimer;
+  Future<void> _pendingHiveWrite = Future<void>.value();
+  int _persistenceRevision = 0;
 
   ShoppingSyncStatus _syncStatus = ShoppingSyncStatus.offline;
   DateTime? _lastSyncedAt;
@@ -226,7 +228,7 @@ class ShoppingProvider extends ChangeNotifier {
 
     // 4. Persistir los cambios localmente en Hive inmediatamente
     await _persistHiveCache();
-  }  
+  }
 
   Future<void> shareSelectedListWithEmail(String email) async {
     // Antigua
@@ -795,11 +797,20 @@ class ShoppingProvider extends ChangeNotifier {
   /// Método central de persistencia: guarda en Hive INMEDIATAMENTE
   /// y programa la subida a Firestore tras 5 segundos de inactividad.
   void _persistState() {
-    // 1. Guardado local inmediato en Hive
-    unawaited(_persistHiveCache());
+    final revision = ++_persistenceRevision;
+    _pendingHiveWrite = _pendingHiveWrite.then((_) => _persistHiveCache());
 
-    // 2. Programar subida diferida a Firestore (Debounce 5s)
-    _scheduleFirestoreSave();
+    if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
+      _setSyncStatus(ShoppingSyncStatus.syncing);
+    }
+
+    unawaited(
+      _pendingHiveWrite.then((_) {
+        if (revision == _persistenceRevision) {
+          _scheduleFirestoreSave(revision);
+        }
+      }),
+    );
   }
 
   /// Escribe la caché de Hive en memoria de forma inmediata.
@@ -854,14 +865,47 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   /// Maneja el temporizador de 5s para Firestore.
-  void _scheduleFirestoreSave() {
+  void _scheduleFirestoreSave(int revision) {
     _pendingFirestoreTimer?.cancel();
+    _pendingFirestoreTimer = null;
+    if (_isOfflineMode || _currentUid == null || _currentUid!.isEmpty) return;
+
     _pendingFirestoreTimer = Timer(const Duration(seconds: 5), () {
       _pendingFirestoreTimer = null;
-      if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
-        unawaited(_saveListsToFirestore(_currentUid!));
-      }
+      unawaited(_syncPendingChanges(revision));
     });
+  }
+
+  Future<void> _syncPendingChanges(int revision) async {
+    final uid = _currentUid;
+    if (revision != _persistenceRevision ||
+        _isOfflineMode ||
+        uid == null ||
+        uid.isEmpty) {
+      return;
+    }
+
+    try {
+      await _pendingHiveWrite;
+      if (revision != _persistenceRevision ||
+          _isOfflineMode ||
+          _currentUid != uid) {
+        return;
+      }
+
+      await _saveListsToFirestore(uid);
+      if (revision == _persistenceRevision &&
+          !_isOfflineMode &&
+          _currentUid == uid) {
+        _setSyncStatus(ShoppingSyncStatus.synced, syncedAt: DateTime.now());
+      }
+    } catch (_) {
+      if (revision == _persistenceRevision &&
+          !_isOfflineMode &&
+          _currentUid == uid) {
+        _setSyncStatus(ShoppingSyncStatus.error);
+      }
+    }
   }
 
   Future<void> syncNow() async {
@@ -1053,8 +1097,9 @@ class ShoppingProvider extends ChangeNotifier {
     _listIds.remove(listName);
 
     if (_selectedListName == listName) {
-      _selectedListName =
-          _shoppingLists.keys.isNotEmpty ? _shoppingLists.keys.first : '';
+      _selectedListName = _shoppingLists.keys.isNotEmpty
+          ? _shoppingLists.keys.first
+          : '';
     }
 
     notifyListeners();
@@ -1265,9 +1310,11 @@ class ShoppingProvider extends ChangeNotifier {
   }
 
   Future<void> saveToStorage({bool mergeCloud = true}) async {
+    _persistenceRevision++;
     _pendingFirestoreTimer?.cancel();
     _pendingFirestoreTimer = null;
 
+    await _pendingHiveWrite;
     await _ensureInitialized();
 
     if (!_isOfflineMode && _currentUid != null && _currentUid!.isNotEmpty) {
@@ -1991,6 +2038,9 @@ class ShoppingProvider extends ChangeNotifier {
     String? imageUrl,
     String? category,
     String? icon,
+    bool clearPrice = false,
+    bool clearPricePerKilo = false,
+    bool clearImageUrl = false,
   }) {
     final list = _shoppingLists[listName];
     if (list == null) return;
@@ -2015,6 +2065,9 @@ class ShoppingProvider extends ChangeNotifier {
         categoryShared: isShared ? category : null,
         icon: icon,
         clearIcon: icon == null,
+        clearPrice: clearPrice,
+        clearPricePerKilo: clearPricePerKilo,
+        clearImageUrl: clearImageUrl,
       );
       _touchList(listName);
       notifyListeners();
