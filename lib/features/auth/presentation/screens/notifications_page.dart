@@ -81,7 +81,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final themeProvider = context.watch<ThemeProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notificaciones')),
+      appBar: AppBar(title: const Text('  Notificaciones')),
       body: RefreshIndicator(
         color: themeProvider.primaryColor,
         onRefresh: _loadInvitations,

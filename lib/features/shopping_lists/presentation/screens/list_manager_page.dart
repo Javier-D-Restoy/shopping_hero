@@ -190,6 +190,13 @@ class _ListManagerState extends State<ListManager> {
             tooltip: 'Más opciones',
             enabled: !_isLoggingOut,
             icon: const Icon(Icons.more_vert),
+            color: themeProvider.surfaceSoft,
+            elevation: 6,
+            shadowColor: themeProvider.cardShadowColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+            ),
             onSelected: (action) {
               switch (action) {
                 case _ListManagerAction.reorder:
@@ -212,11 +219,26 @@ class _ListManagerState extends State<ListManager> {
               PopupMenuItem<_ListManagerAction>(
                 value: _ListManagerAction.reorder,
                 enabled: listNames.length > 1,
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.swap_vert),
-                    SizedBox(width: 12),
-                    Text('Reordenar'),
+                    Icon(
+                      Icons.swap_vert,
+                      size: 20,
+                      color: Colors.orange,
+                      weight: 30,
+                      shadows: themeProvider.shadowsMid,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Reordenar',
+                      style: TextStyle(
+                        color: listNames.length > 1
+                            ? themeProvider.textStrongColor
+                            : Colors.grey,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -226,9 +248,22 @@ class _ListManagerState extends State<ListManager> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.notifications_outlined),
-                      const SizedBox(width: 12),
-                      const Text('Notificaciones'),
+                      Icon(
+                        Icons.notifications_outlined,
+                        size: 20,
+                        color: themeProvider.primaryColor,
+                        weight: 30,
+                        shadows: themeProvider.shadowsMid,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Notificaciones',
+                        style: TextStyle(
+                          color: themeProvider.textStrongColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                       if (_pendingNotificationCount > 0) ...[
                         const SizedBox(width: 8),
                         Container(
@@ -257,13 +292,26 @@ class _ListManagerState extends State<ListManager> {
                     ],
                   ),
                 ),
-              const PopupMenuItem<_ListManagerAction>(
+              PopupMenuItem<_ListManagerAction>(
                 value: _ListManagerAction.settings,
                 child: Row(
                   children: [
-                    Icon(Icons.settings_outlined),
-                    SizedBox(width: 12),
-                    Text('Configuración'),
+                    Icon(
+                      Icons.settings_outlined,
+                      size: 20,
+                      color: Colors.blueGrey,
+                      weight: 30,
+                      shadows: themeProvider.shadowsMid,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Configuración',
+                      style: TextStyle(
+                        color: themeProvider.textStrongColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
