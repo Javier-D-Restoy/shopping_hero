@@ -11,6 +11,8 @@ import 'package:shopping_hero/features/auth/presentation/screens/login_page.dart
 import 'package:shopping_hero/features/auth/presentation/screens/notifications_page.dart';
 import 'package:shopping_hero/features/shopping_lists/presentation/widgets/list_bubble.dart';
 
+enum _ListManagerAction { reorder, notifications, settings }
+
 class ListManager extends StatefulWidget {
   const ListManager({super.key});
 
@@ -20,6 +22,7 @@ class ListManager extends StatefulWidget {
 
 class _ListManagerState extends State<ListManager> {
   int _pendingNotificationCount = 0;
+  bool _isLoggingOut = false;
   String? _observedInvitationUid;
   StreamSubscription<int>? _invitationCountSubscription;
 
@@ -75,7 +78,7 @@ class _ListManagerState extends State<ListManager> {
     final themeProvider = context.watch<ThemeProvider>();
     final displayName = sessionProvider.displayName;
     final isDark = themeProvider.isDarkMode;
-    final listNames = shoppingProvider.shoppingLists.keys.toList();
+    final listNames = shoppingProvider.orderedListNames;
     final screenSize = MediaQuery.sizeOf(context);
 
     return Scaffold(
@@ -98,30 +101,74 @@ class _ListManagerState extends State<ListManager> {
                 ],
               ),
               tooltip: 'Cerrar Sesión',
-              onPressed: () async {
-                final session = context.read<SessionProvider>();
-                final shopping = context.read<ShoppingProvider>();
-                final navigator = Navigator.of(context);
+              onPressed: _isLoggingOut
+                  ? null
+                  : () async {
+                      setState(() => _isLoggingOut = true);
+                      final session = context.read<SessionProvider>();
+                      final shopping = context.read<ShoppingProvider>();
+                      final navigator = Navigator.of(context);
+                      final messenger = ScaffoldMessenger.maybeOf(context);
+                      final wasLoggedIn = session.isLoggedIn;
 
-                // 1. Limpiamos los listeners de Firestore y temporizadores activos
-                await shopping.clearCurrentUser();
+                      try {
+                        if (wasLoggedIn) {
+                          await shopping.saveToStorage();
+                          if (shopping.syncStatus !=
+                              ShoppingSyncStatus.synced) {
+                            messenger?.showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'No se pudieron sincronizar tus listas. Sigues dentro de tu cuenta.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                        }
 
-                // 2. Limpiamos la caché local de Hive si estaba en modo online
-                if (session.isLoggedIn) {
-                  await shopping.clearLocalShoppingCache();
-                }
+                        await session.logout();
+                        if (session.isLoggedIn) {
+                          messenger?.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                session.errorMessage ??
+                                    'No se pudo cerrar la sesión.',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
 
-                // 3. Reseteamos la sesión en SessionProvider
-                await session.logout();
+                        await shopping.clearCurrentUser();
+                        if (wasLoggedIn) {
+                          await shopping.clearLocalShoppingCache();
+                        }
 
-                if (!mounted) return;
-
-                // 4. Redirigimos a LoginPage
-                navigator.pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                  (route) => false,
-                );
-              },
+                        if (!mounted) return;
+                        navigator.pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
+                          (route) => false,
+                        );
+                      } catch (error) {
+                        if (mounted) {
+                          messenger?.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                error.toString().replaceFirst(
+                                  'Exception: ',
+                                  '',
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => _isLoggingOut = false);
+                      }
+                    },
             ),
           ),
         ),
@@ -139,42 +186,61 @@ class _ListManagerState extends State<ListManager> {
         ),
         centerTitle: true,
         actions: [
-          if (sessionProvider.isLoggedIn)
-            IconButton(
-              tooltip: 'Notificaciones',
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationsPage(),
-                  ),
-                );
-              },
-              icon: SizedBox(
-                width: 32,
-                height: 32,
-                child: Stack(
-                  clipBehavior: Clip.none,
+          PopupMenuButton<_ListManagerAction>(
+            tooltip: 'Más opciones',
+            enabled: !_isLoggingOut,
+            icon: const Icon(Icons.more_vert),
+            onSelected: (action) {
+              switch (action) {
+                case _ListManagerAction.reorder:
+                  _showReorderListsDialog(shoppingProvider, themeProvider);
+                case _ListManagerAction.notifications:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const NotificationsPage(),
+                    ),
+                  );
+                case _ListManagerAction.settings:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ConfigPage()),
+                  );
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem<_ListManagerAction>(
+                value: _ListManagerAction.reorder,
+                enabled: listNames.length > 1,
+                child: const Row(
                   children: [
-                    const Center(child: Icon(Icons.notifications_outlined)),
-                    if (_pendingNotificationCount > 0)
-                      Positioned(
-                        right: -5,
-                        bottom: -4,
-                        child: Container(
+                    Icon(Icons.swap_vert),
+                    SizedBox(width: 12),
+                    Text('Reordenar'),
+                  ],
+                ),
+              ),
+              if (sessionProvider.isLoggedIn)
+                PopupMenuItem<_ListManagerAction>(
+                  value: _ListManagerAction.notifications,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.notifications_outlined),
+                      const SizedBox(width: 12),
+                      const Text('Notificaciones'),
+                      if (_pendingNotificationCount > 0) ...[
+                        const SizedBox(width: 8),
+                        Container(
                           constraints: const BoxConstraints(
-                            minWidth: 18,
-                            minHeight: 18,
+                            minWidth: 20,
+                            minHeight: 20,
                           ),
                           alignment: Alignment.center,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          decoration: BoxDecoration(
+                          padding: const EdgeInsets.symmetric(horizontal: 5),
+                          decoration: const BoxDecoration(
                             color: Colors.red,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.surface,
-                              width: 1.5,
-                            ),
                           ),
                           child: Text(
                             _pendingNotificationCount > 99
@@ -184,25 +250,24 @@ class _ListManagerState extends State<ListManager> {
                               color: Colors.white,
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              height: 1,
                             ),
                           ),
                         ),
-                      ),
+                      ],
+                    ],
+                  ),
+                ),
+              const PopupMenuItem<_ListManagerAction>(
+                value: _ListManagerAction.settings,
+                child: Row(
+                  children: [
+                    Icon(Icons.settings_outlined),
+                    SizedBox(width: 12),
+                    Text('Configuración'),
                   ],
                 ),
               ),
-            ),
-          IconButton(
-            onPressed: () {
-              if (context.mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ConfigPage()),
-                );
-              }
-            },
-            icon: const Icon(Icons.settings),
+            ],
           ),
         ],
       ),
@@ -295,6 +360,8 @@ class _ListManagerState extends State<ListManager> {
                             isSharedList: shoppingProvider.isSharedList(
                               listName,
                             ),
+                            hasAcceptedCollaborators: shoppingProvider
+                                .hasAcceptedCollaborators(listName),
                             onRename: (newName) {
                               shoppingProvider.renameList(listName, newName);
                             },
@@ -368,8 +435,84 @@ class _ListManagerState extends State<ListManager> {
               ),
             ),
           ),
+          if (_isLoggingOut) ...[
+            const Positioned.fill(
+              child: ModalBarrier(dismissible: false, color: Colors.black26),
+            ),
+            const Center(child: CircularProgressIndicator()),
+          ],
         ],
       ),
+    );
+  }
+
+  Future<void> _showReorderListsDialog(
+    ShoppingProvider shoppingProvider,
+    ThemeProvider themeProvider,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final listNames = shoppingProvider.orderedListNames;
+
+            return AlertDialog(
+              backgroundColor: themeProvider.surface,
+              elevation: 10,
+              shadowColor: themeProvider.cardShadowColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 0,
+              ),
+              title: const Center(
+                child: Text(
+                  'Reordenar listas',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 320,
+                child: listNames.length < 2
+                    ? const Center(child: Text('No hay listas para reordenar.'))
+                    : ReorderableListView.builder(
+                        itemCount: listNames.length,
+                        onReorderItem: (oldIndex, newIndex) {
+                          shoppingProvider.reorderLists(oldIndex, newIndex);
+                          setDialogState(() {});
+                        },
+                        itemBuilder: (context, index) {
+                          final listName = listNames[index];
+                          return ListTile(
+                            key: ValueKey(listName),
+                            leading: Text(
+                              '${index + 1}.',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            title: Text(listName),
+                            trailing: const Icon(Icons.drag_handle),
+                          );
+                        },
+                      ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cerrar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

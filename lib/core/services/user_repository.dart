@@ -215,6 +215,30 @@ class UserRepository {
     return invitations;
   }
 
+  Future<Map<String, DateTime>> getAcceptedShareInvitationTimestamps(
+    String uid,
+  ) async {
+    final snapshot = await _userDoc(uid)
+        .collection('sharingInvitations')
+        .where('status', isEqualTo: 'accepted')
+        .get();
+
+    final result = <String, DateTime>{};
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final respondedAt = data['respondedAt'];
+      final timestamp = respondedAt is Timestamp
+          ? respondedAt.toDate()
+          : respondedAt is DateTime
+          ? respondedAt
+          : null;
+      if (timestamp != null) {
+        result[(data['listId'] ?? doc.id).toString()] = timestamp;
+      }
+    }
+    return result;
+  }
+
   Stream<int> watchPendingShareInvitationCount(String uid) {
     return _userDoc(uid)
         .collection('sharingInvitations')
@@ -529,6 +553,8 @@ class UserRepository {
     Map<String, List<String>>? listCategories,
     Map<String, DateTime>? listUpdatedAt,
     Map<String, String>? listIds,
+    Map<String, String>? canonicalListNames,
+    Map<String, DateTime>? listCreatedAt,
     Map<String, DateTime>? deletedLists,
   }) async {
     final collection = _userDoc(uid).collection('shoppingLists');
@@ -548,7 +574,8 @@ class UserRepository {
     final currentDocs = await collection.get();
     final stableIdsToKeep = <String>{
       for (final listName in sanitizedLists.keys)
-        listIds?[listName] ?? _buildDocId(listName),
+        listIds?[listName] ??
+            _buildDocId(canonicalListNames?[listName] ?? listName),
     };
     for (final doc in currentDocs.docs) {
       if (!stableIdsToKeep.contains(doc.id)) {
@@ -568,7 +595,8 @@ class UserRepository {
     for (final entry in sanitizedLists.entries) {
       final listName = entry.key;
       final items = entry.value;
-      final stableId = listIds?[listName] ?? _buildDocId(listName);
+      final canonicalName = canonicalListNames?[listName] ?? listName;
+      final stableId = listIds?[listName] ?? _buildDocId(canonicalName);
 
       final activeProducts = (items['active'] ?? <Product>[])
           .map((p) => p.toMap())
@@ -580,14 +608,20 @@ class UserRepository {
       final timestamp = listUpdatedAt?[listName] ?? DateTime.now();
       final categories = listCategories?[listName] ?? <String>[];
 
-      batch.set(collection.doc(stableId), {
-        'name': listName,
+      final data = <String, dynamic>{
+        'name': canonicalName,
         'listId': stableId,
         'active': activeProducts,
         'frequent': frequentProducts,
         'categories': categories,
         'updatedAt': Timestamp.fromDate(timestamp),
-      }, SetOptions(merge: true));
+      };
+      final createdAt = listCreatedAt?[listName];
+      if (createdAt != null) {
+        data['createdAt'] = Timestamp.fromDate(createdAt);
+      }
+
+      batch.set(collection.doc(stableId), data, SetOptions(merge: true));
     }
 
     if (currentDocs.docs.isNotEmpty || sanitizedLists.isNotEmpty) {
@@ -685,11 +719,18 @@ class UserRepository {
       final categories = data['categories'] is List
           ? List<String>.from(data['categories'] as List)
           : <String>[];
+      final createdAtValue = data['createdAt'];
+      final createdAt = createdAtValue is Timestamp
+          ? createdAtValue.toDate()
+          : createdAtValue is DateTime
+          ? createdAtValue
+          : null;
 
       result[listName] = {
         'active': active,
         'frequent': frequent,
         'categories': categories,
+        'createdAt': createdAt,
       };
     }
 

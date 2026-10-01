@@ -22,6 +22,7 @@ class ListBubble extends StatefulWidget {
     required this.productCount,
     required this.canManageList,
     required this.isSharedList,
+    required this.hasAcceptedCollaborators,
     required this.onRename,
     required this.onLeaveShared,
   });
@@ -31,6 +32,7 @@ class ListBubble extends StatefulWidget {
   final int productCount;
   final bool canManageList;
   final bool isSharedList;
+  final bool hasAcceptedCollaborators;
   final ValueChanged<String> onRename;
   final Future<void> Function() onLeaveShared;
 
@@ -291,7 +293,17 @@ class _ListBubbleState extends State<ListBubble> {
     );
 
     if (confirmed == true && mounted) {
-      context.read<ShoppingProvider>().removeList(widget.listName);
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      try {
+        await context.read<ShoppingProvider>().removeList(widget.listName);
+      } catch (error) {
+        if (!mounted) return;
+        messenger?.showSnackBar(
+          SnackBar(
+            content: Text(error.toString().replaceFirst('Exception: ', '')),
+          ),
+        );
+      }
     }
   }
 
@@ -370,7 +382,7 @@ class _ListBubbleState extends State<ListBubble> {
     final primary = themeProvider.primaryColor;
     final primarySoft = themeProvider.primarySoftColor;
     final Color border;
-    if (widget.isSharedList) {
+    if (widget.hasAcceptedCollaborators) {
       border = widget.canManageList
           ? themeProvider.borderOwnerColor
           : themeProvider.borderSharedColor;
