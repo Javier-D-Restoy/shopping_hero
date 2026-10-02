@@ -189,7 +189,49 @@ class _ListManagerState extends State<ListManager> {
           PopupMenuButton<_ListManagerAction>(
             tooltip: 'Más opciones',
             enabled: !_isLoggingOut,
-            icon: const Icon(Icons.more_vert),
+            icon: SizedBox(
+              width: 32,
+              height: 32,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Center(child: Icon(Icons.more_vert)),
+                  if (sessionProvider.isLoggedIn &&
+                      _pendingNotificationCount > 0)
+                    Positioned(
+                      right: -5,
+                      bottom: -4,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.surface,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          _pendingNotificationCount > 99
+                              ? '99+'
+                              : '$_pendingNotificationCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
             color: themeProvider.surfaceSoft,
             elevation: 6,
             shadowColor: themeProvider.cardShadowColor,

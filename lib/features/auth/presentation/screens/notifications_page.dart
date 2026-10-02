@@ -54,7 +54,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
         accept: accept,
       );
       if (!mounted) return;
-      await _loadInvitations();
+      setState(
+        () => _invitations = _invitations
+            .where((item) => item.id != invitation.id)
+            .toList(),
+      );
       messenger?.showSnackBar(
         SnackBar(
           content: Text(
