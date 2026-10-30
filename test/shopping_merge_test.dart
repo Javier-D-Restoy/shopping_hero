@@ -304,5 +304,154 @@ void main() {
         expect(merged.containsKey('Lista antigua'), isFalse);
       },
     );
+
+    test('keeps a locally edited price even when lastAdded is unchanged', () {
+      final added = DateTime(2024, 1, 1);
+      final local = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': [
+            Product(
+              id: 'p1',
+              name: 'Pan',
+              price: 2.5,
+              pricePerKilo: 4,
+              lastAdded: added,
+              updatedAt: DateTime(2024, 1, 5),
+            ),
+          ],
+          'frequent': <Product>[],
+        },
+      };
+      final cloud = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': [
+            Product(
+              id: 'p1',
+              name: 'Pan',
+              price: 1,
+              pricePerKilo: 2,
+              lastAdded: added,
+            ),
+          ],
+          'frequent': <Product>[],
+        },
+      };
+
+      final merged = ShoppingProvider.mergeShoppingListsForSync(local, cloud);
+      final pan = merged['Lista 1']!['active']!.single;
+
+      expect(pan.price, 2.5);
+      expect(pan.pricePerKilo, 4);
+      expect(pan.lastAdded, added);
+    });
+
+    test('does not bring back a price that was cleared locally', () {
+      final added = DateTime(2024, 1, 1);
+      final local = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': [
+            Product(
+              id: 'p1',
+              name: 'Pan',
+              price: null,
+              pricePerKilo: null,
+              lastAdded: added,
+              updatedAt: DateTime(2024, 1, 5),
+            ),
+          ],
+          'frequent': <Product>[],
+        },
+      };
+      final cloud = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': [
+            Product(
+              id: 'p1',
+              name: 'Pan',
+              price: 1,
+              pricePerKilo: 2,
+              lastAdded: added,
+            ),
+          ],
+          'frequent': <Product>[],
+        },
+      };
+
+      final merged = ShoppingProvider.mergeShoppingListsForSync(local, cloud);
+      final pan = merged['Lista 1']!['active']!.single;
+
+      expect(pan.price, isNull);
+      expect(pan.pricePerKilo, isNull);
+    });
+
+    test('keeps the cloud price when it was edited more recently', () {
+      final added = DateTime(2024, 1, 1);
+      final local = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': [
+            Product(
+              id: 'p1',
+              name: 'Pan',
+              price: 1,
+              lastAdded: added,
+              updatedAt: DateTime(2024, 1, 3),
+            ),
+          ],
+          'frequent': <Product>[],
+        },
+      };
+      final cloud = <String, Map<String, List<Product>>>{
+        'Lista 1': {
+          'active': [
+            Product(
+              id: 'p1',
+              name: 'Pan',
+              price: 3,
+              lastAdded: added,
+              updatedAt: DateTime(2024, 1, 4),
+            ),
+          ],
+          'frequent': <Product>[],
+        },
+      };
+
+      final merged = ShoppingProvider.mergeShoppingListsForSync(
+        local,
+        cloud,
+        localUpdatedAt: {'Lista 1': DateTime(2024, 1, 3)},
+        cloudUpdatedAt: {'Lista 1': DateTime(2024, 1, 4)},
+      );
+
+      expect(merged['Lista 1']!['active']!.single.price, 3);
+    });
+
+    test('product prices and updatedAt survive Hive and Firestore maps', () {
+      final product = Product(
+        id: 'p1',
+        name: 'Pan',
+        price: 2.5,
+        pricePerKilo: 4.75,
+        lastAdded: DateTime(2024, 1, 1),
+        updatedAt: DateTime(2024, 1, 5),
+      );
+
+      final fromHive = Product.fromMapHive(product.toMapHive());
+      final fromCloud = Product.fromMap('p1', product.toMap());
+
+      for (final restored in [fromHive, fromCloud]) {
+        expect(restored.price, 2.5);
+        expect(restored.pricePerKilo, 4.75);
+        expect(restored.updatedAt, DateTime(2024, 1, 5));
+        expect(restored.modifiedAt, DateTime(2024, 1, 5));
+      }
+      expect(
+        Product.fromMapHive({
+          'id': 'old',
+          'name': 'Viejo',
+          'lastAdded': DateTime(2024, 1, 1).toIso8601String(),
+        }).modifiedAt,
+        DateTime(2024, 1, 1),
+      );
+    });
   });
 }

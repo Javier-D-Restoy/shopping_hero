@@ -40,8 +40,8 @@ class _ConfigPageState extends State<ConfigPage> {
 
           // 2. Elemento posicionado en coordenadas específicas (ej. Top: 150, Right: 20)
           Positioned(
-            top: 250, 
-            right: 0, 
+            top: 250,
+            right: 0,
             left: 0,
             child: Center(
               child: Row(
@@ -51,7 +51,9 @@ class _ConfigPageState extends State<ConfigPage> {
                     width: 130,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+                      color: themeProvider.isDarkMode
+                          ? Colors.black
+                          : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: const [
                         BoxShadow(color: Colors.grey, spreadRadius: 1.5),
@@ -80,11 +82,14 @@ class _ConfigPageState extends State<ConfigPage> {
             right: 0,
             left: 0,
             child: Center(
-              child: FontSizeSegmentedButton(value: themeProvider.fontSize, onChanged: (newSize) {
-                themeProvider.setFontSize(newSize);
-              }),
+              child: FontSizeSegmentedButton(
+                value: themeProvider.fontSize,
+                onChanged: (newSize) {
+                  themeProvider.setFontSize(newSize);
+                },
+              ),
             ),
-          )
+          ),
         ],
       ),
     );

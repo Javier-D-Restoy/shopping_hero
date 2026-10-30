@@ -82,7 +82,7 @@ class _ProductBubbleState extends State<ProductBubble> {
         borderRadius: BorderRadius.circular(10),
         child: Padding(
           padding: hasCategoryBorder
-              ? const EdgeInsets.all(4.2) // antes 2.5
+              ? const EdgeInsets.all(5) // antes 2.5
               : const EdgeInsets.all(1), // antes en 1
           child: Container(
             width: 100,

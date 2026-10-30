@@ -4,11 +4,9 @@ import 'package:shopping_hero/core/models/user_model.dart';
 import 'package:shopping_hero/core/services/user_repository.dart';
 
 class AuthService {
-  AuthService({
-    FirebaseAuth? firebaseAuth,
-    UserRepository? userRepository,
-  })  : _auth = firebaseAuth ?? FirebaseAuth.instance,
-        _userRepository = userRepository ?? UserRepository();
+  AuthService({FirebaseAuth? firebaseAuth, UserRepository? userRepository})
+    : _auth = firebaseAuth ?? FirebaseAuth.instance,
+      _userRepository = userRepository ?? UserRepository();
 
   final FirebaseAuth _auth;
   final UserRepository _userRepository;
@@ -28,7 +26,9 @@ class AuthService {
       final passwordTrimmed = password.trim();
       final nameTrimmed = displayName.trim();
 
-      if (emailTrimmed.isEmpty || passwordTrimmed.isEmpty || nameTrimmed.isEmpty) {
+      if (emailTrimmed.isEmpty ||
+          passwordTrimmed.isEmpty ||
+          nameTrimmed.isEmpty) {
         throw Exception('Email, contraseña y nombre son requeridos');
       }
 
@@ -60,7 +60,9 @@ class AuthService {
         updatedAt: DateTime.now(),
       );
     } on FirebaseAuthException catch (e) {
-      debugPrint('FirebaseAuthException registro: code=${e.code} message=${e.message}');
+      debugPrint(
+        'FirebaseAuthException registro: code=${e.code} message=${e.message}',
+      );
 
       if (e.code == 'email-already-in-use') {
         throw Exception('Este email ya está registrado');
@@ -141,7 +143,9 @@ class AuthService {
       await user.delete();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        throw Exception('Por seguridad, vuelve a iniciar sesión antes de eliminar la cuenta');
+        throw Exception(
+          'Por seguridad, vuelve a iniciar sesión antes de eliminar la cuenta',
+        );
       }
       throw Exception('No se pudo eliminar la cuenta: ${e.message}');
     }

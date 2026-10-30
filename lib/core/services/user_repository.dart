@@ -410,8 +410,8 @@ class UserRepository {
         final existing = productsByKey[key];
         final shouldReplace =
             existing == null ||
-            product.lastAdded.isAfter(existing.lastAdded) ||
-            (product.lastAdded.isAtSameMomentAs(existing.lastAdded) &&
+            product.modifiedAt.isAfter(existing.modifiedAt) ||
+            (product.modifiedAt.isAtSameMomentAs(existing.modifiedAt) &&
                 product.frequency >= existing.frequency);
         if (shouldReplace) {
           productsByKey[key] = product;

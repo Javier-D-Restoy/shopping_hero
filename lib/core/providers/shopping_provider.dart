@@ -343,27 +343,8 @@ class ShoppingProvider extends ChangeNotifier {
         continue;
       }
 
-      final existingIsNewer = existing.lastAdded.isAfter(product.lastAdded);
-      final newer = existingIsNewer ? existing : product;
-      final older = existingIsNewer ? product : existing;
-
-      byName[key] = newer.copyWith(
-        category: (newer.category != 'Genérico' && newer.category.isNotEmpty)
-            ? newer.category
-            : older.category,
-        categoryShared:
-            (newer.categoryShared != 'Genérico' &&
-                newer.categoryShared.isNotEmpty)
-            ? newer.categoryShared
-            : older.categoryShared,
-        price: newer.price ?? older.price,
-        imageUrl: (newer.imageUrl != null && newer.imageUrl!.isNotEmpty)
-            ? newer.imageUrl
-            : older.imageUrl,
-        icon: (newer.icon != null && newer.icon!.isNotEmpty)
-            ? newer.icon
-            : older.icon,
-      );
+      final existingIsNewer = existing.modifiedAt.isAfter(product.modifiedAt);
+      byName[key] = existingIsNewer ? existing : product;
     }
 
     final merged = byName.values.toList();
@@ -1341,8 +1322,8 @@ class ShoppingProvider extends ChangeNotifier {
         final existing = productsByKey[key];
         final shouldReplace =
             existing == null ||
-            product.lastAdded.isAfter(existing.lastAdded) ||
-            (product.lastAdded.isAtSameMomentAs(existing.lastAdded) &&
+            product.modifiedAt.isAfter(existing.modifiedAt) ||
+            (product.modifiedAt.isAtSameMomentAs(existing.modifiedAt) &&
                 product.frequency >= existing.frequency);
         if (shouldReplace) {
           productsByKey[key] = product;
@@ -2671,6 +2652,7 @@ class ShoppingProvider extends ChangeNotifier {
         clearPrice: clearPrice,
         clearPricePerKilo: clearPricePerKilo,
         clearImageUrl: clearImageUrl,
+        updatedAt: DateTime.now(),
       );
       _touchList(listName);
       notifyListeners();

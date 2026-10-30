@@ -12,7 +12,9 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
-    final isObscureNotifier = ValueNotifier<bool>(true,); // Estado para la visibilidad del Password
+    final isObscureNotifier = ValueNotifier<bool>(
+      true,
+    ); // Estado para la visibilidad del Password
     final focusNode = FocusNode();
 
     final formKey = GlobalKey<FormState>();
@@ -203,7 +205,8 @@ class LoginPage extends StatelessWidget {
                                   : () async {
                                       final success = await sessionProvider
                                           .continueOffline(
-                                            displayName: sessionProvider.displayName,
+                                            displayName:
+                                                sessionProvider.displayName,
                                           );
 
                                       if (!context.mounted) return;

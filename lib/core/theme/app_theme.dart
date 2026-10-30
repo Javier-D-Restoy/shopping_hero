@@ -18,9 +18,13 @@ class AppTheme {
   final bool isDarkMode;
 
   AppTheme({
-    this.selectedColor = 0,  // Añadimos los assert para controlar el rango de inputs.
+    this.selectedColor =
+        0, // Añadimos los assert para controlar el rango de inputs.
     this.isDarkMode = false,
-  }): assert(selectedColor >= 0 && selectedColor <= _colorThemes.length - 1, 'Colors must be between 0 and ${_colorThemes.length}');
+  }) : assert(
+         selectedColor >= 0 && selectedColor <= _colorThemes.length - 1,
+         'Colors must be between 0 and ${_colorThemes.length}',
+       );
 
   // Crearemos un método que retorne algo que de tipo ThemeData, porque eso es lo que espera
   // el parámetro "theme: " del objeto "MaterialApp"

@@ -10,6 +10,9 @@ class Product {
   final String? imageUrl;
   final DateTime lastAdded;
 
+  /// Última edición de los datos del producto; no afecta al orden por recientes.
+  final DateTime? updatedAt;
+
   /// Categoría asignada al producto en listas personales. Valor por defecto 'Genérico'.
   final String category;
 
@@ -28,10 +31,23 @@ class Product {
     this.pricePerKilo = 0,
     this.imageUrl,
     required this.lastAdded,
+    this.updatedAt,
     this.category = 'Genérico',
     this.categoryShared = 'Genérico',
     this.icon,
   });
+
+  /// Momento de la última modificación (alta, movimiento o edición); decide qué versión gana al fusionar.
+  DateTime get modifiedAt => updatedAt != null && updatedAt!.isAfter(lastAdded)
+      ? updatedAt!
+      : lastAdded;
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
 
   /// Devuelve la categoría correspondiente según el contexto de la lista.
   String getCategory({required bool isShared}) =>
@@ -46,6 +62,7 @@ class Product {
     double? pricePerKilo,
     String? imageUrl,
     DateTime? lastAdded,
+    DateTime? updatedAt,
     String? category,
     String? categoryShared,
     String? icon,
@@ -65,6 +82,7 @@ class Product {
           : (pricePerKilo ?? this.pricePerKilo),
       imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
       lastAdded: lastAdded ?? this.lastAdded,
+      updatedAt: updatedAt ?? this.updatedAt,
       category: category ?? this.category,
       categoryShared: categoryShared ?? this.categoryShared,
       icon: clearIcon ? null : (icon ?? this.icon),
@@ -113,6 +131,7 @@ class Product {
                 : DateTime.parse(
                     map['lastAdded'] ?? DateTime.now().toIso8601String(),
                   )),
+      updatedAt: _parseDate(map['updatedAt']),
       category: parsedCategory,
       categoryShared: parsedCategoryShared,
       icon: map['icon']?.toString(),
@@ -129,6 +148,7 @@ class Product {
       'pricePerKilo': pricePerKilo,
       'imageUrl': imageUrl,
       'lastAdded': Timestamp.fromDate(lastAdded),
+      'updatedAt': updatedAt == null ? null : Timestamp.fromDate(updatedAt!),
       'category': category.isEmpty ? 'Genérico' : category,
       'categoryShared': categoryShared.isEmpty ? 'Genérico' : categoryShared,
       'icon': icon,
@@ -145,6 +165,7 @@ class Product {
       'pricePerKilo': pricePerKilo,
       'imageUrl': imageUrl,
       'lastAdded': lastAdded.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
       'category': category.isEmpty ? 'Genérico' : category,
       'categoryShared': categoryShared.isEmpty ? 'Genérico' : categoryShared,
       'icon': icon,
@@ -185,6 +206,7 @@ class Product {
           : DateTime.parse(
               map['lastAdded'] ?? DateTime.now().toIso8601String(),
             ),
+      updatedAt: _parseDate(map['updatedAt']),
       category: parsedCategory,
       categoryShared: parsedCategoryShared,
       icon: map['icon']?.toString(),

@@ -3,7 +3,12 @@ import 'package:flutter/material.dart';
 /// Criterios de ordenación disponibles para los productos activos de una lista.
 /// Es una preferencia puramente local del dispositivo: no se sincroniza con
 /// Firestore para no generar conflictos entre usuarios que comparten la lista.
-enum ProductSortOption { dateDesc, alphabetical, category, categoryAlphabetical}
+enum ProductSortOption {
+  dateDesc,
+  alphabetical,
+  category,
+  categoryAlphabetical,
+}
 
 extension ProductSortOptionLabel on ProductSortOption {
   String get label {
@@ -22,7 +27,7 @@ extension ProductSortOptionLabel on ProductSortOption {
 
 enum FrequentSortOption {
   frequency, // Ordenar por frecuencia de uso (más frecuentes primero)
-  date,      // Ordenar por fecha (más recientes primero)
+  date, // Ordenar por fecha (más recientes primero)
 }
 
 extension FrequentSortOptionExtension on FrequentSortOption {

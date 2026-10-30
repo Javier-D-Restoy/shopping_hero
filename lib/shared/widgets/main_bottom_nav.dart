@@ -16,7 +16,6 @@ class MainBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final themeProvider = context.watch<ThemeProvider>();
 
     final backgroundColor = themeProvider.navSurface;
@@ -31,20 +30,45 @@ class MainBottomNav extends StatelessWidget {
         decoration: BoxDecoration(
           color: themeProvider.isDarkMode ? Colors.black : Colors.white,
           boxShadow: [
-            if (currentIndex != 0) BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 6,
-              offset: const Offset(0, -2),
-            ),
+            if (currentIndex != 0)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 6,
+                offset: const Offset(0, -2),
+              ),
           ],
         ),
         padding: EdgeInsets.fromLTRB(12, topInset, 12, 12),
         child: Row(
           children: [
-            _buildNavigationButton(Icons.list, 'Lista', 0, backgroundColor, borderColor, iconColor, labelColor),
-            _buildNavigationButton(Icons.person, 'Perfil', 1, backgroundColor, borderColor, iconColor, labelColor),
+            _buildNavigationButton(
+              Icons.list,
+              'Lista',
+              0,
+              backgroundColor,
+              borderColor,
+              iconColor,
+              labelColor,
+            ),
+            _buildNavigationButton(
+              Icons.person,
+              'Perfil',
+              1,
+              backgroundColor,
+              borderColor,
+              iconColor,
+              labelColor,
+            ),
             if (showSharedTab)
-              _buildNavigationButton(Icons.supervised_user_circle, 'Compartido', 2, backgroundColor, borderColor, iconColor, labelColor),
+              _buildNavigationButton(
+                Icons.supervised_user_circle,
+                'Compartido',
+                2,
+                backgroundColor,
+                borderColor,
+                iconColor,
+                labelColor,
+              ),
           ],
         ),
       ),
@@ -70,7 +94,10 @@ class MainBottomNav extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected ? backgroundColor : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: isSelected ? borderColor : Colors.transparent, width: 2)
+            border: Border.all(
+              color: isSelected ? borderColor : Colors.transparent,
+              width: 2,
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
