@@ -110,7 +110,7 @@ class ThemeProvider extends ChangeNotifier {
       : 'assets/images/background/Background_Image_1.jpg';
 
   String get listMainBackgroundImagePath => _isDarkMode
-      ? 'assets/images/background/MainPage_DarkTheme_Background.jpg'
+      ? 'assets/images/background/MainPage_DarkTheme_Background2.jpg'
       : 'assets/images/background/MainPage_LightTheme_Background.jpg';
 
   // Mapa de iconos disponibles
