@@ -184,6 +184,43 @@ void main() {
     ]);
   });
 
+  test('renaming a category updates its products and rejects duplicates', () {
+    final provider = ShoppingProvider(userRepository: FakeUserRepository());
+    provider.createList(name: 'Mercadona');
+    provider.addCategoryToList('Mercadona', 'Lacteos');
+    provider.addCategoryToList('Mercadona', 'Fruta');
+    provider.addActiveProductToList('Mercadona', 'Leche');
+    final id = provider.activeProductsForList('Mercadona').single.id;
+    provider.updateProduct(
+      'Mercadona',
+      id,
+      name: 'Leche',
+      frequency: 1,
+      amount: 1,
+      category: 'Lacteos',
+    );
+
+    expect(
+      provider.renameCategoryInList('Mercadona', 'Lacteos', 'fruta'),
+      isFalse,
+    );
+    expect(
+      provider.renameCategoryInList('Mercadona', 'Lacteos', 'Lacteos'),
+      isTrue,
+    );
+    expect(
+      provider.renameCategoryInList('Mercadona', 'Lacteos', 'Refrigerados'),
+      isTrue,
+    );
+
+    final categories = provider.categoriesForList('Mercadona');
+    expect(categories, ['Refrigerados', 'Fruta', 'Genérico']);
+    expect(
+      provider.activeProductsForList('Mercadona').single.category,
+      'Refrigerados',
+    );
+  });
+
   test('reordering the first list to the second position moves it down', () {
     final provider = ShoppingProvider(userRepository: FakeUserRepository());
     provider.createList(name: 'Mercadona');

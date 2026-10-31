@@ -63,10 +63,7 @@ class _ListMainPageState extends State<ListMainPage> {
   @override
   void initState() {
     super.initState();
-    context.read<SessionProvider>().setLastRoute(
-      route: 'listMain',
-      listName: widget.listName,
-    );
+    context.read<SessionProvider>().setLastRoute(route: 'listMain', listName: widget.listName);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<ShoppingProvider>().syncNow();
@@ -100,13 +97,11 @@ class _ListMainPageState extends State<ListMainPage> {
       return;
     }
 
-    _invitationCountSubscription = provider
-        .watchPendingShareInvitationCount()
-        .listen((count) {
-          if (mounted && count != _pendingNotificationCount) {
-            setState(() => _pendingNotificationCount = count);
-          }
-        }, onError: (_) {});
+    _invitationCountSubscription = provider.watchPendingShareInvitationCount().listen((count) {
+      if (mounted && count != _pendingNotificationCount) {
+        setState(() => _pendingNotificationCount = count);
+      }
+    }, onError: (_) {});
   }
 
   @override
@@ -138,17 +133,14 @@ class _ListMainPageState extends State<ListMainPage> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              'La lista "${widget.listName}" ha sido eliminada por el propietario.',
-            ),
+            content: Text('La lista "${widget.listName}" ha sido eliminada por el propietario.'),
             backgroundColor: context.read<ThemeProvider>().dangerColor,
           ),
         );
 
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const ListManager()),
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushAndRemoveUntil(MaterialPageRoute(builder: (context) => const ListManager()), (route) => false);
       });
     }
   }
@@ -242,12 +234,8 @@ class _ListMainPageState extends State<ListMainPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final activeProducts2 = shoppingProvider.activeProductsForList(
-      widget.listName,
-    );
-    final frequentProducts2 = shoppingProvider.frequentProductsForList(
-      widget.listName,
-    );
+    final activeProducts2 = shoppingProvider.activeProductsForList(widget.listName);
+    final frequentProducts2 = shoppingProvider.frequentProductsForList(widget.listName);
 
     final viewInsetsBottom = MediaQuery.of(context).viewInsets.bottom;
     final isKeyboardOpen = viewInsetsBottom > 0;
@@ -280,14 +268,10 @@ class _ListMainPageState extends State<ListMainPage> {
             Tooltip(
               message: _syncTooltip(shoppingProvider),
               child: IconButton(
-                onPressed:
-                    shoppingProvider.syncStatus == ShoppingSyncStatus.error
+                onPressed: shoppingProvider.syncStatus == ShoppingSyncStatus.error
                     ? () => shoppingProvider.saveToStorage()
                     : null,
-                icon: Icon(
-                  _syncIcon(shoppingProvider),
-                  color: _syncColor(shoppingProvider),
-                ),
+                icon: Icon(_syncIcon(shoppingProvider), color: _syncColor(shoppingProvider)),
               ),
             ),
             PopupMenuButton<_ListMainAction>(
@@ -299,30 +283,21 @@ class _ListMainPageState extends State<ListMainPage> {
                   clipBehavior: Clip.none,
                   children: [
                     const Center(child: Icon(Icons.more_vert)),
-                    if (sessionProvider.isLoggedIn &&
-                        _pendingNotificationCount > 0)
+                    if (sessionProvider.isLoggedIn && _pendingNotificationCount > 0)
                       Positioned(
                         right: -5,
                         bottom: -4,
                         child: Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 18,
-                            minHeight: 18,
-                          ),
+                          constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                           alignment: Alignment.center,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           decoration: BoxDecoration(
                             color: Colors.red,
                             shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.surface,
-                              width: 1.5,
-                            ),
+                            border: Border.all(color: Theme.of(context).colorScheme.surface, width: 1.5),
                           ),
                           child: Text(
-                            _pendingNotificationCount > 99
-                                ? '99+'
-                                : '$_pendingNotificationCount',
+                            _pendingNotificationCount > 99 ? '99+' : '$_pendingNotificationCount',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 10,
@@ -345,19 +320,9 @@ class _ListMainPageState extends State<ListMainPage> {
               onSelected: (action) {
                 switch (action) {
                   case _ListMainAction.notifications:
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const NotificationsPage(),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsPage()));
                   case _ListMainAction.settings:
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ConfigPage(),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const ConfigPage()));
                 }
               },
               itemBuilder: (context) => [
@@ -386,25 +351,13 @@ class _ListMainPageState extends State<ListMainPage> {
                         if (_pendingNotificationCount > 0) ...[
                           const SizedBox(width: 8),
                           Container(
-                            constraints: const BoxConstraints(
-                              minWidth: 20,
-                              minHeight: 20,
-                            ),
+                            constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
                             alignment: Alignment.center,
                             padding: const EdgeInsets.symmetric(horizontal: 5),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
+                            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
                             child: Text(
-                              _pendingNotificationCount > 99
-                                  ? '99+'
-                                  : '$_pendingNotificationCount',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              _pendingNotificationCount > 99 ? '99+' : '$_pendingNotificationCount',
+                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
                             ),
                           ),
                         ],
@@ -463,12 +416,7 @@ class _ListMainPageState extends State<ListMainPage> {
               child: IndexedStack(
                 index: _selectedIndex,
                 children: [
-                  _buildListContent(
-                    activeProducts2,
-                    frequentProducts2,
-                    shoppingProvider,
-                    themeProvider,
-                  ),
+                  _buildListContent(activeProducts2, frequentProducts2, shoppingProvider, themeProvider),
                   const ProfilePage(),
                   SharingPage(listName: widget.listName),
                 ],
@@ -487,12 +435,8 @@ class _ListMainPageState extends State<ListMainPage> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          borderRadius: const BorderRadiusDirectional.vertical(
-                            top: Radius.circular(10),
-                          ),
-                          color: themeProvider.isDarkMode
-                              ? Colors.black
-                              : Colors.white,
+                          borderRadius: const BorderRadiusDirectional.vertical(top: Radius.circular(10)),
+                          color: themeProvider.isDarkMode ? Colors.black : Colors.white,
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.08),
@@ -501,19 +445,13 @@ class _ListMainPageState extends State<ListMainPage> {
                             ),
                           ],
                         ),
-                        padding: EdgeInsets.fromLTRB(
-                          12,
-                          10,
-                          12,
-                          _selectedIndex == 0 ? 10 : 2,
-                        ),
+                        padding: EdgeInsets.fromLTRB(12, 10, 12, _selectedIndex == 0 ? 10 : 2),
                         child: Row(
                           children: [
                             Expanded(
                               child: TextFormField(
                                 controller: _productNameController,
-                                textCapitalization:
-                                    TextCapitalization.sentences,
+                                textCapitalization: TextCapitalization.sentences,
                                 maxLength: 30,
                                 onTapOutside: (event) {
                                   focusNode.unfocus();
@@ -522,33 +460,21 @@ class _ListMainPageState extends State<ListMainPage> {
                                 decoration: InputDecoration(
                                   hintText: 'Me hace falta...',
                                   counterText: '',
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12),
                                   filled: true,
                                   fillColor: themeProvider.surface,
-                                  labelStyle: TextStyle(
-                                    color: themeProvider.textMutedColor,
-                                  ),
+                                  labelStyle: TextStyle(color: themeProvider.textMutedColor),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
-                                      color: themeProvider.borderColor,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.borderColor),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
-                                      color: themeProvider.borderColor,
-                                      width: 1.5,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                   ),
                                   focusedBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
-                                      color: themeProvider.primaryColor,
-                                      width: 1.8,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.primaryColor, width: 1.8),
                                   ),
                                 ),
                                 onFieldSubmitted: (value) {
@@ -607,16 +533,10 @@ class _ListMainPageState extends State<ListMainPage> {
     _isLeaving = true;
     await context.read<ShoppingProvider>().saveToStorage(mergeCloud: false);
     if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const ListManager()),
-    );
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const ListManager()));
   }
 
-  Widget _buildSortButton(
-    ShoppingProvider shoppingProvider,
-    ThemeProvider themeProvider,
-  ) {
+  Widget _buildSortButton(ShoppingProvider shoppingProvider, ThemeProvider themeProvider) {
     final currentOption = shoppingProvider.sortOptionForList(widget.listName);
 
     return PopupMenuButton<ProductSortOption>(
@@ -639,21 +559,13 @@ class _ListMainPageState extends State<ListMainPage> {
               child: Row(
                 children: [
                   if (option == currentOption)
-                    Icon(
-                      Icons.check,
-                      size: 18,
-                      color: themeProvider.primaryColor,
-                    )
+                    Icon(Icons.check, size: 18, color: themeProvider.primaryColor)
                   else
                     const SizedBox(width: 18),
                   const SizedBox(width: 8),
                   Text(
                     option.label,
-                    style: TextStyle(
-                      color: themeProvider.textStrongColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(color: themeProvider.textStrongColor, fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -677,28 +589,17 @@ class _ListMainPageState extends State<ListMainPage> {
             const SizedBox(width: 6),
             Text(
               currentOption.label,
-              style: TextStyle(
-                fontSize: 13,
-                color: themeProvider.textStrongColor,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 13, color: themeProvider.textStrongColor, fontWeight: FontWeight.w600),
             ),
             const SizedBox(width: 4),
-            Icon(
-              Icons.arrow_drop_down,
-              size: 20,
-              color: themeProvider.textMutedColor,
-            ),
+            Icon(Icons.arrow_drop_down, size: 20, color: themeProvider.textMutedColor),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFrequentSortButton(
-    ShoppingProvider shoppingProvider,
-    ThemeProvider themeProvider,
-  ) {
+  Widget _buildFrequentSortButton(ShoppingProvider shoppingProvider, ThemeProvider themeProvider) {
     final currentOption = shoppingProvider.frequentSortOption;
 
     return PopupMenuButton<FrequentSortOption>(
@@ -721,21 +622,13 @@ class _ListMainPageState extends State<ListMainPage> {
               child: Row(
                 children: [
                   if (option == currentOption)
-                    Icon(
-                      Icons.check,
-                      size: 18,
-                      color: themeProvider.primaryColor,
-                    )
+                    Icon(Icons.check, size: 18, color: themeProvider.primaryColor)
                   else
                     const SizedBox(width: 18),
                   const SizedBox(width: 8),
                   Text(
                     option.displayName,
-                    style: TextStyle(
-                      color: themeProvider.textStrongColor,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(color: themeProvider.textStrongColor, fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -759,18 +652,10 @@ class _ListMainPageState extends State<ListMainPage> {
             const SizedBox(width: 6),
             Text(
               currentOption.displayName,
-              style: TextStyle(
-                fontSize: 13,
-                color: themeProvider.textStrongColor,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 13, color: themeProvider.textStrongColor, fontWeight: FontWeight.w600),
             ),
             const SizedBox(width: 4),
-            Icon(
-              Icons.arrow_drop_down,
-              size: 20,
-              color: themeProvider.textMutedColor,
-            ),
+            Icon(Icons.arrow_drop_down, size: 20, color: themeProvider.textMutedColor),
           ],
         ),
       ),
@@ -799,10 +684,7 @@ class _ListMainPageState extends State<ListMainPage> {
         slivers: [
           const SliverToBoxAdapter(child: SizedBox(height: 8)),
           SliverToBoxAdapter(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: _buildSortButton(shoppingProvider, themeProvider),
-            ),
+            child: Align(alignment: Alignment.centerRight, child: _buildSortButton(shoppingProvider, themeProvider)),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 6)),
           SliverGrid.builder(
@@ -817,19 +699,14 @@ class _ListMainPageState extends State<ListMainPage> {
               final product = activeProducts[index];
 
               // 1. Obtener la lista ordenada de categorías y el estado compartido
-              final categories = shoppingProvider.categoriesForList(
-                widget.listName,
-              );
+              final categories = shoppingProvider.categoriesForList(widget.listName);
               final isShared = shoppingProvider.isSharedList(widget.listName);
 
               // 2. Obtener la categoría del producto actual
               final cat = product.getCategory(isShared: isShared);
 
               // 3. Asignar el color según el índice
-              final categoryColor = themeProvider.getCategoryColor(
-                cat,
-                categories,
-              );
+              final categoryColor = themeProvider.getCategoryColor(cat, categories);
 
               return ProductBubble(
                 key: ValueKey('${product.id}-active'),
@@ -838,15 +715,8 @@ class _ListMainPageState extends State<ListMainPage> {
                 icon: product.icon,
                 productAdd: ProductAdd.active,
                 categoryColor: categoryColor,
-                animateOnEntry: _shouldAnimateProduct(
-                  product,
-                  ProductAdd.active,
-                ),
-                onLongPress: () => _showProductEditor(
-                  shoppingProvider,
-                  themeProvider,
-                  product,
-                ),
+                animateOnEntry: _shouldAnimateProduct(product, ProductAdd.active),
+                onLongPress: () => _showProductEditor(shoppingProvider, themeProvider, product),
                 onTap: () => _removeActiveProduct(shoppingProvider, product.id),
               );
             },
@@ -854,12 +724,7 @@ class _ListMainPageState extends State<ListMainPage> {
           if (frequentProducts.isNotEmpty)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 20,
-                  bottom: 8,
-                  left: 5,
-                  right: 5,
-                ),
+                padding: const EdgeInsets.only(top: 20, bottom: 8, left: 5, right: 5),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -869,21 +734,10 @@ class _ListMainPageState extends State<ListMainPage> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           border: Border.symmetric(
-                            horizontal: BorderSide(
-                              color: themeProvider.borderColor,
-                              width: 1,
-                            ),
-                            vertical: BorderSide(
-                              color: themeProvider.borderColor,
-                              width: 5,
-                            ),
+                            horizontal: BorderSide(color: themeProvider.borderColor, width: 1),
+                            vertical: BorderSide(color: themeProvider.borderColor, width: 5),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: themeProvider.borderColor,
-                              spreadRadius: 1.5,
-                            ),
-                          ],
+                          boxShadow: [BoxShadow(color: themeProvider.borderColor, spreadRadius: 1.5)],
                           color: themeProvider.surface,
                           // gradient: LinearGradient(
                           //   begin: Alignment.topLeft,
@@ -908,16 +762,12 @@ class _ListMainPageState extends State<ListMainPage> {
                                     ..color = themeProvider.primaryColor,
                                   shadows: [
                                     Shadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.2,
-                                      ),
+                                      color: Colors.black.withValues(alpha: 0.2),
                                       blurRadius: 4,
                                       offset: Offset(0, 0),
                                     ),
                                     Shadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.1,
-                                      ),
+                                      color: Colors.black.withValues(alpha: 0.1),
                                       blurRadius: 2,
                                       offset: Offset(0, 0),
                                     ),
@@ -941,10 +791,7 @@ class _ListMainPageState extends State<ListMainPage> {
                     ),
                     Align(
                       alignment: Alignment.centerRight,
-                      child: _buildFrequentSortButton(
-                        shoppingProvider,
-                        themeProvider,
-                      ),
+                      child: _buildFrequentSortButton(shoppingProvider, themeProvider),
                     ),
                   ],
                 ),
@@ -967,17 +814,9 @@ class _ListMainPageState extends State<ListMainPage> {
                   amount: product.amount,
                   icon: product.icon,
                   productAdd: ProductAdd.frequent,
-                  animateOnEntry: _shouldAnimateProduct(
-                    product,
-                    ProductAdd.frequent,
-                  ),
-                  onLongPress: () => _showProductEditor(
-                    shoppingProvider,
-                    themeProvider,
-                    product,
-                  ),
-                  onTap: () =>
-                      _removeFrequentProduct(shoppingProvider, product.id),
+                  animateOnEntry: _shouldAnimateProduct(product, ProductAdd.frequent),
+                  onLongPress: () => _showProductEditor(shoppingProvider, themeProvider, product),
+                  onTap: () => _removeFrequentProduct(shoppingProvider, product.id),
                 );
               },
             ),
@@ -994,17 +833,11 @@ class _ListMainPageState extends State<ListMainPage> {
     _productNameController.clear();
   }
 
-  void _removeActiveProduct(
-    ShoppingProvider shoppingProvider,
-    String productId,
-  ) {
+  void _removeActiveProduct(ShoppingProvider shoppingProvider, String productId) {
     shoppingProvider.moveActiveProductToFrequent(widget.listName, productId);
   }
 
-  void _removeFrequentProduct(
-    ShoppingProvider shoppingProvider,
-    String productId,
-  ) {
+  void _removeFrequentProduct(ShoppingProvider shoppingProvider, String productId) {
     shoppingProvider.moveFrequentProductToActive(widget.listName, productId);
   }
 
@@ -1016,21 +849,11 @@ class _ListMainPageState extends State<ListMainPage> {
     final isShared = shoppingProvider.isSharedList(widget.listName);
 
     final nameController = TextEditingController(text: product.name);
-    final frequencyController = TextEditingController(
-      text: product.frequency.toString(),
-    );
-    final priceController = TextEditingController(
-      text: product.price?.toString() ?? '',
-    );
-    final pricePerKiloController = TextEditingController(
-      text: product.pricePerKilo?.toString() ?? '',
-    );
-    final amountController = TextEditingController(
-      text: product.amount.toString(),
-    );
-    final imageUrlController = TextEditingController(
-      text: product.imageUrl ?? '',
-    );
+    final frequencyController = TextEditingController(text: product.frequency.toString());
+    final priceController = TextEditingController(text: product.price?.toString() ?? '');
+    final pricePerKiloController = TextEditingController(text: product.pricePerKilo?.toString() ?? '');
+    final amountController = TextEditingController(text: product.amount.toString());
+    final imageUrlController = TextEditingController(text: product.imageUrl ?? '');
 
     String selectedCategory = product.getCategory(isShared: isShared);
     String? selectedIcon = product.icon;
@@ -1043,9 +866,7 @@ class _ListMainPageState extends State<ListMainPage> {
         builder: (modalContext) {
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setModalState) {
-              final availableCategories = shoppingProvider.categoriesForList(
-                widget.listName,
-              );
+              final availableCategories = shoppingProvider.categoriesForList(widget.listName);
 
               if (!availableCategories.contains(selectedCategory)) {
                 selectedCategory = 'Genérico';
@@ -1061,31 +882,13 @@ class _ListMainPageState extends State<ListMainPage> {
                   ),
                   decoration: BoxDecoration(
                     color: themeProvider.surface,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
                     border: Border(
-                      top: BorderSide(
-                        color: themeProvider.borderColor,
-                        width: 3,
-                      ),
-                      left: BorderSide(
-                        color: themeProvider.borderColor,
-                        width: 1,
-                      ),
-                      right: BorderSide(
-                        color: themeProvider.borderColor,
-                        width: 1,
-                      ),
+                      top: BorderSide(color: themeProvider.borderColor, width: 3),
+                      left: BorderSide(color: themeProvider.borderColor, width: 1),
+                      right: BorderSide(color: themeProvider.borderColor, width: 1),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: themeProvider.cardShadowColor,
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    boxShadow: [BoxShadow(color: themeProvider.cardShadowColor, blurRadius: 10, spreadRadius: 2)],
                   ),
                   child: SingleChildScrollView(
                     child: Column(
@@ -1095,11 +898,10 @@ class _ListMainPageState extends State<ListMainPage> {
                         Center(
                           child: Text(
                             'Editar Producto',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  color: themeProvider.textStrongColor,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: themeProvider.textStrongColor,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -1110,22 +912,14 @@ class _ListMainPageState extends State<ListMainPage> {
                             labelText: 'Nombre',
                             counterText: '',
                             border: const OutlineInputBorder(),
-                            labelStyle: TextStyle(
-                              color: themeProvider.textMutedColor,
-                            ),
+                            labelStyle: TextStyle(color: themeProvider.textMutedColor),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: themeProvider.borderColor,
-                                width: 1.5,
-                              ),
+                              borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide(
-                                color: themeProvider.primaryColor,
-                                width: 2,
-                              ),
+                              borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                             ),
                           ),
                         ),
@@ -1133,7 +927,7 @@ class _ListMainPageState extends State<ListMainPage> {
                         Row(
                           children: [
                             Expanded(
-                              flex: 2,
+                              flex: 3,
                               child: InkWell(
                                 onTap: () async {
                                   FocusManager.instance.primaryFocus?.unfocus();
@@ -1144,190 +938,110 @@ class _ListMainPageState extends State<ListMainPage> {
                                     builder: (dialogContext) {
                                       return StatefulBuilder(
                                         builder: (context, setDialogState) {
-                                          final currentCategories =
-                                              shoppingProvider
-                                                  .categoriesForList(
-                                                    widget.listName,
-                                                  );
-                                          final customCategoriesCount =
-                                              currentCategories
-                                                  .where(
-                                                    (cat) => cat != 'Genérico',
-                                                  )
-                                                  .length;
-                                          final canReorder =
-                                              customCategoriesCount > 1;
+                                          final currentCategories = shoppingProvider.categoriesForList(widget.listName);
+                                          final customCategoriesCount = currentCategories
+                                              .where((cat) => cat != 'Genérico')
+                                              .length;
+                                          final canReorder = customCategoriesCount > 1;
 
                                           return AlertDialog(
-                                            backgroundColor:
-                                                themeProvider.surface,
+                                            insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                                            backgroundColor: themeProvider.surface,
                                             elevation: 10,
-                                            shadowColor:
-                                                themeProvider.cardShadowColor,
+                                            shadowColor: themeProvider.cardShadowColor,
                                             shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              side: BorderSide(
-                                                color:
-                                                    themeProvider.borderColor,
-                                                width: 1.5,
-                                              ),
+                                              borderRadius: BorderRadius.circular(16),
+                                              side: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                             ),
-                                            titlePadding:
-                                                const EdgeInsets.fromLTRB(
-                                                  14,
-                                                  24,
-                                                  14,
-                                                  0,
-                                                ),
-                                            contentPadding:
-                                                const EdgeInsets.only(
-                                                  left: 14,
-                                                  right: 14,
-                                                  bottom: 14,
-                                                ),
+                                            titlePadding: const EdgeInsets.fromLTRB(14, 24, 14, 0),
+                                            contentPadding: const EdgeInsets.only(left: 14, right: 14, bottom: 14),
                                             title: const Center(
                                               child: Text(
                                                 'Seleccionar Categoría',
-                                                style: TextStyle(
-                                                  fontSize: 24,
-                                                  fontWeight: FontWeight.w500,
-                                                ),
+                                                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
                                               ),
                                             ),
                                             content: SizedBox(
                                               width: double.maxFinite,
                                               child: ConstrainedBox(
                                                 constraints: BoxConstraints(
-                                                  maxHeight:
-                                                      MediaQuery.of(
-                                                        context,
-                                                      ).size.height *
-                                                      0.6,
+                                                  maxHeight: MediaQuery.of(context).size.height * 0.6,
                                                 ),
                                                 child: Builder(
                                                   builder: (context) {
-                                                    final scrollController =
-                                                        ScrollController();
+                                                    final scrollController = ScrollController();
                                                     bool canScrollUp = false;
                                                     bool canScrollDown = false;
 
                                                     return StatefulBuilder(
                                                       builder: (context, setInnerState) {
-                                                        void
-                                                        updateScrollIndicators() {
-                                                          if (!scrollController
-                                                              .hasClients) {
+                                                        void updateScrollIndicators() {
+                                                          if (!scrollController.hasClients) {
                                                             return;
                                                           }
-                                                          final maxScroll =
-                                                              scrollController
-                                                                  .position
-                                                                  .maxScrollExtent;
-                                                          final currentScroll =
-                                                              scrollController
-                                                                  .offset;
+                                                          final maxScroll = scrollController.position.maxScrollExtent;
+                                                          final currentScroll = scrollController.offset;
 
-                                                          final showUp =
-                                                              currentScroll > 5;
+                                                          final showUp = currentScroll > 5;
                                                           final showDown =
-                                                              maxScroll > 0 &&
-                                                              currentScroll <
-                                                                  (maxScroll -
-                                                                      5);
+                                                              maxScroll > 0 && currentScroll < (maxScroll - 5);
 
-                                                          if (showUp !=
-                                                                  canScrollUp ||
-                                                              showDown !=
-                                                                  canScrollDown) {
+                                                          if (showUp != canScrollUp || showDown != canScrollDown) {
                                                             setInnerState(() {
-                                                              canScrollUp =
-                                                                  showUp;
-                                                              canScrollDown =
-                                                                  showDown;
+                                                              canScrollUp = showUp;
+                                                              canScrollDown = showDown;
                                                             });
                                                           }
                                                         }
 
-                                                        scrollController
-                                                            .addListener(
-                                                              updateScrollIndicators,
-                                                            );
+                                                        scrollController.addListener(updateScrollIndicators);
 
-                                                        WidgetsBinding.instance
-                                                            .addPostFrameCallback((
-                                                              _,
-                                                            ) {
-                                                              updateScrollIndicators();
-                                                            });
+                                                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                                                          updateScrollIndicators();
+                                                        });
 
                                                         return Column(
-                                                          mainAxisSize:
-                                                              MainAxisSize.min,
+                                                          mainAxisSize: MainAxisSize.min,
                                                           children: [
                                                             AnimatedOpacity(
-                                                              duration:
-                                                                  const Duration(
-                                                                    milliseconds:
-                                                                        200,
-                                                                  ),
-                                                              opacity:
-                                                                  canScrollUp
-                                                                  ? 1.0
-                                                                  : 0.0,
+                                                              duration: const Duration(milliseconds: 200),
+                                                              opacity: canScrollUp ? 1.0 : 0.0,
                                                               child: SizedBox(
                                                                 height: 22,
                                                                 child: Center(
                                                                   child: Icon(
-                                                                    Icons
-                                                                        .keyboard_arrow_up,
+                                                                    Icons.keyboard_arrow_up,
                                                                     size: 40,
-                                                                    color: themeProvider
-                                                                        .primaryColor,
+                                                                    color: themeProvider.primaryColor,
                                                                   ),
                                                                 ),
                                                               ),
                                                             ),
-                                                            const SizedBox(
-                                                              height: 10,
-                                                            ),
+                                                            const SizedBox(height: 10),
                                                             Flexible(
                                                               child: SingleChildScrollView(
-                                                                controller:
-                                                                    scrollController,
+                                                                controller: scrollController,
                                                                 child: RadioGroup<String>(
                                                                   groupValue:
                                                                       selectedCategory, // <- Aquí debe ser groupValue en lugar de value
                                                                   onChanged: (String? val) {
-                                                                    if (val !=
-                                                                        null) {
-                                                                      Navigator.pop(
-                                                                        dialogContext,
-                                                                        val,
-                                                                      );
+                                                                    if (val != null) {
+                                                                      Navigator.pop(dialogContext, val);
                                                                     }
                                                                   },
                                                                   child: Column(
-                                                                    children: currentCategories.map((
-                                                                      cat,
-                                                                    ) {
+                                                                    children: currentCategories.map((cat) {
                                                                       return Padding(
                                                                         padding: const EdgeInsets.symmetric(
-                                                                          vertical:
-                                                                              2.0,
+                                                                          vertical: 2.0,
                                                                         ),
                                                                         child: Row(
                                                                           children: [
                                                                             Expanded(
                                                                               child: InkWell(
-                                                                                borderRadius: BorderRadius.circular(
-                                                                                  8,
-                                                                                ),
+                                                                                borderRadius: BorderRadius.circular(8),
                                                                                 onTap: () {
-                                                                                  Navigator.pop(
-                                                                                    dialogContext,
-                                                                                    cat,
-                                                                                  );
+                                                                                  Navigator.pop(dialogContext, cat);
                                                                                 },
                                                                                 child: Padding(
                                                                                   padding: const EdgeInsets.symmetric(
@@ -1335,16 +1049,19 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                                   ),
                                                                                   child: Row(
                                                                                     children: [
-                                                                                      Radio<
-                                                                                        String
-                                                                                      >(
-                                                                                        value: cat,
-                                                                                      ),
+                                                                                      Radio<String>(value: cat),
                                                                                       Expanded(
-                                                                                        child: Text(
+                                                                                        child: AutoSizeText(
                                                                                           cat,
+                                                                                          maxLines: 1,
+                                                                                          minFontSize: 8,
+                                                                                          stepGranularity: 1,
+                                                                                          overflow:
+                                                                                              TextOverflow.ellipsis,
                                                                                           style: TextStyle(
-                                                                                            color: themeProvider.textStrongColor,
+                                                                                            fontSize: 16,
+                                                                                            color: themeProvider
+                                                                                                .textStrongColor,
                                                                                             fontWeight: FontWeight.w500,
                                                                                           ),
                                                                                         ),
@@ -1354,8 +1071,32 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                                 ),
                                                                               ),
                                                                             ),
-                                                                            if (cat !=
-                                                                                'Genérico')
+                                                                            if (cat != 'Genérico')
+                                                                              IconButton(
+                                                                                tooltip: 'Renombrar',
+                                                                                icon: const Icon(
+                                                                                  Icons.edit,
+                                                                                  color: Colors.blue,
+                                                                                ),
+                                                                                onPressed: () async {
+                                                                                  final renamed =
+                                                                                      await _showRenameCategoryDialog(
+                                                                                        context,
+                                                                                        shoppingProvider,
+                                                                                        themeProvider,
+                                                                                        cat,
+                                                                                      );
+                                                                                  if (renamed == null) {
+                                                                                    return;
+                                                                                  }
+                                                                                  if (selectedCategory == cat) {
+                                                                                    selectedCategory = renamed;
+                                                                                  }
+                                                                                  setDialogState(() {});
+                                                                                  setModalState(() {});
+                                                                                },
+                                                                              ),
+                                                                            if (cat != 'Genérico')
                                                                               IconButton(
                                                                                 icon: const Icon(
                                                                                   Icons.delete,
@@ -1364,110 +1105,114 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                                 onPressed: () async {
                                                                                   // Mostrar diálogo de confirmación
                                                                                   final confirmDelete =
-                                                                                      await showDialog<
-                                                                                        bool
-                                                                                      >(
+                                                                                      await showDialog<bool>(
                                                                                         context: context,
                                                                                         barrierDismissible: true,
-                                                                                        builder:
-                                                                                            (
-                                                                                              ctx,
-                                                                                            ) => AlertDialog(
-                                                                                              backgroundColor: themeProvider.surface,
-                                                                                              elevation: 10,
-                                                                                              shadowColor: themeProvider.cardShadowColor,
-                                                                                              shape: RoundedRectangleBorder(
-                                                                                                borderRadius: BorderRadius.circular(
+                                                                                        builder: (ctx) => AlertDialog(
+                                                                                          backgroundColor:
+                                                                                              themeProvider.surface,
+                                                                                          elevation: 10,
+                                                                                          shadowColor: themeProvider
+                                                                                              .cardShadowColor,
+                                                                                          shape: RoundedRectangleBorder(
+                                                                                            borderRadius:
+                                                                                                BorderRadius.circular(
                                                                                                   16,
                                                                                                 ),
-                                                                                                side: BorderSide(
-                                                                                                  color: themeProvider.borderColor,
-                                                                                                  width: 1.5,
-                                                                                                ),
-                                                                                              ),
-                                                                                              titlePadding: const EdgeInsets.fromLTRB(
+                                                                                            side: BorderSide(
+                                                                                              color: themeProvider
+                                                                                                  .borderColor,
+                                                                                              width: 1.5,
+                                                                                            ),
+                                                                                          ),
+                                                                                          titlePadding:
+                                                                                              const EdgeInsets.fromLTRB(
                                                                                                 24,
                                                                                                 20,
                                                                                                 24,
                                                                                                 10,
                                                                                               ),
-                                                                                              contentPadding: const EdgeInsets.symmetric(
+                                                                                          contentPadding:
+                                                                                              const EdgeInsets.symmetric(
                                                                                                 horizontal: 24,
                                                                                                 vertical: 10,
                                                                                               ),
-                                                                                              title: const Center(
-                                                                                                child: Text(
-                                                                                                  'Eliminar Categoría',
-                                                                                                  style: TextStyle(
-                                                                                                    fontSize: 22,
-                                                                                                    fontWeight: FontWeight.w500,
-                                                                                                  ),
-                                                                                                ),
+                                                                                          title: const Center(
+                                                                                            child: Text(
+                                                                                              'Eliminar Categoría',
+                                                                                              style: TextStyle(
+                                                                                                fontSize: 22,
+                                                                                                fontWeight:
+                                                                                                    FontWeight.w500,
                                                                                               ),
-                                                                                              content: Text(
-                                                                                                '"$cat"',
-                                                                                                textAlign: TextAlign.center,
-                                                                                                style: TextStyle(
-                                                                                                  fontSize: 16,
-                                                                                                  color: themeProvider.textStrongColor,
-                                                                                                  fontWeight: FontWeight(
-                                                                                                    600,
-                                                                                                  ),
-                                                                                                ),
+                                                                                            ),
+                                                                                          ),
+                                                                                          content: Text(
+                                                                                            '"$cat"',
+                                                                                            textAlign: TextAlign.center,
+                                                                                            style: TextStyle(
+                                                                                              fontSize: 16,
+                                                                                              color: themeProvider
+                                                                                                  .textStrongColor,
+                                                                                              fontWeight: FontWeight(
+                                                                                                600,
                                                                                               ),
-                                                                                              actionsAlignment: MainAxisAlignment.spaceEvenly,
-                                                                                              actionsPadding: const EdgeInsets.only(
+                                                                                            ),
+                                                                                          ),
+                                                                                          actionsAlignment:
+                                                                                              MainAxisAlignment
+                                                                                                  .spaceEvenly,
+                                                                                          actionsPadding:
+                                                                                              const EdgeInsets.only(
                                                                                                 bottom: 12,
                                                                                                 top: 8,
                                                                                               ),
-                                                                                              actions: [
-                                                                                                TextButton(
-                                                                                                  onPressed: () => Navigator.pop(
+                                                                                          actions: [
+                                                                                            TextButton(
+                                                                                              onPressed: () =>
+                                                                                                  Navigator.pop(
                                                                                                     ctx,
                                                                                                     false,
                                                                                                   ),
-                                                                                                  child: const Text(
-                                                                                                    'Cancelar',
-                                                                                                    style: TextStyle(
-                                                                                                      fontSize: 16,
-                                                                                                    ),
-                                                                                                  ),
+                                                                                              child: const Text(
+                                                                                                'Cancelar',
+                                                                                                style: TextStyle(
+                                                                                                  fontSize: 16,
                                                                                                 ),
-                                                                                                TextButton(
-                                                                                                  onPressed: () => Navigator.pop(
+                                                                                              ),
+                                                                                            ),
+                                                                                            TextButton(
+                                                                                              onPressed: () =>
+                                                                                                  Navigator.pop(
                                                                                                     ctx,
                                                                                                     true,
                                                                                                   ),
-                                                                                                  child: const Text(
-                                                                                                    'Eliminar',
-                                                                                                    style: TextStyle(
-                                                                                                      fontSize: 16,
-                                                                                                      color: Colors.red,
-                                                                                                      fontWeight: FontWeight.bold,
-                                                                                                    ),
-                                                                                                  ),
+                                                                                              child: const Text(
+                                                                                                'Eliminar',
+                                                                                                style: TextStyle(
+                                                                                                  fontSize: 16,
+                                                                                                  color: Colors.red,
+                                                                                                  fontWeight:
+                                                                                                      FontWeight.bold,
                                                                                                 ),
-                                                                                              ],
+                                                                                              ),
                                                                                             ),
+                                                                                          ],
+                                                                                        ),
                                                                                       );
 
                                                                                   // Si el usuario confirma la eliminación
-                                                                                  if (confirmDelete ==
-                                                                                      true) {
-                                                                                    shoppingProvider.removeCategoryFromList(
-                                                                                      widget.listName,
-                                                                                      cat,
-                                                                                    );
-                                                                                    if (selectedCategory ==
-                                                                                        cat) {
+                                                                                  if (confirmDelete == true) {
+                                                                                    shoppingProvider
+                                                                                        .removeCategoryFromList(
+                                                                                          widget.listName,
+                                                                                          cat,
+                                                                                        );
+                                                                                    if (selectedCategory == cat) {
                                                                                       selectedCategory = 'Genérico';
                                                                                     }
-                                                                                    setDialogState(
-                                                                                      () {},
-                                                                                    );
-                                                                                    setModalState(
-                                                                                      () {},
-                                                                                    );
+                                                                                    setDialogState(() {});
+                                                                                    setModalState(() {});
                                                                                   }
                                                                                 },
                                                                               ),
@@ -1480,154 +1225,107 @@ class _ListMainPageState extends State<ListMainPage> {
                                                               ),
                                                             ),
                                                             AnimatedOpacity(
-                                                              duration:
-                                                                  const Duration(
-                                                                    milliseconds:
-                                                                        200,
-                                                                  ),
-                                                              opacity:
-                                                                  canScrollDown
-                                                                  ? 1.0
-                                                                  : 0.0,
+                                                              duration: const Duration(milliseconds: 200),
+                                                              opacity: canScrollDown ? 1.0 : 0.0,
                                                               child: SizedBox(
                                                                 height: 22,
                                                                 child: Center(
                                                                   child: Icon(
-                                                                    Icons
-                                                                        .keyboard_arrow_down,
+                                                                    Icons.keyboard_arrow_down,
                                                                     size: 40,
-                                                                    color: themeProvider
-                                                                        .primaryColor,
+                                                                    color: themeProvider.primaryColor,
                                                                   ),
                                                                 ),
                                                               ),
                                                             ),
                                                             const Divider(),
                                                             ListTile(
-                                                              leading:
-                                                                  const Icon(
-                                                                    Icons.add,
-                                                                    color: Colors
-                                                                        .blue,
-                                                                  ),
-                                                              title: const Text(
-                                                                'Crear categoría',
-                                                                style: TextStyle(
-                                                                  color: Colors
-                                                                      .blue,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
+                                                              title: const Center(
+                                                                child: Row(
+                                                                  mainAxisSize: MainAxisSize.min,
+                                                                  children: [
+                                                                    Icon(Icons.add, color: Colors.blue),
+                                                                    SizedBox(width: 8),
+                                                                    Text(
+                                                                      'Crear categoría',
+                                                                      style: TextStyle(
+                                                                        color: Colors.blue,
+                                                                        fontWeight: FontWeight.w500,
+                                                                      ),
+                                                                    ),
+                                                                  ],
                                                                 ),
                                                               ),
                                                               onTap: () async {
-                                                                final newCatController =
-                                                                    TextEditingController();
+                                                                final newCatController = TextEditingController();
                                                                 final newCat = await showDialog<String>(
-                                                                  context:
-                                                                      context,
-                                                                  barrierDismissible:
-                                                                      true,
+                                                                  context: context,
+                                                                  barrierDismissible: true,
                                                                   builder: (ctx) => AlertDialog(
-                                                                    backgroundColor:
-                                                                        themeProvider
-                                                                            .surface,
-                                                                    elevation:
-                                                                        10,
-                                                                    shadowColor:
-                                                                        themeProvider
-                                                                            .cardShadowColor,
+                                                                    backgroundColor: themeProvider.surface,
+                                                                    elevation: 10,
+                                                                    shadowColor: themeProvider.cardShadowColor,
                                                                     shape: RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                            16,
-                                                                          ),
+                                                                      borderRadius: BorderRadius.circular(16),
                                                                       side: BorderSide(
-                                                                        color: themeProvider
-                                                                            .borderColor,
-                                                                        width:
-                                                                            1.5,
+                                                                        color: themeProvider.borderColor,
+                                                                        width: 1.5,
                                                                       ),
                                                                     ),
-                                                                    titlePadding:
-                                                                        const EdgeInsets.fromLTRB(
-                                                                          24,
-                                                                          20,
-                                                                          24,
-                                                                          20,
-                                                                        ),
-                                                                    contentPadding:
-                                                                        const EdgeInsets.symmetric(
-                                                                          horizontal:
-                                                                              14,
-                                                                          vertical:
-                                                                              0,
-                                                                        ),
+                                                                    titlePadding: const EdgeInsets.fromLTRB(
+                                                                      24,
+                                                                      20,
+                                                                      24,
+                                                                      20,
+                                                                    ),
+                                                                    contentPadding: const EdgeInsets.symmetric(
+                                                                      horizontal: 14,
+                                                                      vertical: 0,
+                                                                    ),
                                                                     title: const Center(
                                                                       child: Text(
                                                                         'Nueva Categoría',
                                                                         style: TextStyle(
-                                                                          fontSize:
-                                                                              24,
-                                                                          fontWeight:
-                                                                              FontWeight.w500,
+                                                                          fontSize: 24,
+                                                                          fontWeight: FontWeight.w500,
                                                                         ),
                                                                       ),
                                                                     ),
                                                                     content: Padding(
-                                                                      padding: const EdgeInsets.only(
-                                                                        bottom:
-                                                                            10,
-                                                                      ),
+                                                                      padding: const EdgeInsets.only(bottom: 10),
                                                                       child: TextField(
-                                                                        textAlign:
-                                                                            TextAlign.center,
-                                                                        controller:
-                                                                            newCatController,
+                                                                        textAlign: TextAlign.center,
+                                                                        controller: newCatController,
                                                                         textCapitalization:
                                                                             TextCapitalization.sentences,
-                                                                        autofocus:
-                                                                            true,
-                                                                        maxLines:
-                                                                            1,
-                                                                        maxLength:
-                                                                            15,
+                                                                        autofocus: true,
+                                                                        maxLines: 1,
+                                                                        maxLength: 15,
                                                                         decoration: InputDecoration(
-                                                                          counterText:
-                                                                              '',
+                                                                          counterText: '',
                                                                           contentPadding: const EdgeInsets.symmetric(
-                                                                            horizontal:
-                                                                                12,
+                                                                            horizontal: 12,
                                                                           ),
-                                                                          filled:
-                                                                              true,
-                                                                          fillColor:
-                                                                              themeProvider.surface,
+                                                                          filled: true,
+                                                                          fillColor: themeProvider.surface,
                                                                           labelStyle: TextStyle(
-                                                                            color:
-                                                                                themeProvider.textMutedColor,
+                                                                            color: themeProvider.textMutedColor,
                                                                           ),
                                                                           border: OutlineInputBorder(
-                                                                            borderRadius: BorderRadius.circular(
-                                                                              14,
-                                                                            ),
+                                                                            borderRadius: BorderRadius.circular(14),
                                                                             borderSide: BorderSide(
                                                                               color: themeProvider.borderColor,
                                                                             ),
                                                                           ),
                                                                           enabledBorder: OutlineInputBorder(
-                                                                            borderRadius: BorderRadius.circular(
-                                                                              14,
-                                                                            ),
+                                                                            borderRadius: BorderRadius.circular(14),
                                                                             borderSide: BorderSide(
                                                                               color: themeProvider.borderColor,
                                                                               width: 1.5,
                                                                             ),
                                                                           ),
                                                                           focusedBorder: OutlineInputBorder(
-                                                                            borderRadius: BorderRadius.circular(
-                                                                              14,
-                                                                            ),
+                                                                            borderRadius: BorderRadius.circular(14),
                                                                             borderSide: BorderSide(
                                                                               color: themeProvider.primaryColor,
                                                                               width: 1.8,
@@ -1638,26 +1336,17 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                     ),
                                                                     actions: [
                                                                       Row(
-                                                                        mainAxisAlignment:
-                                                                            MainAxisAlignment.center,
-                                                                        crossAxisAlignment:
-                                                                            CrossAxisAlignment.center,
+                                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                                        crossAxisAlignment: CrossAxisAlignment.center,
                                                                         children: [
                                                                           TextButton(
-                                                                            onPressed: () => Navigator.pop(
-                                                                              ctx,
-                                                                            ),
+                                                                            onPressed: () => Navigator.pop(ctx),
                                                                             child: const Text(
                                                                               'Cancelar',
-                                                                              style: TextStyle(
-                                                                                fontSize: 16,
-                                                                              ),
+                                                                              style: TextStyle(fontSize: 16),
                                                                             ),
                                                                           ),
-                                                                          const SizedBox(
-                                                                            width:
-                                                                                10,
-                                                                          ),
+                                                                          const SizedBox(width: 10),
                                                                           TextButton(
                                                                             onPressed: () => Navigator.pop(
                                                                               ctx,
@@ -1665,9 +1354,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                             ),
                                                                             child: const Text(
                                                                               'Añadir',
-                                                                              style: TextStyle(
-                                                                                fontSize: 16,
-                                                                              ),
+                                                                              style: TextStyle(fontSize: 16),
                                                                             ),
                                                                           ),
                                                                         ],
@@ -1676,50 +1363,36 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                   ),
                                                                 );
 
-                                                                if (newCat !=
-                                                                        null &&
-                                                                    newCat
-                                                                        .isNotEmpty) {
-                                                                  shoppingProvider
-                                                                      .addCategoryToList(
-                                                                        widget
-                                                                            .listName,
-                                                                        newCat,
-                                                                      );
-                                                                  setDialogState(
-                                                                    () {},
+                                                                if (newCat != null && newCat.isNotEmpty) {
+                                                                  shoppingProvider.addCategoryToList(
+                                                                    widget.listName,
+                                                                    newCat,
                                                                   );
-                                                                  setModalState(
-                                                                    () {},
-                                                                  );
+                                                                  setDialogState(() {});
+                                                                  setModalState(() {});
                                                                 }
                                                               },
                                                             ),
                                                             const Divider(),
                                                             ListTile(
-                                                              enabled:
-                                                                  canReorder,
-                                                              leading: Icon(
-                                                                Icons.swap_vert,
-                                                                color:
-                                                                    canReorder
-                                                                    ? Colors
-                                                                          .orange
-                                                                    : Colors
-                                                                          .grey,
-                                                              ),
-                                                              title: Text(
-                                                                'Reordenar categorías',
-                                                                style: TextStyle(
-                                                                  color:
-                                                                      canReorder
-                                                                      ? Colors
-                                                                            .orange
-                                                                      : Colors
-                                                                            .grey,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
+                                                              enabled: canReorder,
+                                                              title: Center(
+                                                                child: Row(
+                                                                  mainAxisSize: MainAxisSize.min,
+                                                                  children: [
+                                                                    Icon(
+                                                                      Icons.swap_vert,
+                                                                      color: canReorder ? Colors.orange : Colors.grey,
+                                                                    ),
+                                                                    const SizedBox(width: 8),
+                                                                    Text(
+                                                                      'Reordenar categorías',
+                                                                      style: TextStyle(
+                                                                        color: canReorder ? Colors.orange : Colors.grey,
+                                                                        fontWeight: FontWeight.w500,
+                                                                      ),
+                                                                    ),
+                                                                  ],
                                                                 ),
                                                               ),
                                                               onTap: canReorder
@@ -1728,15 +1401,10 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                         dialogContext,
                                                                         shoppingProvider,
                                                                         themeProvider,
-                                                                        widget
-                                                                            .listName,
+                                                                        widget.listName,
                                                                       );
-                                                                      setDialogState(
-                                                                        () {},
-                                                                      );
-                                                                      setModalState(
-                                                                        () {},
-                                                                      );
+                                                                      setDialogState(() {});
+                                                                      setModalState(() {});
                                                                     }
                                                                   : null,
                                                             ),
@@ -1764,27 +1432,16 @@ class _ListMainPageState extends State<ListMainPage> {
                                   decoration: InputDecoration(
                                     labelText: 'Categoría',
                                     border: const OutlineInputBorder(),
-                                    labelStyle: TextStyle(
-                                      color: themeProvider.textMutedColor,
-                                    ),
+                                    labelStyle: TextStyle(color: themeProvider.textMutedColor),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: themeProvider.borderColor,
-                                        width: 1.5,
-                                      ),
+                                      borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                     ),
                                   ),
                                   child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      AutoSizeText(
-                                        selectedCategory,
-                                        maxFontSize: 15,
-                                        minFontSize: 8,
-                                        maxLines: 1,
-                                      ),
+                                      AutoSizeText(selectedCategory, maxFontSize: 15, minFontSize: 8, maxLines: 1),
                                       const Icon(Icons.arrow_drop_down),
                                     ],
                                   ),
@@ -1805,29 +1462,16 @@ class _ListMainPageState extends State<ListMainPage> {
                                       return AlertDialog(
                                         backgroundColor: themeProvider.surface,
                                         elevation: 10,
-                                        shadowColor:
-                                            themeProvider.cardShadowColor,
+                                        shadowColor: themeProvider.cardShadowColor,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            16,
-                                          ),
-                                          side: BorderSide(
-                                            color: themeProvider.borderColor,
-                                            width: 1.5,
-                                          ),
+                                          borderRadius: BorderRadius.circular(16),
+                                          side: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                         ),
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                              horizontal: 14,
-                                              vertical: 14,
-                                            ),
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                                         title: const Center(
                                           child: Text(
                                             'Seleccionar Icono',
-                                            style: TextStyle(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.w500,
-                                            ),
+                                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
                                           ),
                                         ),
                                         content: SizedBox(
@@ -1837,51 +1481,24 @@ class _ListMainPageState extends State<ListMainPage> {
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 ListTile(
-                                                  leading: const Icon(
-                                                    Icons.block,
-                                                    color: Colors.grey,
-                                                  ),
-                                                  title: const Text(
-                                                    'Sin icono',
-                                                  ),
+                                                  leading: const Icon(Icons.block, color: Colors.grey),
+                                                  title: const Text('Sin icono'),
                                                   trailing: selectedIcon == null
-                                                      ? const Icon(
-                                                          Icons.check,
-                                                          color: Colors.blue,
-                                                        )
+                                                      ? const Icon(Icons.check, color: Colors.blue)
                                                       : null,
-                                                  onTap: () => Navigator.pop(
-                                                    dialogContext,
-                                                    'CLEAR',
-                                                  ),
+                                                  onTap: () => Navigator.pop(dialogContext, 'CLEAR'),
                                                 ),
                                                 const Divider(),
-                                                ...themeProvider
-                                                    .availableIconsSvg
-                                                    .entries
-                                                    .map((entry) {
-                                                      return ListTile(
-                                                        leading:
-                                                            SvgPicture.asset(
-                                                              entry.value,
-                                                            ),
-                                                        title: Text(entry.key),
-                                                        trailing:
-                                                            selectedIcon ==
-                                                                entry.key
-                                                            ? const Icon(
-                                                                Icons.check,
-                                                                color:
-                                                                    Colors.blue,
-                                                              )
-                                                            : null,
-                                                        onTap: () =>
-                                                            Navigator.pop(
-                                                              dialogContext,
-                                                              entry.key,
-                                                            ),
-                                                      );
-                                                    }),
+                                                ...themeProvider.availableIconsSvg.entries.map((entry) {
+                                                  return ListTile(
+                                                    leading: SvgPicture.asset(entry.value),
+                                                    title: Text(entry.key),
+                                                    trailing: selectedIcon == entry.key
+                                                        ? const Icon(Icons.check, color: Colors.blue)
+                                                        : null,
+                                                    onTap: () => Navigator.pop(dialogContext, entry.key),
+                                                  );
+                                                }),
                                               ],
                                             ),
                                           ),
@@ -1892,9 +1509,7 @@ class _ListMainPageState extends State<ListMainPage> {
 
                                   if (chosenIcon != null) {
                                     setModalState(() {
-                                      selectedIcon = chosenIcon == 'CLEAR'
-                                          ? null
-                                          : chosenIcon;
+                                      selectedIcon = chosenIcon == 'CLEAR' ? null : chosenIcon;
                                     });
                                   }
                                 },
@@ -1902,29 +1517,21 @@ class _ListMainPageState extends State<ListMainPage> {
                                   decoration: InputDecoration(
                                     labelText: 'Icono',
                                     border: const OutlineInputBorder(),
-                                    labelStyle: TextStyle(
-                                      color: themeProvider.textMutedColor,
-                                    ),
+                                    labelStyle: TextStyle(color: themeProvider.textMutedColor),
                                     enabledBorder: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: themeProvider.borderColor,
-                                        width: 1.5,
-                                      ),
+                                      borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                     ),
                                   ),
                                   child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Row(
                                         children: [
                                           if (selectedIcon != null &&
-                                              themeProvider.availableIconsSvg
-                                                  .containsKey(selectedIcon))
+                                              themeProvider.availableIconsSvg.containsKey(selectedIcon))
                                             SvgPicture.asset(
-                                              themeProvider
-                                                  .availableIconsSvg[selectedIcon]!,
+                                              themeProvider.availableIconsSvg[selectedIcon]!,
                                               width: 25,
                                               height: 25,
                                               fit: BoxFit.fitHeight,
@@ -1936,9 +1543,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                                 maxFontSize: 16,
                                                 minFontSize: 10,
                                                 maxLines: 1,
-                                                style: TextStyle(
-                                                  color: Colors.grey,
-                                                ),
+                                                style: TextStyle(color: Colors.grey),
                                               ),
                                             ),
                                         ],
@@ -1960,29 +1565,16 @@ class _ListMainPageState extends State<ListMainPage> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   labelText: 'Frecuencia',
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
+                                  floatingLabelBehavior: FloatingLabelBehavior.always,
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                    vertical: 12,
-                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
                                   border: const OutlineInputBorder(),
-                                  labelStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: themeProvider.textMutedColor,
-                                  ),
+                                  labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                                   enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: themeProvider.borderColor,
-                                      width: 1.5,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: themeProvider.primaryColor,
-                                      width: 2,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                                   ),
                                 ),
                               ),
@@ -1994,29 +1586,16 @@ class _ListMainPageState extends State<ListMainPage> {
                                 keyboardType: TextInputType.number,
                                 decoration: InputDecoration(
                                   labelText: 'Cantidad',
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
+                                  floatingLabelBehavior: FloatingLabelBehavior.always,
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                    vertical: 12,
-                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
                                   border: const OutlineInputBorder(),
-                                  labelStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: themeProvider.textMutedColor,
-                                  ),
+                                  labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                                   enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: themeProvider.borderColor,
-                                      width: 1.5,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: themeProvider.primaryColor,
-                                      width: 2,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                                   ),
                                 ),
                               ),
@@ -2027,36 +1606,20 @@ class _ListMainPageState extends State<ListMainPage> {
                                 textAlign: TextAlign.center,
                                 controller: priceController,
                                 maxLength: 7,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                 decoration: InputDecoration(
                                   labelText: 'Precio',
                                   counterText: '',
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
+                                  floatingLabelBehavior: FloatingLabelBehavior.always,
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                    vertical: 12,
-                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
                                   border: const OutlineInputBorder(),
-                                  labelStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: themeProvider.textMutedColor,
-                                  ),
+                                  labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                                   enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: themeProvider.borderColor,
-                                      width: 1.5,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: themeProvider.primaryColor,
-                                      width: 2,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                                   ),
                                 ),
                               ),
@@ -2067,36 +1630,20 @@ class _ListMainPageState extends State<ListMainPage> {
                                 textAlign: TextAlign.center,
                                 controller: pricePerKiloController,
                                 maxLength: 7,
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
+                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                 decoration: InputDecoration(
                                   labelText: 'Precio/Kg',
                                   counterText: '',
-                                  floatingLabelBehavior:
-                                      FloatingLabelBehavior.always,
+                                  floatingLabelBehavior: FloatingLabelBehavior.always,
                                   isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                    vertical: 12,
-                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
                                   border: const OutlineInputBorder(),
-                                  labelStyle: TextStyle(
-                                    fontSize: 14,
-                                    color: themeProvider.textMutedColor,
-                                  ),
+                                  labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                                   enabledBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: themeProvider.borderColor,
-                                      width: 1.5,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                   ),
                                   focusedBorder: OutlineInputBorder(
-                                    borderSide: BorderSide(
-                                      color: themeProvider.primaryColor,
-                                      width: 2,
-                                    ),
+                                    borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                                   ),
                                 ),
                               ),
@@ -2110,21 +1657,12 @@ class _ListMainPageState extends State<ListMainPage> {
                           decoration: InputDecoration(
                             labelText: 'URL de imagen',
                             border: const OutlineInputBorder(),
-                            labelStyle: TextStyle(
-                              fontSize: 14,
-                              color: themeProvider.textMutedColor,
-                            ),
+                            labelStyle: TextStyle(fontSize: 14, color: themeProvider.textMutedColor),
                             enabledBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: themeProvider.borderColor,
-                                width: 1.5,
-                              ),
+                              borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
                             ),
                             focusedBorder: OutlineInputBorder(
-                              borderSide: BorderSide(
-                                color: themeProvider.primaryColor,
-                                width: 2,
-                              ),
+                              borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
                             ),
                           ),
                         ),
@@ -2133,10 +1671,7 @@ class _ListMainPageState extends State<ListMainPage> {
                           children: [
                             Expanded(
                               child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  elevation: 10,
-                                  backgroundColor: Colors.red,
-                                ),
+                                style: ElevatedButton.styleFrom(elevation: 10, backgroundColor: Colors.red),
                                 onPressed: () async {
                                   // Mostrar diálogo de confirmación de eliminación de producto
                                   final confirmDelete = await showDialog<bool>(
@@ -2145,33 +1680,17 @@ class _ListMainPageState extends State<ListMainPage> {
                                     builder: (ctx) => AlertDialog(
                                       backgroundColor: themeProvider.surface,
                                       elevation: 10,
-                                      shadowColor:
-                                          themeProvider.cardShadowColor,
+                                      shadowColor: themeProvider.cardShadowColor,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(16),
-                                        side: BorderSide(
-                                          color: themeProvider.borderColor,
-                                          width: 1.5,
-                                        ),
+                                        side: BorderSide(color: themeProvider.borderColor, width: 1.5),
                                       ),
-                                      titlePadding: const EdgeInsets.fromLTRB(
-                                        24,
-                                        20,
-                                        24,
-                                        10,
-                                      ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 10,
-                                          ),
+                                      titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                                       title: const Center(
                                         child: Text(
                                           'Eliminar Producto',
-                                          style: TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.w500,
-                                          ),
+                                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w500),
                                         ),
                                       ),
                                       content: Text(
@@ -2183,24 +1702,15 @@ class _ListMainPageState extends State<ListMainPage> {
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                      actionsAlignment:
-                                          MainAxisAlignment.spaceEvenly,
-                                      actionsPadding: const EdgeInsets.only(
-                                        bottom: 12,
-                                        top: 8,
-                                      ),
+                                      actionsAlignment: MainAxisAlignment.spaceEvenly,
+                                      actionsPadding: const EdgeInsets.only(bottom: 12, top: 8),
                                       actions: [
                                         TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, false),
-                                          child: const Text(
-                                            'Cancelar',
-                                            style: TextStyle(fontSize: 16),
-                                          ),
+                                          onPressed: () => Navigator.pop(ctx, false),
+                                          child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
                                         ),
                                         TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, true),
+                                          onPressed: () => Navigator.pop(ctx, true),
                                           child: const Text(
                                             'Eliminar',
                                             style: TextStyle(
@@ -2216,22 +1726,14 @@ class _ListMainPageState extends State<ListMainPage> {
 
                                   // Si el usuario confirma la eliminación
                                   if (confirmDelete == true) {
-                                    shoppingProvider.deleteProduct(
-                                      widget.listName,
-                                      product.id,
-                                    );
+                                    shoppingProvider.deleteProduct(widget.listName, product.id);
 
                                     if (context.mounted) {
-                                      Navigator.of(
-                                        context,
-                                      ).pop(); // Cierra la hoja inferior (bottom sheet)
+                                      Navigator.of(context).pop(); // Cierra la hoja inferior (bottom sheet)
                                     }
                                   }
                                 },
-                                child: const Text(
-                                  'Borrar',
-                                  style: TextStyle(color: Colors.white),
-                                ),
+                                child: const Text('Borrar', style: TextStyle(color: Colors.white)),
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -2240,36 +1742,21 @@ class _ListMainPageState extends State<ListMainPage> {
                                 style: ElevatedButton.styleFrom(elevation: 10),
                                 onPressed: () {
                                   final name = nameController.text.trim();
-                                  final frequency = int.tryParse(
-                                    frequencyController.text.trim(),
-                                  );
-                                  final amount = int.tryParse(
-                                    amountController.text.trim(),
-                                  );
-                                  final priceText = priceController.text
-                                      .trim()
-                                      .replaceAll(',', '.');
-                                  final price = priceText.isEmpty
-                                      ? null
-                                      : double.tryParse(priceText);
-                                  final pricePerKiloText =
-                                      pricePerKiloController.text
-                                          .trim()
-                                          .replaceAll(',', '.');
+                                  final frequency = int.tryParse(frequencyController.text.trim());
+                                  final amount = int.tryParse(amountController.text.trim());
+                                  final priceText = priceController.text.trim().replaceAll(',', '.');
+                                  final price = priceText.isEmpty ? null : double.tryParse(priceText);
+                                  final pricePerKiloText = pricePerKiloController.text.trim().replaceAll(',', '.');
                                   final pricePerKilo = pricePerKiloText.isEmpty
                                       ? null
                                       : double.tryParse(pricePerKiloText);
-                                  final imageUrl = imageUrlController.text
-                                      .trim();
+                                  final imageUrl = imageUrlController.text.trim();
 
                                   if (name.isEmpty ||
                                       frequency == null ||
                                       amount == null ||
-                                      (priceText.isNotEmpty &&
-                                          (price == null || price < 0)) ||
-                                      (pricePerKiloText.isNotEmpty &&
-                                          (pricePerKilo == null ||
-                                              pricePerKilo < 0))) {
+                                      (priceText.isNotEmpty && (price == null || price < 0)) ||
+                                      (pricePerKiloText.isNotEmpty && (pricePerKilo == null || pricePerKilo < 0))) {
                                     return;
                                   }
 
@@ -2281,9 +1768,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                     amount: amount,
                                     price: price,
                                     pricePerKilo: pricePerKilo,
-                                    imageUrl: imageUrl.isEmpty
-                                        ? null
-                                        : imageUrl,
+                                    imageUrl: imageUrl.isEmpty ? null : imageUrl,
                                     category: selectedCategory,
                                     icon: selectedIcon,
                                     clearPrice: price == null,
@@ -2319,6 +1804,107 @@ class _ListMainPageState extends State<ListMainPage> {
     }
   }
 
+  /// Devuelve el nombre final si se renombró (o el mismo si no cambió); null si se canceló.
+  Future<String?> _showRenameCategoryDialog(
+    BuildContext context,
+    ShoppingProvider shoppingProvider,
+    ThemeProvider themeProvider,
+    String category,
+  ) async {
+    final controller = TextEditingController(text: category);
+    String? errorText;
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void save() {
+              final newName = controller.text.trim();
+              if (newName.isEmpty) {
+                setDialogState(() => errorText = 'Escribe un nombre.');
+                return;
+              }
+              if (newName == category) {
+                Navigator.pop(dialogContext);
+                return;
+              }
+              final ok = shoppingProvider.renameCategoryInList(widget.listName, category, newName);
+              if (!ok) {
+                setDialogState(() => errorText = 'Ya existe una categoría con ese nombre. Escribe otro.');
+                return;
+              }
+              Navigator.pop(dialogContext, newName);
+            }
+
+            return AlertDialog(
+              backgroundColor: themeProvider.surface,
+              elevation: 10,
+              shadowColor: themeProvider.cardShadowColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+              title: const Center(
+                child: Text('Renombrar Categoría', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500)),
+              ),
+              content: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: TextField(
+                  controller: controller,
+                  textAlign: TextAlign.center,
+                  textCapitalization: TextCapitalization.sentences,
+                  autofocus: true,
+                  maxLines: 1,
+                  maxLength: 15,
+                  onChanged: (_) {
+                    if (errorText != null) {
+                      setDialogState(() => errorText = null);
+                    }
+                  },
+                  onSubmitted: (_) => save(),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    errorText: errorText,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    filled: true,
+                    fillColor: themeProvider.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: themeProvider.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: themeProvider.primaryColor, width: 1.8),
+                    ),
+                  ),
+                ),
+              ),
+              actionsAlignment: MainAxisAlignment.center,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+                ),
+                TextButton(
+                  onPressed: save,
+                  child: const Text('Guardar', style: TextStyle(fontSize: 16)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _showReorderCategoriesDialog(
     BuildContext context,
     ShoppingProvider shoppingProvider,
@@ -2331,10 +1917,7 @@ class _ListMainPageState extends State<ListMainPage> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             final allCategories = shoppingProvider.categoriesForList(listName);
-            final categories = shoppingProvider
-                .categoriesForList(listName)
-                .where((cat) => cat != 'Genérico')
-                .toList();
+            final categories = shoppingProvider.categoriesForList(listName).where((cat) => cat != 'Genérico').toList();
 
             return AlertDialog(
               backgroundColor: themeProvider.surface,
@@ -2345,50 +1928,30 @@ class _ListMainPageState extends State<ListMainPage> {
                 side: BorderSide(color: themeProvider.borderColor, width: 1.5),
               ),
               titlePadding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 0,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
               title: const Center(
-                child: Text(
-                  'Reordenar Categorías',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
-                ),
+                child: Text('Reordenar Categorías', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500)),
               ),
               content: SizedBox(
                 width: double.maxFinite,
                 height: 300,
                 child: categories.isEmpty
-                    ? const Center(
-                        child: Text('No hay categorías personalizadas.'),
-                      )
+                    ? const Center(child: Text('No hay categorías personalizadas.'))
                     : ReorderableListView.builder(
                         itemCount: categories.length,
                         onReorderItem: (oldIndex, newIndex) {
-                          shoppingProvider.reorderCategoriesForList(
-                            listName,
-                            oldIndex,
-                            newIndex,
-                          );
+                          shoppingProvider.reorderCategoriesForList(listName, oldIndex, newIndex);
                           setDialogState(() {});
                         },
                         itemBuilder: (context, index) {
                           final cat = categories[index];
-                          final catColor = themeProvider.getCategoryColor(
-                            cat,
-                            allCategories,
-                          );
+                          final catColor = themeProvider.getCategoryColor(cat, allCategories);
                           return ListTile(
                             key: ValueKey(cat),
                             leading: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  '${index + 1}.',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                Text('${index + 1}.', style: const TextStyle(fontWeight: FontWeight.bold)),
                                 const SizedBox(width: 8),
                                 Container(
                                   width: 16,
@@ -2396,12 +1959,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                   decoration: BoxDecoration(
                                     color: catColor,
                                     shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      width: 1,
-                                    ),
+                                    border: Border.all(color: Colors.black.withValues(alpha: 0.3), width: 1),
                                   ),
                                 ),
                               ],
@@ -2412,12 +1970,7 @@ class _ListMainPageState extends State<ListMainPage> {
                         },
                       ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cerrar'),
-                ),
-              ],
+              actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cerrar'))],
             );
           },
         );

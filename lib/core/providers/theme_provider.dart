@@ -125,12 +125,16 @@ class ThemeProvider extends ChangeNotifier {
   List<Color> get categoryColors => const [
     Colors.blue,
     Colors.purple,
-    Colors.teal,
+    Colors.amber,
+    Colors.green,
     Colors.deepOrange,
     Colors.pink,
+    Colors.teal,
     Colors.indigo,
     Colors.amber,
     Colors.brown,
+    Colors.blueGrey,
+    Colors.lime,
   ];
 
   /// Devuelve el color asignado a una categoría según su posición en la lista.

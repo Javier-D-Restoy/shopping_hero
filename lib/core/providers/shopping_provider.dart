@@ -2260,6 +2260,58 @@ class ShoppingProvider extends ChangeNotifier {
     }
   }
 
+  /// Renombra una categoría. Devuelve false si el nuevo nombre ya lo usa otra categoría.
+  bool renameCategoryInList(String listName, String oldName, String newName) {
+    final cleaned = newName.trim();
+    if (oldName == 'Genérico' || listName.isEmpty || cleaned.isEmpty) {
+      return false;
+    }
+    if (cleaned == oldName) return true;
+
+    final existing = categoriesForList(listName);
+    final taken = existing.any(
+      (c) => c != oldName && c.trim().toLowerCase() == cleaned.toLowerCase(),
+    );
+    if (taken) return false;
+
+    final categories = _listCategories.putIfAbsent(
+      listName,
+      () => ['Genérico'],
+    );
+    final index = categories.indexOf(oldName);
+    if (index >= 0) {
+      categories[index] = cleaned;
+    } else {
+      final genericIdx = categories.indexOf('Genérico');
+      categories.insert(
+        genericIdx < 0 ? categories.length : genericIdx,
+        cleaned,
+      );
+    }
+
+    final isShared = isSharedList(listName);
+    final now = DateTime.now();
+    final list = _shoppingLists[listName];
+    if (list != null) {
+      for (final group in ['active', 'frequent']) {
+        final products = list[group];
+        if (products == null) continue;
+        for (var i = 0; i < products.length; i++) {
+          final prod = products[i];
+          if (prod.getCategory(isShared: isShared) != oldName) continue;
+          products[i] = isShared
+              ? prod.copyWith(categoryShared: cleaned, updatedAt: now)
+              : prod.copyWith(category: cleaned, updatedAt: now);
+        }
+      }
+    }
+
+    _touchList(listName);
+    notifyListeners();
+    _persistState();
+    return true;
+  }
+
   void reorderCategoriesForList(String listName, int oldIndex, int newIndex) {
     if (listName.isEmpty) return;
 
