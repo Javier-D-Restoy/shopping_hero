@@ -45,13 +45,7 @@ class UserModel {
     };
   }
 
-  UserModel copyWith({
-    String? uid,
-    String? email,
-    String? displayName,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
+  UserModel copyWith({String? uid, String? email, String? displayName, DateTime? createdAt, DateTime? updatedAt}) {
     return UserModel(
       uid: uid ?? this.uid,
       email: email ?? this.email,

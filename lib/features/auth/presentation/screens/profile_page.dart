@@ -42,8 +42,7 @@ class _ProfilePageState extends State<ProfilePage> {
         content: Text(
           success
               ? 'Nombre de usuario actualizado'
-              : (sessionProvider.errorMessage ??
-                    'No se pudo actualizar el nombre'),
+              : (sessionProvider.errorMessage ?? 'No se pudo actualizar el nombre'),
         ),
       ),
     );
@@ -65,12 +64,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final primary = isDark ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
     final border = isDark ? const Color(0xFF4A6448) : const Color(0xFFBFE0B0);
     final textStrong = isDark ? Colors.white : const Color(0xFF234B2A);
-    final textMuted = isDark
-        ? const Color(0xFFD9E9D2)
-        : const Color(0xFF55755E);
-    final cardShadow = isDark
-        ? Colors.black.withValues(alpha: 0.35)
-        : Colors.black.withValues(alpha: 0.08);
+    final textMuted = isDark ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
+    final cardShadow = isDark ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.08);
     final dangerColor = const Color(0xFFB35C5C);
 
     final profileCard = Container(
@@ -80,24 +75,12 @@ class _ProfilePageState extends State<ProfilePage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDark
-              ? [
-                  const Color(0xFF1D2D1F).withValues(alpha: 0.80),
-                  const Color(0xFF243928).withValues(alpha: 0.80),
-                ]
-              : [
-                  const Color(0xFFF6F8E8).withValues(alpha: 0.80),
-                  const Color(0xFFE7F4E1).withValues(alpha: 0.80),
-                ],
+              ? [const Color(0xFF1D2D1F).withValues(alpha: 0.80), const Color(0xFF243928).withValues(alpha: 0.80)]
+              : [const Color(0xFFF6F8E8).withValues(alpha: 0.80), const Color(0xFFE7F4E1).withValues(alpha: 0.80)],
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: border, width: 1.6),
-        boxShadow: [
-          BoxShadow(
-            color: cardShadow,
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: cardShadow, blurRadius: 12, offset: const Offset(0, 6))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,36 +89,23 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.person_rounded,
-                  color: isDark ? Colors.black : Colors.white,
-                  size: 22,
-                ),
+                decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.person_rounded, color: isDark ? Colors.black : Colors.white, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Mi perfil',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: textStrong,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700, color: textStrong),
                 ),
               ),
             ],
           ),
           if (sessionProvider.email.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(
-              sessionProvider.email,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: textMuted),
-            ),
+            Text(sessionProvider.email, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textMuted)),
           ],
           const SizedBox(height: 16),
           TextField(
@@ -173,18 +143,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 backgroundColor: primary,
                 foregroundColor: isDark ? Colors.black : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               icon: _isSaving
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.save_rounded),
               label: Text(_isSaving ? 'Guardando...' : 'Guardar cambios'),
@@ -258,13 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
         color: surface.withValues(alpha: 0.80),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: dangerColor, width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: cardShadow,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: cardShadow, blurRadius: 8, offset: const Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,19 +234,16 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(width: 8),
               Text(
                 'Eliminar cuenta',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: textStrong,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700, color: textStrong),
               ),
             ],
           ),
           const SizedBox(height: 14),
           Text(
             'Esta acción es irreversible: se borrará tu cuenta, con su perfil y listas, se desvincularán las listas compartidas con otros usuarios y se borrarán datos locales del dispositivo.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: textMuted),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textMuted),
           ),
           const SizedBox(height: 14),
           SizedBox(
@@ -298,25 +254,16 @@ class _ProfilePageState extends State<ProfilePage> {
                 backgroundColor: dangerColor,
                 foregroundColor: isDark ? Colors.black : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
               icon: _isDeletingAccount
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Icon(Icons.dangerous_rounded),
-              label: Text(
-                _isDeletingAccount
-                    ? 'Eliminando...'
-                    : 'Eliminar cuenta definitivamente',
-              ),
+              label: Text(_isDeletingAccount ? 'Eliminando...' : 'Eliminar cuenta definitivamente'),
             ),
           ),
         ],
@@ -400,13 +347,7 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isDeletingAccount = false);
 
     if (!success) {
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(
-            sessionProvider.errorMessage ?? 'No se pudo eliminar la cuenta',
-          ),
-        ),
-      );
+      messenger?.showSnackBar(SnackBar(content: Text(sessionProvider.errorMessage ?? 'No se pudo eliminar la cuenta')));
       return;
     }
 
@@ -414,10 +355,7 @@ class _ProfilePageState extends State<ProfilePage> {
     await shoppingProvider.clearLocalShoppingCache();
 
     if (context.mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
     }
   }
 }
@@ -426,12 +364,10 @@ class _DeleteAccountDialogContent extends StatefulWidget {
   const _DeleteAccountDialogContent();
 
   @override
-  State<_DeleteAccountDialogContent> createState() =>
-      _DeleteAccountDialogContentState();
+  State<_DeleteAccountDialogContent> createState() => _DeleteAccountDialogContentState();
 }
 
-class _DeleteAccountDialogContentState
-    extends State<_DeleteAccountDialogContent> {
+class _DeleteAccountDialogContentState extends State<_DeleteAccountDialogContent> {
   int _secondsRemaining = 10;
   Timer? _timer;
 
@@ -476,11 +412,7 @@ class _DeleteAccountDialogContentState
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
+                const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
                 const SizedBox(width: 10),
                 Text(
                   'Espera para confirmar...',
@@ -495,22 +427,13 @@ class _DeleteAccountDialogContentState
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: const Text('Cancelar'),
-        ),
+        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
         FilledButton(
           onPressed: isButtonEnabled
               ? () => Navigator.pop(context, true)
               : null, // Si es null, Flutter inhabilita visualmente el botón
-          style: FilledButton.styleFrom(
-            backgroundColor: isButtonEnabled
-                ? const Color(0xFFB35C5C)
-                : Colors.grey,
-          ),
-          child: Text(
-            isButtonEnabled ? 'Eliminar' : 'Eliminar ($_secondsRemaining)',
-          ),
+          style: FilledButton.styleFrom(backgroundColor: isButtonEnabled ? const Color(0xFFB35C5C) : Colors.grey),
+          child: Text(isButtonEnabled ? 'Eliminar' : 'Eliminar ($_secondsRemaining)'),
         ),
       ],
     );

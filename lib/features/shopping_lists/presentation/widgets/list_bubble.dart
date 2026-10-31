@@ -62,8 +62,7 @@ class _ListBubbleState extends State<ListBubble> {
   void didUpdateWidget(covariant ListBubble oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Solo recargamos si cambió el nombre de la lista o el estado de si es compartida
-    if (oldWidget.listName != widget.listName ||
-        oldWidget.isSharedList != widget.isSharedList) {
+    if (oldWidget.listName != widget.listName || oldWidget.isSharedList != widget.isSharedList) {
       _loadSharedMembers();
     }
   }
@@ -92,17 +91,13 @@ class _ListBubbleState extends State<ListBubble> {
     try {
       if (mounted) setState(() => _isLoadingMembers = true);
 
-      final doc = await FirebaseFirestore.instance
-          .collection('sharedShoppingLists')
-          .doc(sharedListId)
-          .get();
+      final doc = await FirebaseFirestore.instance.collection('sharedShoppingLists').doc(sharedListId).get();
 
-      final memberUids =
-          (doc.data()?['memberUids'] as List<dynamic>? ?? const [])
-              .whereType<String>()
-              .where((uid) => uid.isNotEmpty && uid != currentUid)
-              .toSet()
-              .toList();
+      final memberUids = (doc.data()?['memberUids'] as List<dynamic>? ?? const [])
+          .whereType<String>()
+          .where((uid) => uid.isNotEmpty && uid != currentUid)
+          .toSet()
+          .toList();
 
       if (memberUids.isEmpty) {
         if (mounted) setState(() => _sharedMembers = const []);
@@ -111,10 +106,7 @@ class _ListBubbleState extends State<ListBubble> {
 
       final loadedMembers = <_ListMemberAvatar>[];
       for (var i = 0; i < memberUids.length; i += 10) {
-        final chunk = memberUids.sublist(
-          i,
-          i + 10 < memberUids.length ? i + 10 : memberUids.length,
-        );
+        final chunk = memberUids.sublist(i, i + 10 < memberUids.length ? i + 10 : memberUids.length);
 
         final snapshot = await FirebaseFirestore.instance
             .collection('users')
@@ -124,10 +116,7 @@ class _ListBubbleState extends State<ListBubble> {
         for (final userDoc in snapshot.docs) {
           final data = userDoc.data();
           loadedMembers.add(
-            _ListMemberAvatar(
-              uid: userDoc.id,
-              displayName: (data['displayName'] ?? 'Usuario').toString(),
-            ),
+            _ListMemberAvatar(uid: userDoc.id, displayName: (data['displayName'] ?? 'Usuario').toString()),
           );
         }
       }
@@ -169,10 +158,7 @@ class _ListBubbleState extends State<ListBubble> {
           title: Center(
             child: Text(
               'Renombrar Lista',
-              style: TextStyle(
-                color: themeProvider.textStrongColor,
-                fontWeight: FontWeight(500),
-              ),
+              style: TextStyle(color: themeProvider.textStrongColor, fontWeight: FontWeight(500)),
             ),
           ),
           content: TextField(
@@ -188,17 +174,11 @@ class _ListBubbleState extends State<ListBubble> {
               labelStyle: TextStyle(color: themeProvider.textMutedColor),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: themeProvider.borderColor,
-                  width: 1.5,
-                ),
+                borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: themeProvider.primaryColor,
-                  width: 2,
-                ),
+                borderSide: BorderSide(color: themeProvider.primaryColor, width: 2),
               ),
             ),
           ),
@@ -206,10 +186,7 @@ class _ListBubbleState extends State<ListBubble> {
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(fontWeight: FontWeight(700)),
-              ),
+              child: const Text('Cancelar', style: TextStyle(fontWeight: FontWeight(700))),
             ),
             SizedBox(width: 4),
             ElevatedButton(
@@ -222,10 +199,7 @@ class _ListBubbleState extends State<ListBubble> {
               },
               child: Text(
                 'Guardar',
-                style: TextStyle(
-                  color: themeProvider.primaryColor,
-                  fontWeight: FontWeight(700),
-                ),
+                style: TextStyle(color: themeProvider.primaryColor, fontWeight: FontWeight(700)),
               ),
             ),
           ],
@@ -255,10 +229,7 @@ class _ListBubbleState extends State<ListBubble> {
           title: Center(
             child: Text(
               'Eliminar Lista',
-              style: TextStyle(
-                color: themeProvider.textStrongColor,
-                fontWeight: FontWeight(500),
-              ),
+              style: TextStyle(color: themeProvider.textStrongColor, fontWeight: FontWeight(500)),
             ),
           ),
           content: Text(
@@ -270,21 +241,14 @@ class _ListBubbleState extends State<ListBubble> {
           actions: [
             ElevatedButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(fontWeight: FontWeight(700), fontSize: 16),
-              ),
+              child: const Text('Cancelar', style: TextStyle(fontWeight: FontWeight(700), fontSize: 16)),
             ),
             // SizedBox(width: 10),
             ElevatedButton(
               onPressed: () => Navigator.pop(context, true),
               child: const Text(
                 'Eliminar',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight(700),
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight(700), fontSize: 16),
               ),
             ),
           ],
@@ -298,11 +262,7 @@ class _ListBubbleState extends State<ListBubble> {
         await context.read<ShoppingProvider>().removeList(widget.listName);
       } catch (error) {
         if (!mounted) return;
-        messenger?.showSnackBar(
-          SnackBar(
-            content: Text(error.toString().replaceFirst('Exception: ', '')),
-          ),
-        );
+        messenger?.showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))));
       }
     }
   }
@@ -323,24 +283,14 @@ class _ListBubbleState extends State<ListBubble> {
           side: BorderSide(color: themeProvider.borderColor, width: 1.5),
         ),
         titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 10),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 10,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
         title: const Center(
-          child: Text(
-            'Desvincular Lista',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-          ),
+          child: Text('Desvincular Lista', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
         ),
         content: Text(
           '¿Seguro que quieres desvincularte de\n"$listName"?',
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 16,
-            color: themeProvider.textStrongColor,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16, color: themeProvider.textStrongColor, fontWeight: FontWeight.w600),
         ),
         actionsAlignment: MainAxisAlignment.spaceEvenly,
         actionsPadding: const EdgeInsets.only(bottom: 12, top: 8),
@@ -353,11 +303,7 @@ class _ListBubbleState extends State<ListBubble> {
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text(
               'Desvincularme',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -374,18 +320,14 @@ class _ListBubbleState extends State<ListBubble> {
     final shoppingProvider = context.read<ShoppingProvider>();
     final themeProvider = context.read<ThemeProvider>();
     final visibleMembers = _sharedMembers.take(4).toList();
-    final extraMembersCount = _sharedMembers.length > 4
-        ? _sharedMembers.length - 4
-        : 0;
+    final extraMembersCount = _sharedMembers.length > 4 ? _sharedMembers.length - 4 : 0;
     final isDark = widget.isDark;
 
     final primary = themeProvider.primaryColor;
     final primarySoft = themeProvider.primarySoftColor;
     final Color border;
     if (widget.hasAcceptedCollaborators) {
-      border = widget.canManageList
-          ? themeProvider.borderOwnerColor
-          : themeProvider.borderSharedColor;
+      border = widget.canManageList ? themeProvider.borderOwnerColor : themeProvider.borderSharedColor;
     } else {
       border = themeProvider.borderColor;
     }
@@ -410,10 +352,7 @@ class _ListBubbleState extends State<ListBubble> {
                     shoppingProvider.selectList(widget.listName);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            ListMainPage(listName: widget.listName),
-                      ),
+                      MaterialPageRoute(builder: (context) => ListMainPage(listName: widget.listName)),
                     );
                   },
                   borderRadius: BorderRadius.circular(20),
@@ -422,10 +361,7 @@ class _ListBubbleState extends State<ListBubble> {
                   hoverColor: primary.withValues(alpha: 0.08),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 120),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -433,17 +369,8 @@ class _ListBubbleState extends State<ListBubble> {
                         colors: gradientColors,
                       ),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: _isHovered ? primary : border,
-                        width: _isHovered ? 3.8 : 2.4,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: cardShadow,
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
+                      border: Border.all(color: _isHovered ? primary : border, width: _isHovered ? 3.8 : 2.4),
+                      boxShadow: [BoxShadow(color: cardShadow, blurRadius: 10, offset: const Offset(0, 5))],
                     ),
                     width: 320,
                     height: 100,
@@ -454,10 +381,7 @@ class _ListBubbleState extends State<ListBubble> {
                           children: [
                             Container(
                               padding: const EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: primary,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
+                              decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(10)),
                               child: Icon(
                                 Icons.list_alt_rounded,
                                 color: isDark ? Colors.black : Colors.white,
@@ -473,11 +397,7 @@ class _ListBubbleState extends State<ListBubble> {
                                 minFontSize: 10,
                                 stepGranularity: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: textStrong,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: TextStyle(color: textStrong, fontSize: 18, fontWeight: FontWeight.w700),
                               ),
                             ),
                             const Expanded(flex: 1, child: SizedBox()),
@@ -487,14 +407,8 @@ class _ListBubbleState extends State<ListBubble> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4,
-                                horizontal: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: primary,
-                                borderRadius: BorderRadius.circular(14),
-                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                              decoration: BoxDecoration(color: primary, borderRadius: BorderRadius.circular(14)),
                               child: AutoSizeText(
                                 '${widget.productCount} Productos',
                                 maxLines: 1,
@@ -525,76 +439,53 @@ class _ListBubbleState extends State<ListBubble> {
                                             padding: const EdgeInsets.all(3.0),
                                             child: CircleAvatar(
                                               radius: 15,
-                                              backgroundColor: primarySoft
-                                                  .withValues(alpha: 0.35),
+                                              backgroundColor: primarySoft.withValues(alpha: 0.35),
                                               child: SizedBox(
                                                 width: 12,
                                                 height: 12,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      color: primary,
-                                                    ),
+                                                child: CircularProgressIndicator(strokeWidth: 2, color: primary),
                                               ),
                                             ),
                                           )
                                         else ...[
-                                          ...visibleMembers.asMap().entries.map(
-                                            (entry) {
-                                              final index = entry.key;
-                                              final member = entry.value;
-                                              final initials =
-                                                  member.displayName
+                                          ...visibleMembers.asMap().entries.map((entry) {
+                                            final index = entry.key;
+                                            final member = entry.value;
+                                            final initials = member.displayName.trim().isNotEmpty
+                                                ? member.displayName
                                                       .trim()
-                                                      .isNotEmpty
-                                                  ? member.displayName
-                                                        .trim()
-                                                        .split(RegExp(r'\s+'))
-                                                        .take(2)
-                                                        .map(
-                                                          (part) => part[0]
-                                                              .toUpperCase(),
-                                                        )
-                                                        .join()
-                                                  : 'U';
+                                                      .split(RegExp(r'\s+'))
+                                                      .take(2)
+                                                      .map((part) => part[0].toUpperCase())
+                                                      .join()
+                                                : 'U';
 
-                                              return Padding(
-                                                padding: EdgeInsets.only(
-                                                  left: index == 0 ? 0 : 3.0,
-                                                  right: 3.0,
-                                                ),
-                                                child: CircleAvatar(
-                                                  radius: 15,
-                                                  backgroundColor: primarySoft,
-                                                  child: Text(
-                                                    initials,
-                                                    style: TextStyle(
-                                                      color: isDark
-                                                          ? Colors.black
-                                                          : Colors.white,
-                                                      fontSize: 10,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                    ),
+                                            return Padding(
+                                              padding: EdgeInsets.only(left: index == 0 ? 0 : 3.0, right: 3.0),
+                                              child: CircleAvatar(
+                                                radius: 15,
+                                                backgroundColor: primarySoft,
+                                                child: Text(
+                                                  initials,
+                                                  style: TextStyle(
+                                                    color: isDark ? Colors.black : Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w700,
                                                   ),
                                                 ),
-                                              );
-                                            },
-                                          ),
+                                              ),
+                                            );
+                                          }),
                                           if (extraMembersCount > 0)
                                             Padding(
-                                              padding: const EdgeInsets.only(
-                                                left: 3.0,
-                                              ),
+                                              padding: const EdgeInsets.only(left: 3.0),
                                               child: CircleAvatar(
                                                 radius: 15,
                                                 backgroundColor: primary,
                                                 child: Text(
                                                   '+$extraMembersCount',
                                                   style: TextStyle(
-                                                    color: isDark
-                                                        ? Colors.black
-                                                        : Colors.white,
+                                                    color: isDark ? Colors.black : Colors.white,
                                                     fontSize: 10,
                                                     fontWeight: FontWeight.w700,
                                                   ),
@@ -625,10 +516,7 @@ class _ListBubbleState extends State<ListBubble> {
                   if (widget.canManageList) ...[
                     IconButton(
                       iconSize: 25,
-                      constraints: const BoxConstraints(
-                        minWidth: 35,
-                        minHeight: 35,
-                      ),
+                      constraints: const BoxConstraints(minWidth: 35, minHeight: 35),
                       padding: EdgeInsets.zero,
                       onPressed: _showDeleteConfirmationDialog,
                       icon: Icon(Icons.delete_outline, color: dangerColor),
@@ -636,10 +524,7 @@ class _ListBubbleState extends State<ListBubble> {
                     ),
                     IconButton(
                       iconSize: 23,
-                      constraints: const BoxConstraints(
-                        minWidth: 35,
-                        minHeight: 35,
-                      ),
+                      constraints: const BoxConstraints(minWidth: 35, minHeight: 35),
                       padding: EdgeInsets.zero,
                       onPressed: _showRenameDialog,
                       icon: Icon(Icons.edit, color: primary),

@@ -14,34 +14,20 @@ import 'package:shopping_hero/core/models/user_model.dart';
 // - eliminar listas
 
 class UserRepository {
-  UserRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  UserRepository({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
-  CollectionReference<Map<String, dynamic>> get _usersCollection =>
-      _firestore.collection('users');
+  CollectionReference<Map<String, dynamic>> get _usersCollection => _firestore.collection('users');
 
-  DocumentReference<Map<String, dynamic>> _userDoc(String uid) =>
-      _usersCollection.doc(uid);
+  DocumentReference<Map<String, dynamic>> _userDoc(String uid) => _usersCollection.doc(uid);
 
-  CollectionReference<Map<String, dynamic>> get _sharedListsCollection =>
-      _firestore.collection('sharedShoppingLists');
+  CollectionReference<Map<String, dynamic>> get _sharedListsCollection => _firestore.collection('sharedShoppingLists');
 
-  Future<void> createUserProfile({
-    required String uid,
-    required String email,
-    String? displayName,
-  }) async {
+  Future<void> createUserProfile({required String uid, required String email, String? displayName}) async {
     final now = DateTime.now();
 
-    final user = UserModel(
-      uid: uid,
-      email: email,
-      displayName: displayName,
-      createdAt: now,
-      updatedAt: now,
-    );
+    final user = UserModel(uid: uid, email: email, displayName: displayName, createdAt: now, updatedAt: now);
 
     await _userDoc(uid).set(user.toMap(), SetOptions(merge: true));
   }
@@ -67,10 +53,7 @@ class UserRepository {
     String? preferredListId,
   }) async {
     final cleanedEmail = recipientEmail.trim();
-    final recipientSnapshot = await _usersCollection
-        .where('email', isEqualTo: cleanedEmail)
-        .limit(1)
-        .get();
+    final recipientSnapshot = await _usersCollection.where('email', isEqualTo: cleanedEmail).limit(1).get();
 
     if (recipientSnapshot.docs.isEmpty) {
       throw Exception('No existe un usuario con ese email');
@@ -84,11 +67,9 @@ class UserRepository {
     final ownerSnapshot = await _userDoc(ownerUid).get();
     final ownerData = ownerSnapshot.data() ?? <String, dynamic>{};
 
-    final listSnapshot = await _userDoc(ownerUid)
-        .collection('shoppingLists')
-        .where('name', isEqualTo: listName)
-        .limit(1)
-        .get();
+    final listSnapshot = await _userDoc(
+      ownerUid,
+    ).collection('shoppingLists').where('name', isEqualTo: listName).limit(1).get();
 
     String listId;
     Map<String, dynamic> listData = {};
@@ -113,9 +94,7 @@ class UserRepository {
         }
 
         listId = preferredListId;
-        personalListRef = _userDoc(
-          ownerUid,
-        ).collection('shoppingLists').doc(listId);
+        personalListRef = _userDoc(ownerUid).collection('shoppingLists').doc(listId);
       } else {
         final existingDoc = sharedListSnapshot.docs.first;
         listData = existingDoc.data();
@@ -125,9 +104,7 @@ class UserRepository {
     }
 
     final sharedListRef = _sharedListsCollection.doc(listId);
-    final invitationRef = _userDoc(
-      recipientUid,
-    ).collection('sharingInvitations').doc(listId);
+    final invitationRef = _userDoc(recipientUid).collection('sharingInvitations').doc(listId);
 
     await _firestore.runTransaction((transaction) async {
       var currentListData = listData;
@@ -145,8 +122,7 @@ class UserRepository {
       }
 
       final members = <String>{
-        if (currentListData['memberUids'] is List)
-          ...(currentListData['memberUids'] as List).whereType<String>(),
+        if (currentListData['memberUids'] is List) ...(currentListData['memberUids'] as List).whereType<String>(),
         ownerUid,
       };
       if (members.contains(recipientUid)) {
@@ -156,16 +132,14 @@ class UserRepository {
       final cloudUpdatedAt = currentListData['updatedAt'] is Timestamp
           ? (currentListData['updatedAt'] as Timestamp).toDate()
           : DateTime.fromMillisecondsSinceEpoch(0);
-      final localIsNewer =
-          currentListData.isEmpty || localUpdatedAt.isAfter(cloudUpdatedAt);
+      final localIsNewer = currentListData.isEmpty || localUpdatedAt.isAfter(cloudUpdatedAt);
       final active = localIsNewer
           ? activeProducts.map((product) => product.toMap()).toList()
           : currentListData['active'] ?? <Map<String, dynamic>>[];
       final frequent = localIsNewer
           ? frequentProducts.map((product) => product.toMap()).toList()
           : currentListData['frequent'] ?? <Map<String, dynamic>>[];
-      final finalCategories =
-          localIsNewer || currentListData['categories'] is! List
+      final finalCategories = localIsNewer || currentListData['categories'] is! List
           ? categories
           : List<String>.from(currentListData['categories'] as List);
       final finalUpdatedAt = localIsNewer
@@ -203,25 +177,15 @@ class UserRepository {
   }
 
   Future<List<ShareInvitation>> getPendingShareInvitations(String uid) async {
-    final snapshot = await _userDoc(uid)
-        .collection('sharingInvitations')
-        .where('status', isEqualTo: 'pending')
-        .get();
+    final snapshot = await _userDoc(uid).collection('sharingInvitations').where('status', isEqualTo: 'pending').get();
 
-    final invitations = snapshot.docs
-        .map((doc) => ShareInvitation.fromMap(doc.id, doc.data()))
-        .toList();
+    final invitations = snapshot.docs.map((doc) => ShareInvitation.fromMap(doc.id, doc.data())).toList();
     invitations.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return invitations;
   }
 
-  Future<Map<String, DateTime>> getAcceptedShareInvitationTimestamps(
-    String uid,
-  ) async {
-    final snapshot = await _userDoc(uid)
-        .collection('sharingInvitations')
-        .where('status', isEqualTo: 'accepted')
-        .get();
+  Future<Map<String, DateTime>> getAcceptedShareInvitationTimestamps(String uid) async {
+    final snapshot = await _userDoc(uid).collection('sharingInvitations').where('status', isEqualTo: 'accepted').get();
 
     final result = <String, DateTime>{};
     for (final doc in snapshot.docs) {
@@ -247,14 +211,8 @@ class UserRepository {
         .map((snapshot) => snapshot.size);
   }
 
-  Future<void> respondToShareInvitation({
-    required String uid,
-    required String listId,
-    required bool accept,
-  }) async {
-    final invitationRef = _userDoc(
-      uid,
-    ).collection('sharingInvitations').doc(listId);
+  Future<void> respondToShareInvitation({required String uid, required String listId, required bool accept}) async {
+    final invitationRef = _userDoc(uid).collection('sharingInvitations').doc(listId);
     final sharedListRef = _sharedListsCollection.doc(listId);
 
     await _firestore.runTransaction((transaction) async {
@@ -274,19 +232,12 @@ class UserRepository {
         });
       }
 
-      transaction.update(invitationRef, {
-        'status': accept ? 'accepted' : 'rejected',
-        'respondedAt': Timestamp.now(),
-      });
+      transaction.update(invitationRef, {'status': accept ? 'accepted' : 'rejected', 'respondedAt': Timestamp.now()});
     });
   }
 
-  Future<Map<String, Map<String, dynamic>>> getSharedShoppingLists(
-    String uid,
-  ) async {
-    final snapshot = await _sharedListsCollection
-        .where('memberUids', arrayContains: uid)
-        .get();
+  Future<Map<String, Map<String, dynamic>>> getSharedShoppingLists(String uid) async {
+    final snapshot = await _sharedListsCollection.where('memberUids', arrayContains: uid).get();
     return {
       for (final doc in snapshot.docs)
         doc.id: {
@@ -315,9 +266,7 @@ class UserRepository {
       final cloudData = snapshot.data() ?? <String, dynamic>{};
       final cloudActive = _productsFromData(cloudData['active']);
       final cloudFrequent = _productsFromData(cloudData['frequent']);
-      final cloudDeletedProducts = _timestampsFromData(
-        cloudData['deletedProductTimestamps'],
-      );
+      final cloudDeletedProducts = _timestampsFromData(cloudData['deletedProductTimestamps']);
 
       final mergedDeletedProducts = <String, DateTime>{...cloudDeletedProducts};
       for (final entry in (deletedProductTimestamps ?? {}).entries) {
@@ -329,9 +278,7 @@ class UserRepository {
       final cloudUpdatedAt = cloudData['updatedAt'] is Timestamp
           ? (cloudData['updatedAt'] as Timestamp).toDate()
           : DateTime.fromMillisecondsSinceEpoch(0);
-      final mergedUpdatedAt = updatedAt.isAfter(cloudUpdatedAt)
-          ? updatedAt
-          : cloudUpdatedAt;
+      final mergedUpdatedAt = updatedAt.isAfter(cloudUpdatedAt) ? updatedAt : cloudUpdatedAt;
       final mergedCategories = _mergeCategorizedProducts(
         cloudActive,
         cloudFrequent,
@@ -344,23 +291,16 @@ class UserRepository {
       final cloudCategories = cloudData['categories'] is List
           ? List<String>.from(cloudData['categories'] as List)
           : <String>[];
-      final finalCategories = (categories != null && categories.isNotEmpty)
-          ? categories
-          : cloudCategories;
+      final finalCategories = (categories != null && categories.isNotEmpty) ? categories : cloudCategories;
 
       transaction.set(docRef, {
         'name': name,
-        'active': mergedCategories['active']!
-            .map((product) => product.toMap())
-            .toList(),
-        'frequent': mergedCategories['frequent']!
-            .map((product) => product.toMap())
-            .toList(),
+        'active': mergedCategories['active']!.map((product) => product.toMap()).toList(),
+        'frequent': mergedCategories['frequent']!.map((product) => product.toMap()).toList(),
         'categories': finalCategories,
         'updatedAt': Timestamp.fromDate(mergedUpdatedAt),
         'deletedProductTimestamps': {
-          for (final entry in mergedDeletedProducts.entries)
-            entry.key: Timestamp.fromDate(entry.value),
+          for (final entry in mergedDeletedProducts.entries) entry.key: Timestamp.fromDate(entry.value),
         },
       }, SetOptions(merge: true));
     });
@@ -404,15 +344,12 @@ class UserRepository {
 
     void addProducts(List<Product> products, String category) {
       for (final product in products) {
-        final key = product.id.isNotEmpty
-            ? 'id:${product.id}'
-            : 'name:${product.name.trim().toLowerCase()}';
+        final key = product.id.isNotEmpty ? 'id:${product.id}' : 'name:${product.name.trim().toLowerCase()}';
         final existing = productsByKey[key];
         final shouldReplace =
             existing == null ||
             product.modifiedAt.isAfter(existing.modifiedAt) ||
-            (product.modifiedAt.isAtSameMomentAs(existing.modifiedAt) &&
-                product.frequency >= existing.frequency);
+            (product.modifiedAt.isAtSameMomentAs(existing.modifiedAt) && product.frequency >= existing.frequency);
         if (shouldReplace) {
           productsByKey[key] = product;
           categoryByKey[key] = category;
@@ -450,10 +387,7 @@ class UserRepository {
     await _sharedListsCollection.doc(listId).delete();
   }
 
-  Future<void> removeMemberFromSharedList({
-    required String listId,
-    required String uid,
-  }) async {
+  Future<void> removeMemberFromSharedList({required String listId, required String uid}) async {
     final docRef = _sharedListsCollection.doc(listId);
     final snapshot = await docRef.get();
 
@@ -461,30 +395,20 @@ class UserRepository {
       return;
     }
 
-    final memberUids =
-        (snapshot.data()!['memberUids'] as List<dynamic>? ?? const [])
-            .whereType<String>()
-            .where(
-              (memberUid) => memberUid.trim().isNotEmpty && memberUid != uid,
-            )
-            .toList();
+    final memberUids = (snapshot.data()!['memberUids'] as List<dynamic>? ?? const [])
+        .whereType<String>()
+        .where((memberUid) => memberUid.trim().isNotEmpty && memberUid != uid)
+        .toList();
 
     if (memberUids.isEmpty) {
       await docRef.delete();
       return;
     }
 
-    await docRef.update({
-      'memberUids': memberUids,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await docRef.update({'memberUids': memberUids, 'updatedAt': FieldValue.serverTimestamp()});
   }
 
-  Future<void> updateUserProfile({
-    required String uid,
-    String? email,
-    String? displayName,
-  }) async {
+  Future<void> updateUserProfile({required String uid, String? email, String? displayName}) async {
     final data = <String, dynamic>{};
 
     if (email != null) {
@@ -504,9 +428,7 @@ class UserRepository {
   Future<void> deleteUserAccountData(String uid) async {
     final batch = _firestore.batch();
 
-    final sharedSnapshot = await _sharedListsCollection
-        .where('memberUids', arrayContains: uid)
-        .get();
+    final sharedSnapshot = await _sharedListsCollection.where('memberUids', arrayContains: uid).get();
 
     for (final doc in sharedSnapshot.docs) {
       final data = doc.data();
@@ -517,27 +439,18 @@ class UserRepository {
       } else {
         final memberUids = (data['memberUids'] as List<dynamic>? ?? const [])
             .whereType<String>()
-            .where(
-              (memberUid) => memberUid.trim().isNotEmpty && memberUid != uid,
-            )
+            .where((memberUid) => memberUid.trim().isNotEmpty && memberUid != uid)
             .toList();
-        batch.update(doc.reference, {
-          'memberUids': memberUids,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+        batch.update(doc.reference, {'memberUids': memberUids, 'updatedAt': FieldValue.serverTimestamp()});
       }
     }
 
-    final personalListsSnapshot = await _userDoc(
-      uid,
-    ).collection('shoppingLists').get();
+    final personalListsSnapshot = await _userDoc(uid).collection('shoppingLists').get();
     for (final doc in personalListsSnapshot.docs) {
       batch.delete(doc.reference);
     }
 
-    final tombstonesSnapshot = await _userDoc(
-      uid,
-    ).collection('shoppingListDeletes').get();
+    final tombstonesSnapshot = await _userDoc(uid).collection('shoppingListDeletes').get();
     for (final doc in tombstonesSnapshot.docs) {
       batch.delete(doc.reference);
     }
@@ -574,8 +487,7 @@ class UserRepository {
     final currentDocs = await collection.get();
     final stableIdsToKeep = <String>{
       for (final listName in sanitizedLists.keys)
-        listIds?[listName] ??
-            _buildDocId(canonicalListNames?[listName] ?? listName),
+        listIds?[listName] ?? _buildDocId(canonicalListNames?[listName] ?? listName),
     };
     for (final doc in currentDocs.docs) {
       if (!stableIdsToKeep.contains(doc.id)) {
@@ -586,9 +498,7 @@ class UserRepository {
     if (deletedLists != null && deletedLists.isNotEmpty) {
       final tombstonesRef = _userDoc(uid).collection('shoppingListDeletes');
       for (final entry in deletedLists.entries) {
-        await tombstonesRef.doc(entry.key).set({
-          'deletedAt': Timestamp.fromDate(entry.value),
-        }, SetOptions(merge: true));
+        await tombstonesRef.doc(entry.key).set({'deletedAt': Timestamp.fromDate(entry.value)}, SetOptions(merge: true));
       }
     }
 
@@ -598,12 +508,8 @@ class UserRepository {
       final canonicalName = canonicalListNames?[listName] ?? listName;
       final stableId = listIds?[listName] ?? _buildDocId(canonicalName);
 
-      final activeProducts = (items['active'] ?? <Product>[])
-          .map((p) => p.toMap())
-          .toList();
-      final frequentProducts = (items['frequent'] ?? <Product>[])
-          .map((p) => p.toMap())
-          .toList();
+      final activeProducts = (items['active'] ?? <Product>[]).map((p) => p.toMap()).toList();
+      final frequentProducts = (items['frequent'] ?? <Product>[]).map((p) => p.toMap()).toList();
 
       final timestamp = listUpdatedAt?[listName] ?? DateTime.now();
       final categories = listCategories?[listName] ?? <String>[];
@@ -659,12 +565,8 @@ class UserRepository {
     return result;
   }
 
-  Future<Map<String, DateTime>> getDeletedShoppingListTimestamps(
-    String uid,
-  ) async {
-    final snapshot = await _userDoc(
-      uid,
-    ).collection('shoppingListDeletes').get();
+  Future<Map<String, DateTime>> getDeletedShoppingListTimestamps(String uid) async {
+    final snapshot = await _userDoc(uid).collection('shoppingListDeletes').get();
     final result = <String, DateTime>{};
 
     for (final doc in snapshot.docs) {
@@ -678,9 +580,7 @@ class UserRepository {
     return result;
   }
 
-  Future<Map<String, Map<String, dynamic>>> getShoppingListsWithCategories(
-    String uid,
-  ) async {
+  Future<Map<String, Map<String, dynamic>>> getShoppingListsWithCategories(String uid) async {
     final snapshot = await _userDoc(uid).collection('shoppingLists').get();
     final result = <String, Map<String, dynamic>>{};
 
@@ -716,9 +616,7 @@ class UserRepository {
           .whereType<Product>()
           .toList();
 
-      final categories = data['categories'] is List
-          ? List<String>.from(data['categories'] as List)
-          : <String>[];
+      final categories = data['categories'] is List ? List<String>.from(data['categories'] as List) : <String>[];
       final createdAtValue = data['createdAt'];
       final createdAt = createdAtValue is Timestamp
           ? createdAtValue.toDate()
@@ -726,26 +624,17 @@ class UserRepository {
           ? createdAtValue
           : null;
 
-      result[listName] = {
-        'active': active,
-        'frequent': frequent,
-        'categories': categories,
-        'createdAt': createdAt,
-      };
+      result[listName] = {'active': active, 'frequent': frequent, 'categories': categories, 'createdAt': createdAt};
     }
 
     return result;
   }
 
-  Future<Map<String, Map<String, List<Product>>>> getShoppingLists(
-    String uid,
-  ) async {
+  Future<Map<String, Map<String, List<Product>>>> getShoppingLists(String uid) async {
     final listsWithCategories = await getShoppingListsWithCategories(uid);
     return listsWithCategories.map(
-      (key, value) => MapEntry(key, {
-        'active': value['active'] as List<Product>,
-        'frequent': value['frequent'] as List<Product>,
-      }),
+      (key, value) =>
+          MapEntry(key, {'active': value['active'] as List<Product>, 'frequent': value['frequent'] as List<Product>}),
     );
   }
 
@@ -757,12 +646,8 @@ class UserRepository {
   }) async {
     final docId = _buildDocId(listName);
 
-    final activeProducts = (items['active'] ?? <Product>[])
-        .map((p) => p.toMap())
-        .toList();
-    final frequentProducts = (items['frequent'] ?? <Product>[])
-        .map((p) => p.toMap())
-        .toList();
+    final activeProducts = (items['active'] ?? <Product>[]).map((p) => p.toMap()).toList();
+    final frequentProducts = (items['frequent'] ?? <Product>[]).map((p) => p.toMap()).toList();
 
     final dataToSet = <String, dynamic>{
       'name': listName,
@@ -775,16 +660,10 @@ class UserRepository {
       dataToSet['categories'] = categories;
     }
 
-    await _userDoc(uid)
-        .collection('shoppingLists')
-        .doc(docId)
-        .set(dataToSet, SetOptions(merge: true));
+    await _userDoc(uid).collection('shoppingLists').doc(docId).set(dataToSet, SetOptions(merge: true));
   }
 
-  Future<void> deleteShoppingList({
-    required String uid,
-    required String listName,
-  }) async {
+  Future<void> deleteShoppingList({required String uid, required String listName}) async {
     final docId = _buildDocId(listName);
     await _userDoc(uid).collection('shoppingLists').doc(docId).delete();
   }
@@ -795,13 +674,8 @@ class UserRepository {
       return 'lista_1';
     }
 
-    final sanitized = cleaned
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'^_+|_+'), '');
+    final sanitized = cleaned.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '_').replaceAll(RegExp(r'^_+|_+'), '');
 
-    return sanitized.isEmpty
-        ? 'list_${DateTime.now().millisecondsSinceEpoch}'
-        : sanitized;
+    return sanitized.isEmpty ? 'list_${DateTime.now().millisecondsSinceEpoch}' : sanitized;
   }
 }

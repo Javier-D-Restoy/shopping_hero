@@ -47,15 +47,9 @@ Future<void> main() async {
   }
 
   // 4. Configurar ShoppingProvider con los datos de sesión resueltos
-  await shoppingProvider.setCurrentUser(
-    sessionProvider.uid,
-    isOffline: sessionProvider.isOffline,
-  );
+  await shoppingProvider.setCurrentUser(sessionProvider.uid, isOffline: sessionProvider.isOffline);
 
-  await Future.wait([
-    themeProvider.init(),
-    shoppingProvider.init(isOffline: sessionProvider.isOffline),
-  ]);
+  await Future.wait([themeProvider.init(), shoppingProvider.init(isOffline: sessionProvider.isOffline)]);
 
   // 5. Determinar la pantalla inicial en función del estado real guardado
   Widget initialScreen = const LoginPage();
@@ -71,8 +65,7 @@ Future<void> main() async {
     // Redirección si se quedó dentro de una lista concreta
     if (sessionProvider.lastRoute == 'listMain') {
       final lastListName = sessionProvider.lastListName;
-      if (lastListName != null &&
-          shoppingProvider.shoppingLists.containsKey(lastListName)) {
+      if (lastListName != null && shoppingProvider.shoppingLists.containsKey(lastListName)) {
         initialScreen = ListMainPage(listName: lastListName);
       }
     }
@@ -116,10 +109,7 @@ class MyApp extends StatelessWidget {
             return MaterialApp(
               title: 'Shopping Hero',
               debugShowCheckedModeBanner: false,
-              theme: AppTheme(
-                selectedColor: 0,
-                isDarkMode: themeProvider.isDarkMode,
-              ).theme(),
+              theme: AppTheme(selectedColor: 0, isDarkMode: themeProvider.isDarkMode).theme(),
               home: initialScreen,
             );
           },
@@ -140,8 +130,7 @@ class AppLifecycleWrapper extends StatefulWidget {
   State<AppLifecycleWrapper> createState() => _AppLifecycleWrapperState();
 }
 
-class _AppLifecycleWrapperState extends State<AppLifecycleWrapper>
-    with WidgetsBindingObserver {
+class _AppLifecycleWrapperState extends State<AppLifecycleWrapper> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -156,8 +145,7 @@ class _AppLifecycleWrapperState extends State<AppLifecycleWrapper>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
       context.read<ShoppingProvider>().saveToStorage(mergeCloud: false);
     }
   }

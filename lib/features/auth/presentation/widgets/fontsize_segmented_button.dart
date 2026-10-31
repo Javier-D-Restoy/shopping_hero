@@ -5,11 +5,7 @@ class FontSizeSegmentedButton extends StatelessWidget {
   final FontSizeOption value;
   final ValueChanged<FontSizeOption> onChanged;
 
-  const FontSizeSegmentedButton({
-    super.key,
-    required this.value,
-    required this.onChanged,
-  });
+  const FontSizeSegmentedButton({super.key, required this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {

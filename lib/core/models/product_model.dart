@@ -38,9 +38,7 @@ class Product {
   });
 
   /// Momento de la última modificación (alta, movimiento o edición); decide qué versión gana al fusionar.
-  DateTime get modifiedAt => updatedAt != null && updatedAt!.isAfter(lastAdded)
-      ? updatedAt!
-      : lastAdded;
+  DateTime get modifiedAt => updatedAt != null && updatedAt!.isAfter(lastAdded) ? updatedAt! : lastAdded;
 
   static DateTime? _parseDate(dynamic value) {
     if (value is Timestamp) return value.toDate();
@@ -50,8 +48,7 @@ class Product {
   }
 
   /// Devuelve la categoría correspondiente según el contexto de la lista.
-  String getCategory({required bool isShared}) =>
-      isShared ? categoryShared : category;
+  String getCategory({required bool isShared}) => isShared ? categoryShared : category;
 
   Product copyWith({
     String? id,
@@ -77,9 +74,7 @@ class Product {
       frequency: frequency ?? this.frequency,
       amount: amount ?? this.amount,
       price: clearPrice ? null : (price ?? this.price),
-      pricePerKilo: clearPricePerKilo
-          ? null
-          : (pricePerKilo ?? this.pricePerKilo),
+      pricePerKilo: clearPricePerKilo ? null : (pricePerKilo ?? this.pricePerKilo),
       imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
       lastAdded: lastAdded ?? this.lastAdded,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -99,10 +94,7 @@ class Product {
     if (rawCategory is String && rawCategory.isNotEmpty) {
       parsedCategory = rawCategory;
     } else if (rawCategory is Iterable && rawCategory.isNotEmpty) {
-      final first = rawCategory.firstWhere(
-        (e) => e != null,
-        orElse: () => 'Genérico',
-      );
+      final first = rawCategory.firstWhere((e) => e != null, orElse: () => 'Genérico');
       parsedCategory = first.toString();
     }
 
@@ -120,17 +112,13 @@ class Product {
       frequency: (map['frequency'] ?? 1) as int,
       amount: (map['amount'] ?? 1) as int,
       price: map['price'] != null ? (map['price'] as num).toDouble() : null,
-      pricePerKilo: map['pricePerKilo'] != null
-          ? (map['pricePerKilo'] as num).toDouble()
-          : null,
+      pricePerKilo: map['pricePerKilo'] != null ? (map['pricePerKilo'] as num).toDouble() : null,
       imageUrl: map['imageUrl']?.toString(),
       lastAdded: lastAddedValue is Timestamp
           ? lastAddedValue.toDate()
           : (lastAddedValue is DateTime
                 ? lastAddedValue
-                : DateTime.parse(
-                    map['lastAdded'] ?? DateTime.now().toIso8601String(),
-                  )),
+                : DateTime.parse(map['lastAdded'] ?? DateTime.now().toIso8601String())),
       updatedAt: _parseDate(map['updatedAt']),
       category: parsedCategory,
       categoryShared: parsedCategoryShared,
@@ -178,10 +166,7 @@ class Product {
     if (rawCategory is String && rawCategory.isNotEmpty) {
       parsedCategory = rawCategory;
     } else if (rawCategory is Iterable && rawCategory.isNotEmpty) {
-      final first = rawCategory.firstWhere(
-        (e) => e != null,
-        orElse: () => 'Genérico',
-      );
+      final first = rawCategory.firstWhere((e) => e != null, orElse: () => 'Genérico');
       parsedCategory = first.toString();
     }
 
@@ -197,15 +182,11 @@ class Product {
       frequency: (map['frequency'] ?? 1) as int,
       amount: (map['amount'] ?? 1) as int,
       price: map['price'] != null ? (map['price'] as num).toDouble() : null,
-      pricePerKilo: map['pricePerKilo'] != null
-          ? (map['pricePerKilo'] as num).toDouble()
-          : null,
+      pricePerKilo: map['pricePerKilo'] != null ? (map['pricePerKilo'] as num).toDouble() : null,
       imageUrl: map['imageUrl']?.toString(),
       lastAdded: map['lastAdded'] is DateTime
           ? map['lastAdded'] as DateTime
-          : DateTime.parse(
-              map['lastAdded'] ?? DateTime.now().toIso8601String(),
-            ),
+          : DateTime.parse(map['lastAdded'] ?? DateTime.now().toIso8601String()),
       updatedAt: _parseDate(map['updatedAt']),
       category: parsedCategory,
       categoryShared: parsedCategoryShared,
@@ -216,15 +197,11 @@ class Product {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Product &&
-          runtimeType == other.runtimeType &&
-          id == other.id &&
-          name == other.name;
+      other is Product && runtimeType == other.runtimeType && id == other.id && name == other.name;
 
   @override
   int get hashCode => id.hashCode ^ name.hashCode;
 
   @override
-  String toString() =>
-      'Product(id: $id, name: $name, category: $category, categoryShared: $categoryShared)';
+  String toString() => 'Product(id: $id, name: $name, category: $category, categoryShared: $categoryShared)';
 }

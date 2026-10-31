@@ -12,9 +12,7 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
-    final isObscureNotifier = ValueNotifier<bool>(
-      true,
-    ); // Estado para la visibilidad del Password
+    final isObscureNotifier = ValueNotifier<bool>(true); // Estado para la visibilidad del Password
     final focusNode = FocusNode();
 
     final formKey = GlobalKey<FormState>();
@@ -37,10 +35,7 @@ class LoginPage extends StatelessWidget {
                         SizedBox(
                           width: 240,
                           height: 240,
-                          child: Image.asset(
-                            'assets/images/logos/Logo_ShoppingHero.png',
-                            fit: BoxFit.contain,
-                          ),
+                          child: Image.asset('assets/images/logos/Logo_ShoppingHero.png', fit: BoxFit.contain),
                         ),
                         const SizedBox(height: 24),
                         Form(
@@ -51,9 +46,7 @@ class LoginPage extends StatelessWidget {
                               children: [
                                 TextFormField(
                                   controller: emailController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'Email',
-                                  ),
+                                  decoration: const InputDecoration(labelText: 'Email'),
                                   keyboardType: TextInputType.emailAddress,
                                   onTapOutside: (event) {
                                     focusNode.unfocus();
@@ -80,14 +73,9 @@ class LoginPage extends StatelessWidget {
                                         labelText: 'Password',
                                         // 3. Icono para alternar estado
                                         suffixIcon: IconButton(
-                                          icon: Icon(
-                                            isObscure
-                                                ? Icons.visibility_off
-                                                : Icons.visibility,
-                                          ),
+                                          icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
                                           onPressed: () {
-                                            isObscureNotifier.value =
-                                                !isObscure;
+                                            isObscureNotifier.value = !isObscure;
                                           },
                                         ),
                                       ),
@@ -95,8 +83,7 @@ class LoginPage extends StatelessWidget {
                                         focusNode.unfocus();
                                       },
                                       validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
+                                        if (value == null || value.trim().isEmpty) {
                                           return 'Introduce tu password';
                                         }
                                         return null;
@@ -118,10 +105,7 @@ class LoginPage extends StatelessWidget {
                                     padding: const EdgeInsets.only(bottom: 16),
                                     child: Text(
                                       sessionProvider.errorMessage!,
-                                      style: const TextStyle(
-                                        color: Colors.red,
-                                        fontSize: 12,
-                                      ),
+                                      style: const TextStyle(color: Colors.red, fontSize: 12),
                                       textAlign: TextAlign.center,
                                     ),
                                   ),
@@ -129,38 +113,27 @@ class LoginPage extends StatelessWidget {
                                   onPressed: sessionProvider.isLoading
                                       ? null
                                       : () async {
-                                          if (formKey.currentState!
-                                              .validate()) {
-                                            final success =
-                                                await sessionProvider.login(
-                                                  email: emailController.text,
-                                                  password:
-                                                      passwordController.text,
-                                                );
+                                          if (formKey.currentState!.validate()) {
+                                            final success = await sessionProvider.login(
+                                              email: emailController.text,
+                                              password: passwordController.text,
+                                            );
 
                                             if (!context.mounted) return;
 
                                             if (success) {
-                                              final shoppingProvider = context
-                                                  .read<ShoppingProvider>();
-                                              await shoppingProvider
-                                                  .setCurrentUser(
-                                                    sessionProvider.uid,
-                                                    isOffline: false,
-                                                  );
-                                              await shoppingProvider
-                                                  .switchUserEnvironment(
-                                                    isOffline: false,
-                                                  );
+                                              final shoppingProvider = context.read<ShoppingProvider>();
+                                              await shoppingProvider.setCurrentUser(
+                                                sessionProvider.uid,
+                                                isOffline: false,
+                                              );
+                                              await shoppingProvider.switchUserEnvironment(isOffline: false);
 
                                               if (!context.mounted) return;
 
                                               Navigator.pushReplacement(
                                                 context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      const ListManager(),
-                                                ),
+                                                MaterialPageRoute(builder: (context) => const ListManager()),
                                               );
                                             }
                                           }
@@ -169,9 +142,7 @@ class LoginPage extends StatelessWidget {
                                       ? const SizedBox(
                                           height: 20,
                                           width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
+                                          child: CircularProgressIndicator(strokeWidth: 2),
                                         )
                                       : const Text('Login'),
                                 ),
@@ -183,18 +154,10 @@ class LoginPage extends StatelessWidget {
                         TextButton(
                           onPressed: () {
                             if (context.mounted) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const RegisterPage(),
-                                ),
-                              );
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage()));
                             }
                           },
-                          child: const Text(
-                            'Aún no tienes cuenta?  Registrate',
-                            style: TextStyle(fontSize: 13),
-                          ),
+                          child: const Text('Aún no tienes cuenta?  Registrate', style: TextStyle(fontSize: 13)),
                         ),
                         const SizedBox(height: 30),
                         Consumer<SessionProvider>(
@@ -203,32 +166,22 @@ class LoginPage extends StatelessWidget {
                               onPressed: sessionProvider.isLoading
                                   ? null
                                   : () async {
-                                      final success = await sessionProvider
-                                          .continueOffline(
-                                            displayName:
-                                                sessionProvider.displayName,
-                                          );
+                                      final success = await sessionProvider.continueOffline(
+                                        displayName: sessionProvider.displayName,
+                                      );
 
                                       if (!context.mounted) return;
 
                                       if (success) {
-                                        final shoppingProvider = context
-                                            .read<ShoppingProvider>();
-                                        await shoppingProvider
-                                            .clearCurrentUser();
-                                        await shoppingProvider
-                                            .switchUserEnvironment(
-                                              isOffline: true,
-                                            );
+                                        final shoppingProvider = context.read<ShoppingProvider>();
+                                        await shoppingProvider.clearCurrentUser();
+                                        await shoppingProvider.switchUserEnvironment(isOffline: true);
 
                                         if (!context.mounted) return;
 
                                         Navigator.pushReplacement(
                                           context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                const ListManager(),
-                                          ),
+                                          MaterialPageRoute(builder: (context) => const ListManager()),
                                         );
                                       }
                                     },

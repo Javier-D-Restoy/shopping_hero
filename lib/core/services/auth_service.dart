@@ -16,19 +16,13 @@ class AuthService {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   /// Registra un nuevo usuario en Firebase Authentication y crea su perfil en Firestore
-  Future<UserModel?> register({
-    required String email,
-    required String password,
-    required String displayName,
-  }) async {
+  Future<UserModel?> register({required String email, required String password, required String displayName}) async {
     try {
       final emailTrimmed = email.trim();
       final passwordTrimmed = password.trim();
       final nameTrimmed = displayName.trim();
 
-      if (emailTrimmed.isEmpty ||
-          passwordTrimmed.isEmpty ||
-          nameTrimmed.isEmpty) {
+      if (emailTrimmed.isEmpty || passwordTrimmed.isEmpty || nameTrimmed.isEmpty) {
         throw Exception('Email, contraseña y nombre son requeridos');
       }
 
@@ -37,19 +31,12 @@ class AuthService {
       }
 
       // Crear usuario en Firebase Auth
-      final userCredential = await _auth.createUserWithEmailAndPassword(
-        email: emailTrimmed,
-        password: passwordTrimmed,
-      );
+      final userCredential = await _auth.createUserWithEmailAndPassword(email: emailTrimmed, password: passwordTrimmed);
 
       final uid = userCredential.user!.uid;
 
       // Crear perfil en Firestore
-      await _userRepository.createUserProfile(
-        uid: uid,
-        email: emailTrimmed,
-        displayName: nameTrimmed,
-      );
+      await _userRepository.createUserProfile(uid: uid, email: emailTrimmed, displayName: nameTrimmed);
 
       // Retornar modelo de usuario
       return UserModel(
@@ -60,9 +47,7 @@ class AuthService {
         updatedAt: DateTime.now(),
       );
     } on FirebaseAuthException catch (e) {
-      debugPrint(
-        'FirebaseAuthException registro: code=${e.code} message=${e.message}',
-      );
+      debugPrint('FirebaseAuthException registro: code=${e.code} message=${e.message}');
 
       if (e.code == 'email-already-in-use') {
         throw Exception('Este email ya está registrado');
@@ -79,10 +64,7 @@ class AuthService {
   }
 
   /// Inicia sesión con email y contraseña
-  Future<UserModel?> login({
-    required String email,
-    required String password,
-  }) async {
+  Future<UserModel?> login({required String email, required String password}) async {
     try {
       final emailTrimmed = email.trim();
       final passwordTrimmed = password.trim();
@@ -92,10 +74,7 @@ class AuthService {
       }
 
       // Autenticar en Firebase Auth
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: emailTrimmed,
-        password: passwordTrimmed,
-      );
+      final userCredential = await _auth.signInWithEmailAndPassword(email: emailTrimmed, password: passwordTrimmed);
 
       final uid = userCredential.user!.uid;
 
@@ -143,9 +122,7 @@ class AuthService {
       await user.delete();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        throw Exception(
-          'Por seguridad, vuelve a iniciar sesión antes de eliminar la cuenta',
-        );
+        throw Exception('Por seguridad, vuelve a iniciar sesión antes de eliminar la cuenta');
       }
       throw Exception('No se pudo eliminar la cuenta: ${e.message}');
     }

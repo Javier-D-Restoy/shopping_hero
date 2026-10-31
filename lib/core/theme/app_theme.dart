@@ -4,22 +4,14 @@ import 'package:flutter/material.dart';
 
 // const Color _customColor = Color(0xFF31045C);  // Los colores hexadecimal empiezan con "0xFF"
 
-const List<Color> _colorThemes = [
-  Colors.blue,
-  Colors.teal,
-  Colors.green,
-  Colors.yellow,
-  Colors.orange,
-  Colors.pink,
-];
+const List<Color> _colorThemes = [Colors.blue, Colors.teal, Colors.green, Colors.yellow, Colors.orange, Colors.pink];
 
 class AppTheme {
   final int selectedColor;
   final bool isDarkMode;
 
   AppTheme({
-    this.selectedColor =
-        0, // Añadimos los assert para controlar el rango de inputs.
+    this.selectedColor = 0, // Añadimos los assert para controlar el rango de inputs.
     this.isDarkMode = false,
   }) : assert(
          selectedColor >= 0 && selectedColor <= _colorThemes.length - 1,

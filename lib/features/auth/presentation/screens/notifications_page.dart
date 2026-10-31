@@ -31,9 +31,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     });
 
     try {
-      final invitations = await context
-          .read<ShoppingProvider>()
-          .getPendingShareInvitations();
+      final invitations = await context.read<ShoppingProvider>().getPendingShareInvitations();
       if (!mounted) return;
       setState(() => _invitations = invitations);
     } catch (error) {
@@ -49,16 +47,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final messenger = ScaffoldMessenger.maybeOf(context);
 
     try {
-      await context.read<ShoppingProvider>().respondToShareInvitation(
-        listId: invitation.listId,
-        accept: accept,
-      );
+      await context.read<ShoppingProvider>().respondToShareInvitation(listId: invitation.listId, accept: accept);
       if (!mounted) return;
-      setState(
-        () => _invitations = _invitations
-            .where((item) => item.id != invitation.id)
-            .toList(),
-      );
+      setState(() => _invitations = _invitations.where((item) => item.id != invitation.id).toList());
       messenger?.showSnackBar(
         SnackBar(
           content: Text(
@@ -70,11 +61,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       );
     } catch (error) {
       if (!mounted) return;
-      messenger?.showSnackBar(
-        SnackBar(
-          content: Text(error.toString().replaceFirst('Exception: ', '')),
-        ),
-      );
+      messenger?.showSnackBar(SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))));
     } finally {
       if (mounted) setState(() => _respondingTo.remove(invitation.id));
     }
@@ -106,22 +93,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (_isLoading) {
       return const ListTile(
         title: Text('Cargando invitaciones...'),
-        trailing: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+        trailing: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
       );
     }
 
     if (_error != null) {
       return ListTile(
         title: const Text('No se pudieron cargar las invitaciones'),
-        trailing: IconButton(
-          tooltip: 'Reintentar',
-          onPressed: _loadInvitations,
-          icon: const Icon(Icons.refresh),
-        ),
+        trailing: IconButton(tooltip: 'Reintentar', onPressed: _loadInvitations, icon: const Icon(Icons.refresh)),
       );
     }
 
@@ -138,10 +117,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 8),
-            decoration: BoxDecoration(
-              color: themeProvider.primaryColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: themeProvider.primaryColor, shape: BoxShape.circle),
             child: Text(
               '${_invitations.length}',
               style: TextStyle(
@@ -154,17 +130,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
           Icon(Icons.expand_more, color: themeProvider.textMutedColor),
         ],
       ),
-      children: [
-        for (final invitation in _invitations)
-          _buildInvitation(invitation, themeProvider),
-      ],
+      children: [for (final invitation in _invitations) _buildInvitation(invitation, themeProvider)],
     );
   }
 
-  Widget _buildInvitation(
-    ShareInvitation invitation,
-    ThemeProvider themeProvider,
-  ) {
+  Widget _buildInvitation(ShareInvitation invitation, ThemeProvider themeProvider) {
     final isResponding = _respondingTo.contains(invitation.id);
 
     return Container(
@@ -174,50 +144,34 @@ class _NotificationsPageState extends State<NotificationsPage> {
         color: themeProvider.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: themeProvider.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: themeProvider.cardShadowColor,
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: themeProvider.cardShadowColor, blurRadius: 8, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             invitation.ownerDisplayName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: themeProvider.textStrongColor,
-              fontWeight: FontWeight.w700,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: themeProvider.textStrongColor, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 2),
-          Text(
-            invitation.ownerEmail,
-            style: TextStyle(color: themeProvider.textMutedColor),
-          ),
+          Text(invitation.ownerEmail, style: TextStyle(color: themeProvider.textMutedColor)),
           const SizedBox(height: 12),
-          Text(
-            'Quiere compartir contigo la lista:',
-            style: TextStyle(color: themeProvider.textStrongColor),
-          ),
+          Text('Quiere compartir contigo la lista:', style: TextStyle(color: themeProvider.textStrongColor)),
           const SizedBox(height: 4),
           Text(
             invitation.listName,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: themeProvider.primaryColor,
-              fontWeight: FontWeight.w700,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: themeProvider.primaryColor, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 16),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: isResponding
-                      ? null
-                      : () => _respond(invitation, false),
+                  onPressed: isResponding ? null : () => _respond(invitation, false),
                   icon: const Icon(Icons.close),
                   label: const Text('Rechazar'),
                 ),
@@ -225,15 +179,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: isResponding
-                      ? null
-                      : () => _respond(invitation, true),
+                  onPressed: isResponding ? null : () => _respond(invitation, true),
                   icon: isResponding
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.check),
                   label: const Text('Aceptar'),
                 ),
@@ -247,21 +195,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   Widget _buildGeneralNotificationsSection(ThemeProvider themeProvider) {
     return ExpansionTile(
-      leading: Icon(
-        Icons.notifications_none_outlined,
-        color: themeProvider.primaryColor,
-      ),
+      leading: Icon(Icons.notifications_none_outlined, color: themeProvider.primaryColor),
       title: const Text('Notificaciones generales'),
       children: [
         ListTile(
-          leading: Icon(
-            Icons.inbox_outlined,
-            color: themeProvider.textMutedColor,
-          ),
-          title: Text(
-            'No hay notificaciones nuevas.',
-            style: TextStyle(color: themeProvider.textMutedColor),
-          ),
+          leading: Icon(Icons.inbox_outlined, color: themeProvider.textMutedColor),
+          title: Text('No hay notificaciones nuevas.', style: TextStyle(color: themeProvider.textMutedColor)),
         ),
       ],
     );

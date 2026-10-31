@@ -26,9 +26,7 @@ class RegisterPage extends StatelessWidget {
                 SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 480),
@@ -39,10 +37,7 @@ class RegisterPage extends StatelessWidget {
                             SizedBox(
                               width: 240,
                               height: 240,
-                              child: Image.asset(
-                                'assets/images/logos/Logo_Register.png',
-                                fit: BoxFit.contain,
-                              ),
+                              child: Image.asset('assets/images/logos/Logo_Register.png', fit: BoxFit.contain),
                             ),
                             const SizedBox(height: 24),
                             Form(
@@ -55,16 +50,12 @@ class RegisterPage extends StatelessWidget {
                                       controller: displayNameController,
                                       maxLength: 20,
                                       maxLines: 1,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Nombre',
-                                        counterText: '',
-                                      ),
+                                      decoration: const InputDecoration(labelText: 'Nombre', counterText: ''),
                                       onTapOutside: (event) {
                                         focusNode.unfocus();
                                       },
                                       validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
+                                        if (value == null || value.trim().isEmpty) {
                                           return 'Introduce tu nombre';
                                         }
                                         return null;
@@ -75,17 +66,13 @@ class RegisterPage extends StatelessWidget {
                                       controller: emailController,
                                       maxLength: 30,
                                       maxLines: 1,
-                                      decoration: const InputDecoration(
-                                        labelText: 'Email',
-                                        counterText: '',
-                                      ),
+                                      decoration: const InputDecoration(labelText: 'Email', counterText: ''),
                                       keyboardType: TextInputType.emailAddress,
                                       onTapOutside: (event) {
                                         focusNode.unfocus();
                                       },
                                       validator: (value) {
-                                        if (value == null ||
-                                            value.trim().isEmpty) {
+                                        if (value == null || value.trim().isEmpty) {
                                           return 'Introduce tu email';
                                         }
                                         if (!value.contains('@')) {
@@ -104,14 +91,9 @@ class RegisterPage extends StatelessWidget {
                                           decoration: InputDecoration(
                                             labelText: 'Password',
                                             suffixIcon: IconButton(
-                                              icon: Icon(
-                                                isObscure
-                                                    ? Icons.visibility_off
-                                                    : Icons.visibility,
-                                              ),
+                                              icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
                                               onPressed: () {
-                                                isObscureNotifier.value =
-                                                    !isObscure;
+                                                isObscureNotifier.value = !isObscure;
                                               },
                                             ),
                                           ),
@@ -119,8 +101,7 @@ class RegisterPage extends StatelessWidget {
                                             focusNode.unfocus();
                                           },
                                           validator: (value) {
-                                            if (value == null ||
-                                                value.trim().isEmpty) {
+                                            if (value == null || value.trim().isEmpty) {
                                               return 'Introduce tu password';
                                             }
                                             if (value.length < 6) {
@@ -142,15 +123,10 @@ class RegisterPage extends StatelessWidget {
                                   children: [
                                     if (sessionProvider.errorMessage != null)
                                       Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: 16,
-                                        ),
+                                        padding: const EdgeInsets.only(bottom: 16),
                                         child: Text(
                                           sessionProvider.errorMessage!,
-                                          style: const TextStyle(
-                                            color: Colors.red,
-                                            fontSize: 12,
-                                          ),
+                                          style: const TextStyle(color: Colors.red, fontSize: 12),
                                           textAlign: TextAlign.center,
                                         ),
                                       ),
@@ -158,46 +134,28 @@ class RegisterPage extends StatelessWidget {
                                       onPressed: sessionProvider.isLoading
                                           ? null
                                           : () async {
-                                              if (formKey.currentState!
-                                                  .validate()) {
-                                                final success =
-                                                    await sessionProvider.register(
-                                                      email:
-                                                          emailController.text,
-                                                      password:
-                                                          passwordController
-                                                              .text,
-                                                      displayName:
-                                                          displayNameController
-                                                              .text,
-                                                    );
+                                              if (formKey.currentState!.validate()) {
+                                                final success = await sessionProvider.register(
+                                                  email: emailController.text,
+                                                  password: passwordController.text,
+                                                  displayName: displayNameController.text,
+                                                );
 
                                                 if (!context.mounted) return;
 
                                                 if (success) {
-                                                  final shoppingProvider =
-                                                      context
-                                                          .read<
-                                                            ShoppingProvider
-                                                          >();
-                                                  await shoppingProvider
-                                                      .setCurrentUser(
-                                                        sessionProvider.uid,
-                                                        isOffline: false,
-                                                      );
-                                                  await shoppingProvider
-                                                      .switchUserEnvironment(
-                                                        isOffline: false,
-                                                      );
+                                                  final shoppingProvider = context.read<ShoppingProvider>();
+                                                  await shoppingProvider.setCurrentUser(
+                                                    sessionProvider.uid,
+                                                    isOffline: false,
+                                                  );
+                                                  await shoppingProvider.switchUserEnvironment(isOffline: false);
 
                                                   if (!context.mounted) return;
 
                                                   Navigator.pushReplacement(
                                                     context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          const ListManager(),
-                                                    ),
+                                                    MaterialPageRoute(builder: (context) => const ListManager()),
                                                   );
                                                 }
                                               }
@@ -206,9 +164,7 @@ class RegisterPage extends StatelessWidget {
                                           ? const SizedBox(
                                               height: 20,
                                               width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                              ),
+                                              child: CircularProgressIndicator(strokeWidth: 2),
                                             )
                                           : const Text('Registrar'),
                                     ),

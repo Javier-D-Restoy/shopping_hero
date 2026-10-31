@@ -32,10 +32,7 @@ class _ConfigPageState extends State<ConfigPage> {
         children: [
           // 1. Imagen de Fondo
           Positioned.fill(
-            child: Image.asset(
-              'assets/images/background/Background_Config_Image_1.jpg',
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset('assets/images/background/Background_Config_Image_1.jpg', fit: BoxFit.cover),
           ),
 
           // 2. Elemento posicionado en coordenadas específicas (ej. Top: 150, Right: 20)
@@ -51,13 +48,9 @@ class _ConfigPageState extends State<ConfigPage> {
                     width: 130,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: themeProvider.isDarkMode
-                          ? Colors.black
-                          : Colors.white,
+                      color: themeProvider.isDarkMode ? Colors.black : Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.grey, spreadRadius: 1.5),
-                      ],
+                      boxShadow: const [BoxShadow(color: Colors.grey, spreadRadius: 1.5)],
                     ),
                     child: Center(
                       child: Text(

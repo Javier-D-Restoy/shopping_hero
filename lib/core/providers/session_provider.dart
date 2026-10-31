@@ -59,19 +59,15 @@ class SessionProvider extends ChangeNotifier {
     _email = _box!.get('email', defaultValue: '') as String;
     _isOffline = _box!.get('isOffline', defaultValue: true) as bool;
     _isLoggedIn = _box!.get('isLoggedIn', defaultValue: false) as bool;
-    _hasActiveSession =
-        _box!.get('hasActiveSession', defaultValue: false) as bool;
+    _hasActiveSession = _box!.get('hasActiveSession', defaultValue: false) as bool;
     _lastRoute = _box!.get('lastRoute', defaultValue: 'login') as String;
     _lastListName = _box!.get('lastListName') as String?;
 
     // Cargar nombre dependiendo de si es Online u Offline
     if (_isOffline) {
-      _displayName =
-          _box!.get('offlineDisplayName', defaultValue: 'Shopping Hero')
-              as String;
+      _displayName = _box!.get('offlineDisplayName', defaultValue: 'Shopping Hero') as String;
     } else {
-      _displayName =
-          _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
+      _displayName = _box!.get('displayName', defaultValue: 'Shopping Hero') as String;
     }
 
     notifyListeners();
@@ -113,21 +109,13 @@ class SessionProvider extends ChangeNotifier {
   // ---------------------------------------------- ][ GESTIÓN DE AUTENTICACIÓN ][ ---------------------------------------------- //
 
   /// Registra un nuevo usuario con email, contraseña y nombre
-  Future<bool> register({
-    required String email,
-    required String password,
-    required String displayName,
-  }) async {
+  Future<bool> register({required String email, required String password, required String displayName}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      final user = await _authService.register(
-        email: email,
-        password: password,
-        displayName: displayName,
-      );
+      final user = await _authService.register(email: email, password: password, displayName: displayName);
 
       if (user != null) {
         _uid = user.uid;
@@ -255,9 +243,7 @@ class SessionProvider extends ChangeNotifier {
 
       // Al hacer logout recuperamos el nombre asignado al modo offline
       await _ensureInitialized();
-      _displayName =
-          _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero')
-              as String;
+      _displayName = _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero') as String;
 
       await _saveSessionToStorage();
 
@@ -302,10 +288,7 @@ class SessionProvider extends ChangeNotifier {
 
     try {
       if (!_isOffline && _uid != null) {
-        await _userRepository.updateUserProfile(
-          uid: _uid!,
-          displayName: trimmed,
-        );
+        await _userRepository.updateUserProfile(uid: _uid!, displayName: trimmed);
       }
 
       _displayName = trimmed;
@@ -348,9 +331,7 @@ class SessionProvider extends ChangeNotifier {
       _isLoading = false;
 
       await _ensureInitialized();
-      _displayName =
-          _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero')
-              as String;
+      _displayName = _box?.get('offlineDisplayName', defaultValue: 'Shopping Hero') as String;
 
       await _saveSessionToStorage();
 
@@ -377,9 +358,7 @@ class SessionProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> saveShoppingListsToFirestore(
-    Map<String, Map<String, dynamic>> shoppingLists,
-  ) async {
+  Future<void> saveShoppingListsToFirestore(Map<String, Map<String, dynamic>> shoppingLists) async {
     if (_uid == null || _isOffline) return;
 
     try {
