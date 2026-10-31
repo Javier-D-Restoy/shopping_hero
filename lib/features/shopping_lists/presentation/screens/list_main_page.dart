@@ -706,7 +706,7 @@ class _ListMainPageState extends State<ListMainPage> {
               final cat = product.getCategory(isShared: isShared);
 
               // 3. Asignar el color según el índice
-              final categoryColor = themeProvider.getCategoryColor(cat, categories);
+              final categoryColor = _categoryColor(shoppingProvider, themeProvider, cat, categories);
 
               return ProductBubble(
                 key: ValueKey('${product.id}-active'),
@@ -943,6 +943,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                               .where((cat) => cat != 'Genérico')
                                               .length;
                                           final canReorder = customCategoriesCount > 1;
+                                          final canColor = customCategoriesCount > 0;
 
                                           return AlertDialog(
                                             insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -965,7 +966,7 @@ class _ListMainPageState extends State<ListMainPage> {
                                               width: double.maxFinite,
                                               child: ConstrainedBox(
                                                 constraints: BoxConstraints(
-                                                  maxHeight: MediaQuery.of(context).size.height * 0.6,
+                                                  maxHeight: MediaQuery.of(context).size.height * 0.8,
                                                 ),
                                                 child: Builder(
                                                   builder: (context) {
@@ -1257,117 +1258,12 @@ class _ListMainPageState extends State<ListMainPage> {
                                                                 ),
                                                               ),
                                                               onTap: () async {
-                                                                final newCatController = TextEditingController();
-                                                                final newCat = await showDialog<String>(
-                                                                  context: context,
-                                                                  barrierDismissible: true,
-                                                                  builder: (ctx) => AlertDialog(
-                                                                    backgroundColor: themeProvider.surface,
-                                                                    elevation: 10,
-                                                                    shadowColor: themeProvider.cardShadowColor,
-                                                                    shape: RoundedRectangleBorder(
-                                                                      borderRadius: BorderRadius.circular(16),
-                                                                      side: BorderSide(
-                                                                        color: themeProvider.borderColor,
-                                                                        width: 1.5,
-                                                                      ),
-                                                                    ),
-                                                                    titlePadding: const EdgeInsets.fromLTRB(
-                                                                      24,
-                                                                      20,
-                                                                      24,
-                                                                      20,
-                                                                    ),
-                                                                    contentPadding: const EdgeInsets.symmetric(
-                                                                      horizontal: 14,
-                                                                      vertical: 0,
-                                                                    ),
-                                                                    title: const Center(
-                                                                      child: Text(
-                                                                        'Nueva Categoría',
-                                                                        style: TextStyle(
-                                                                          fontSize: 24,
-                                                                          fontWeight: FontWeight.w500,
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                    content: Padding(
-                                                                      padding: const EdgeInsets.only(bottom: 10),
-                                                                      child: TextField(
-                                                                        textAlign: TextAlign.center,
-                                                                        controller: newCatController,
-                                                                        textCapitalization:
-                                                                            TextCapitalization.sentences,
-                                                                        autofocus: true,
-                                                                        maxLines: 1,
-                                                                        maxLength: 15,
-                                                                        decoration: InputDecoration(
-                                                                          counterText: '',
-                                                                          contentPadding: const EdgeInsets.symmetric(
-                                                                            horizontal: 12,
-                                                                          ),
-                                                                          filled: true,
-                                                                          fillColor: themeProvider.surface,
-                                                                          labelStyle: TextStyle(
-                                                                            color: themeProvider.textMutedColor,
-                                                                          ),
-                                                                          border: OutlineInputBorder(
-                                                                            borderRadius: BorderRadius.circular(14),
-                                                                            borderSide: BorderSide(
-                                                                              color: themeProvider.borderColor,
-                                                                            ),
-                                                                          ),
-                                                                          enabledBorder: OutlineInputBorder(
-                                                                            borderRadius: BorderRadius.circular(14),
-                                                                            borderSide: BorderSide(
-                                                                              color: themeProvider.borderColor,
-                                                                              width: 1.5,
-                                                                            ),
-                                                                          ),
-                                                                          focusedBorder: OutlineInputBorder(
-                                                                            borderRadius: BorderRadius.circular(14),
-                                                                            borderSide: BorderSide(
-                                                                              color: themeProvider.primaryColor,
-                                                                              width: 1.8,
-                                                                            ),
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                    ),
-                                                                    actions: [
-                                                                      Row(
-                                                                        mainAxisAlignment: MainAxisAlignment.center,
-                                                                        crossAxisAlignment: CrossAxisAlignment.center,
-                                                                        children: [
-                                                                          TextButton(
-                                                                            onPressed: () => Navigator.pop(ctx),
-                                                                            child: const Text(
-                                                                              'Cancelar',
-                                                                              style: TextStyle(fontSize: 16),
-                                                                            ),
-                                                                          ),
-                                                                          const SizedBox(width: 10),
-                                                                          TextButton(
-                                                                            onPressed: () => Navigator.pop(
-                                                                              ctx,
-                                                                              newCatController.text.trim(),
-                                                                            ),
-                                                                            child: const Text(
-                                                                              'Añadir',
-                                                                              style: TextStyle(fontSize: 16),
-                                                                            ),
-                                                                          ),
-                                                                        ],
-                                                                      ),
-                                                                    ],
-                                                                  ),
+                                                                final created = await _showCreateCategoryDialog(
+                                                                  context,
+                                                                  shoppingProvider,
+                                                                  themeProvider,
                                                                 );
-
-                                                                if (newCat != null && newCat.isNotEmpty) {
-                                                                  shoppingProvider.addCategoryToList(
-                                                                    widget.listName,
-                                                                    newCat,
-                                                                  );
+                                                                if (created) {
                                                                   setDialogState(() {});
                                                                   setModalState(() {});
                                                                 }
@@ -1398,6 +1294,41 @@ class _ListMainPageState extends State<ListMainPage> {
                                                               onTap: canReorder
                                                                   ? () async {
                                                                       await _showReorderCategoriesDialog(
+                                                                        dialogContext,
+                                                                        shoppingProvider,
+                                                                        themeProvider,
+                                                                        widget.listName,
+                                                                      );
+                                                                      setDialogState(() {});
+                                                                      setModalState(() {});
+                                                                    }
+                                                                  : null,
+                                                            ),
+                                                            const Divider(),
+                                                            ListTile(
+                                                              enabled: canColor,
+                                                              title: Center(
+                                                                child: Row(
+                                                                  mainAxisSize: MainAxisSize.min,
+                                                                  children: [
+                                                                    Icon(
+                                                                      Icons.palette,
+                                                                      color: canColor ? Colors.purple : Colors.grey,
+                                                                    ),
+                                                                    const SizedBox(width: 8),
+                                                                    Text(
+                                                                      'Color categoría',
+                                                                      style: TextStyle(
+                                                                        color: canColor ? Colors.purple : Colors.grey,
+                                                                        fontWeight: FontWeight.w500,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              ),
+                                                              onTap: canColor
+                                                                  ? () async {
+                                                                      await _showCategoryColorDialog(
                                                                         dialogContext,
                                                                         shoppingProvider,
                                                                         themeProvider,
@@ -1804,6 +1735,103 @@ class _ListMainPageState extends State<ListMainPage> {
     }
   }
 
+  /// Devuelve true si se creó la categoría; false si se canceló.
+  Future<bool> _showCreateCategoryDialog(
+    BuildContext context,
+    ShoppingProvider shoppingProvider,
+    ThemeProvider themeProvider,
+  ) async {
+    final controller = TextEditingController();
+    String? errorText;
+
+    final created = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void save() {
+              final newName = controller.text.trim();
+              if (newName.isEmpty) {
+                setDialogState(() => errorText = 'Escribe un nombre.');
+                return;
+              }
+              if (!shoppingProvider.addCategoryToList(widget.listName, newName)) {
+                setDialogState(() => errorText = 'Categoría existente.');
+                return;
+              }
+              Navigator.pop(dialogContext, true);
+            }
+
+            return AlertDialog(
+              backgroundColor: themeProvider.surface,
+              elevation: 10,
+              shadowColor: themeProvider.cardShadowColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+              title: const Center(
+                child: Text('Nueva Categoría', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500)),
+              ),
+              content: Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: TextField(
+                  controller: controller,
+                  textAlign: TextAlign.center,
+                  textCapitalization: TextCapitalization.sentences,
+                  autofocus: true,
+                  maxLines: 1,
+                  maxLength: 32,
+                  onChanged: (_) {
+                    if (errorText != null) {
+                      setDialogState(() => errorText = null);
+                    }
+                  },
+                  onSubmitted: (_) => save(),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    errorText: errorText,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    filled: true,
+                    fillColor: themeProvider.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: themeProvider.borderColor),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: themeProvider.borderColor, width: 1.5),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: themeProvider.primaryColor, width: 1.8),
+                    ),
+                  ),
+                ),
+              ),
+              actionsAlignment: MainAxisAlignment.center,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Cancelar', style: TextStyle(fontSize: 16)),
+                ),
+                TextButton(
+                  onPressed: save,
+                  child: const Text('Añadir', style: TextStyle(fontSize: 16)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    return created ?? false;
+  }
+
   /// Devuelve el nombre final si se renombró (o el mismo si no cambió); null si se canceló.
   Future<String?> _showRenameCategoryDialog(
     BuildContext context,
@@ -1832,7 +1860,7 @@ class _ListMainPageState extends State<ListMainPage> {
               }
               final ok = shoppingProvider.renameCategoryInList(widget.listName, category, newName);
               if (!ok) {
-                setDialogState(() => errorText = 'Ya existe una categoría con ese nombre. Escribe otro.');
+                setDialogState(() => errorText = 'Categoría existente.');
                 return;
               }
               Navigator.pop(dialogContext, newName);
@@ -1859,7 +1887,7 @@ class _ListMainPageState extends State<ListMainPage> {
                   textCapitalization: TextCapitalization.sentences,
                   autofocus: true,
                   maxLines: 1,
-                  maxLength: 15,
+                  maxLength: 32,
                   onChanged: (_) {
                     if (errorText != null) {
                       setDialogState(() => errorText = null);
@@ -1905,6 +1933,163 @@ class _ListMainPageState extends State<ListMainPage> {
     );
   }
 
+  Color _categoryColor(
+    ShoppingProvider shoppingProvider,
+    ThemeProvider themeProvider,
+    String category,
+    List<String> categories,
+  ) {
+    return shoppingProvider.customCategoryColor(widget.listName, category) ??
+        themeProvider.getCategoryColor(category, categories);
+  }
+
+  Future<void> _showCategoryColorDialog(
+    BuildContext context,
+    ShoppingProvider shoppingProvider,
+    ThemeProvider themeProvider,
+    String listName,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final categories = shoppingProvider.categoriesForList(listName);
+
+            return AlertDialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+              backgroundColor: themeProvider.surface,
+              elevation: 10,
+              shadowColor: themeProvider.cardShadowColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+              title: const Center(
+                child: Text('Color Categoría', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500)),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final cat in categories)
+                      ListTile(
+                        enabled: cat != 'Genérico',
+                        leading: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: BoxDecoration(
+                            color: _categoryColor(shoppingProvider, themeProvider, cat, categories),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.black.withValues(alpha: 0.3), width: 1),
+                          ),
+                        ),
+                        title: AutoSizeText(
+                          cat,
+                          maxLines: 1,
+                          minFontSize: 8,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: cat == 'Genérico' ? Colors.grey : themeProvider.textStrongColor,
+                          ),
+                        ),
+                        trailing: cat == 'Genérico' ? const Icon(Icons.lock_outline, size: 18) : null,
+                        onTap: cat == 'Genérico'
+                            ? null
+                            : () async {
+                                final picked = await _showColorPickerDialog(
+                                  dialogContext,
+                                  themeProvider,
+                                  cat,
+                                  _categoryColor(shoppingProvider, themeProvider, cat, categories),
+                                );
+                                if (picked == null) return;
+                                shoppingProvider.setCategoryColor(listName, cat, picked);
+                                setDialogState(() {});
+                              },
+                      ),
+                  ],
+                ),
+              ),
+              actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cerrar'))],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<Color?> _showColorPickerDialog(
+    BuildContext context,
+    ThemeProvider themeProvider,
+    String category,
+    Color current,
+  ) {
+    final options = <Color>[];
+    for (final color in themeProvider.categoryColors) {
+      if (!options.any((option) => option.toARGB32() == color.toARGB32())) options.add(color);
+    }
+
+    return showDialog<Color>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: themeProvider.surface,
+          elevation: 10,
+          shadowColor: themeProvider.cardShadowColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: themeProvider.borderColor, width: 1.5),
+          ),
+          titlePadding: const EdgeInsets.fromLTRB(14, 20, 14, 12),
+          title: Column(
+            children: [
+              const Text('Elegir color', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 4),
+              Text(
+                category,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 16, color: themeProvider.textMutedColor),
+              ),
+            ],
+          ),
+          content: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (final color in options)
+                InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.pop(dialogContext, color),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: color.toARGB32() == current.toARGB32() ? themeProvider.textStrongColor : Colors.black26,
+                        width: color.toARGB32() == current.toARGB32() ? 3 : 1,
+                      ),
+                    ),
+                    child: color.toARGB32() == current.toARGB32() ? const Icon(Icons.check, color: Colors.white) : null,
+                  ),
+                ),
+            ],
+          ),
+          actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar'))],
+        );
+      },
+    );
+  }
+
   Future<void> _showReorderCategoriesDialog(
     BuildContext context,
     ShoppingProvider shoppingProvider,
@@ -1920,6 +2105,7 @@ class _ListMainPageState extends State<ListMainPage> {
             final categories = shoppingProvider.categoriesForList(listName).where((cat) => cat != 'Genérico').toList();
 
             return AlertDialog(
+              insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               backgroundColor: themeProvider.surface,
               elevation: 10,
               shadowColor: themeProvider.cardShadowColor,
@@ -1934,41 +2120,44 @@ class _ListMainPageState extends State<ListMainPage> {
               ),
               content: SizedBox(
                 width: double.maxFinite,
-                height: 300,
-                child: categories.isEmpty
-                    ? const Center(child: Text('No hay categorías personalizadas.'))
-                    : ReorderableListView.builder(
-                        itemCount: categories.length,
-                        onReorderItem: (oldIndex, newIndex) {
-                          shoppingProvider.reorderCategoriesForList(listName, oldIndex, newIndex);
-                          setDialogState(() {});
-                        },
-                        itemBuilder: (context, index) {
-                          final cat = categories[index];
-                          final catColor = themeProvider.getCategoryColor(cat, allCategories);
-                          return ListTile(
-                            key: ValueKey(cat),
-                            leading: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('${index + 1}.', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                const SizedBox(width: 8),
-                                Container(
-                                  width: 16,
-                                  height: 16,
-                                  decoration: BoxDecoration(
-                                    color: catColor,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.black.withValues(alpha: 0.3), width: 1),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.8),
+                  child: categories.isEmpty
+                      ? const Text('No hay categorías personalizadas.', textAlign: TextAlign.center)
+                      : ReorderableListView.builder(
+                          shrinkWrap: true,
+                          itemCount: categories.length,
+                          onReorderItem: (oldIndex, newIndex) {
+                            shoppingProvider.reorderCategoriesForList(listName, oldIndex, newIndex);
+                            setDialogState(() {});
+                          },
+                          itemBuilder: (context, index) {
+                            final cat = categories[index];
+                            final catColor = _categoryColor(shoppingProvider, themeProvider, cat, allCategories);
+                            return ListTile(
+                              key: ValueKey(cat),
+                              leading: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('${index + 1}.', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    width: 16,
+                                    height: 16,
+                                    decoration: BoxDecoration(
+                                      color: catColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.black.withValues(alpha: 0.3), width: 1),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            title: Text(cat),
-                            trailing: const Icon(Icons.drag_handle),
-                          );
-                        },
-                      ),
+                                ],
+                              ),
+                              title: Text(cat),
+                              trailing: const Icon(Icons.drag_handle),
+                            );
+                          },
+                        ),
+                ),
               ),
               actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cerrar'))],
             );

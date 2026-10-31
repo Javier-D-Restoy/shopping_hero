@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart' show Colors;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shopping_hero/core/models/product_model.dart';
 import 'package:shopping_hero/core/providers/shopping_provider.dart';
+import 'package:shopping_hero/core/providers/theme_provider.dart';
 import 'package:shopping_hero/core/services/user_repository.dart';
 
 class _FakeFirestore extends Fake implements FirebaseFirestore {}
@@ -56,9 +58,7 @@ class _LegacyCopyRepository extends UserRepository {
   List<Product>? savedSharedActive;
 
   @override
-  Future<Map<String, Map<String, dynamic>>> getShoppingListsWithCategories(
-    String uid,
-  ) async => {
+  Future<Map<String, Map<String, dynamic>>> getShoppingListsWithCategories(String uid) async => {
     personalListName: {
       'active': _personalProducts,
       'frequent': <Product>[],
@@ -68,24 +68,16 @@ class _LegacyCopyRepository extends UserRepository {
   };
 
   @override
-  Future<Map<String, DateTime>> getShoppingListTimestamps(String uid) async => {
-    personalListName: DateTime(2025, 1, 2),
-  };
+  Future<Map<String, DateTime>> getShoppingListTimestamps(String uid) async => {personalListName: DateTime(2025, 1, 2)};
 
   @override
-  Future<Map<String, String>> getShoppingListIds(String uid) async => {
-    personalListName: 'legacy-personal-id',
-  };
+  Future<Map<String, String>> getShoppingListIds(String uid) async => {personalListName: 'legacy-personal-id'};
 
   @override
-  Future<Map<String, DateTime>> getDeletedShoppingListTimestamps(
-    String uid,
-  ) async => {};
+  Future<Map<String, DateTime>> getDeletedShoppingListTimestamps(String uid) async => {};
 
   @override
-  Future<Map<String, Map<String, dynamic>>> getSharedShoppingLists(
-    String uid,
-  ) async => {
+  Future<Map<String, Map<String, dynamic>>> getSharedShoppingLists(String uid) async => {
     'shared-list-id': {
       'listId': 'shared-list-id',
       'ownerUid': sharedOwnerUid,
@@ -99,9 +91,9 @@ class _LegacyCopyRepository extends UserRepository {
   };
 
   @override
-  Future<Map<String, DateTime>> getAcceptedShareInvitationTimestamps(
-    String uid,
-  ) async => {'shared-list-id': DateTime(2025, 1, 2)};
+  Future<Map<String, DateTime>> getAcceptedShareInvitationTimestamps(String uid) async => {
+    'shared-list-id': DateTime(2025, 1, 2),
+  };
 
   @override
   Future<void> saveShoppingLists({
@@ -153,15 +145,9 @@ void main() {
   });
 
   test('shared list aliases avoid name collisions and remain unique', () {
+    expect(ShoppingProvider.sharedListDisplayName('Lista 6', ['Lista 6']), 'Lista 6 (compartida)');
     expect(
-      ShoppingProvider.sharedListDisplayName('Lista 6', ['Lista 6']),
-      'Lista 6 (compartida)',
-    );
-    expect(
-      ShoppingProvider.sharedListDisplayName('Lista 6', [
-        'Lista 6',
-        'Lista 6 (compartida)',
-      ]),
+      ShoppingProvider.sharedListDisplayName('Lista 6', ['Lista 6', 'Lista 6 (compartida)']),
       'Lista 6 (compartida 2)',
     );
   });
@@ -176,12 +162,27 @@ void main() {
     expect(provider.orderedListNames, ['Lista B', 'Lista C', 'Lista A']);
 
     provider.createList(name: 'Lista D');
-    expect(provider.orderedListNames, [
-      'Lista B',
-      'Lista C',
-      'Lista A',
-      'Lista D',
-    ]);
+    expect(provider.orderedListNames, ['Lista B', 'Lista C', 'Lista A', 'Lista D']);
+  });
+
+  test('custom category colors follow renames, deletions and ignore Genérico', () {
+    final provider = ShoppingProvider(userRepository: FakeUserRepository());
+    provider.createList(name: 'Mercadona');
+    provider.addCategoryToList('Mercadona', 'Lacteos');
+
+    provider.setCategoryColor('Mercadona', 'Lacteos', Colors.teal);
+    provider.setCategoryColor('Mercadona', 'Genérico', Colors.red);
+
+    expect(provider.customCategoryColor('Mercadona', 'Lacteos')?.toARGB32(), Colors.teal.toARGB32());
+    expect(provider.customCategoryColor('Mercadona', 'Genérico'), isNull);
+    expect(ThemeProvider().getCategoryColor('Genérico', ['Lacteos', 'Genérico']), Colors.blueGrey);
+
+    provider.renameCategoryInList('Mercadona', 'Lacteos', 'Refrigerados');
+    expect(provider.customCategoryColor('Mercadona', 'Lacteos'), isNull);
+    expect(provider.customCategoryColor('Mercadona', 'Refrigerados')?.toARGB32(), Colors.teal.toARGB32());
+
+    provider.removeCategoryFromList('Mercadona', 'Refrigerados');
+    expect(provider.customCategoryColor('Mercadona', 'Refrigerados'), isNull);
   });
 
   test('renaming a category updates its products and rejects duplicates', () {
@@ -191,34 +192,15 @@ void main() {
     provider.addCategoryToList('Mercadona', 'Fruta');
     provider.addActiveProductToList('Mercadona', 'Leche');
     final id = provider.activeProductsForList('Mercadona').single.id;
-    provider.updateProduct(
-      'Mercadona',
-      id,
-      name: 'Leche',
-      frequency: 1,
-      amount: 1,
-      category: 'Lacteos',
-    );
+    provider.updateProduct('Mercadona', id, name: 'Leche', frequency: 1, amount: 1, category: 'Lacteos');
 
-    expect(
-      provider.renameCategoryInList('Mercadona', 'Lacteos', 'fruta'),
-      isFalse,
-    );
-    expect(
-      provider.renameCategoryInList('Mercadona', 'Lacteos', 'Lacteos'),
-      isTrue,
-    );
-    expect(
-      provider.renameCategoryInList('Mercadona', 'Lacteos', 'Refrigerados'),
-      isTrue,
-    );
+    expect(provider.renameCategoryInList('Mercadona', 'Lacteos', 'fruta'), isFalse);
+    expect(provider.renameCategoryInList('Mercadona', 'Lacteos', 'Lacteos'), isTrue);
+    expect(provider.renameCategoryInList('Mercadona', 'Lacteos', 'Refrigerados'), isTrue);
 
     final categories = provider.categoriesForList('Mercadona');
     expect(categories, ['Refrigerados', 'Fruta', 'Genérico']);
-    expect(
-      provider.activeProductsForList('Mercadona').single.category,
-      'Refrigerados',
-    );
+    expect(provider.activeProductsForList('Mercadona').single.category, 'Refrigerados');
   });
 
   test('reordering the first list to the second position moves it down', () {
@@ -243,9 +225,7 @@ void main() {
 
   test('clears the online Hive cache after queued writes finish', () async {
     const onlineBoxName = 'shopping_lists_online_cache';
-    final box = Hive.isBoxOpen(onlineBoxName)
-        ? Hive.box(onlineBoxName)
-        : await Hive.openBox(onlineBoxName);
+    final box = Hive.isBoxOpen(onlineBoxName) ? Hive.box(onlineBoxName) : await Hive.openBox(onlineBoxName);
     await box.clear();
 
     final provider = ShoppingProvider(userRepository: FakeUserRepository());
@@ -258,85 +238,55 @@ void main() {
     expect(provider.shoppingLists, isEmpty);
   });
 
-  test(
-    'removes a legacy personal copy when it matches an owned shared list',
-    () async {
-      final product = Product(
-        id: 'product-pan',
-        name: 'Pan',
-        lastAdded: DateTime(2025, 1, 1),
-      );
-      final repository = _LegacyCopyRepository(product);
-      final provider = ShoppingProvider(userRepository: repository);
-      provider.setCurrentUser('owner-1', isOffline: false);
+  test('removes a legacy personal copy when it matches an owned shared list', () async {
+    final product = Product(id: 'product-pan', name: 'Pan', lastAdded: DateTime(2025, 1, 1));
+    final repository = _LegacyCopyRepository(product);
+    final provider = ShoppingProvider(userRepository: repository);
+    provider.setCurrentUser('owner-1', isOffline: false);
 
-      const onlineBoxName = 'shopping_lists_online_cache';
-      if (Hive.isBoxOpen(onlineBoxName)) {
-        await Hive.box(onlineBoxName).clear();
-      }
+    const onlineBoxName = 'shopping_lists_online_cache';
+    if (Hive.isBoxOpen(onlineBoxName)) {
+      await Hive.box(onlineBoxName).clear();
+    }
 
-      await provider.saveToStorage();
-      await provider.saveToStorage();
+    await provider.saveToStorage();
+    await provider.saveToStorage();
 
-      expect(provider.shoppingLists.keys, ['Lista 6']);
-      expect(provider.isSharedList('Lista 6'), isTrue);
-      expect(repository.savedPersonalLists, isEmpty);
-      expect(repository.savedSharedActive, hasLength(1));
-    },
-  );
+    expect(provider.shoppingLists.keys, ['Lista 6']);
+    expect(provider.isSharedList('Lista 6'), isTrue);
+    expect(repository.savedPersonalLists, isEmpty);
+    expect(repository.savedSharedActive, hasLength(1));
+  });
 
-  test(
-    'preserves a same-named personal list when the shared owner is another user',
-    () async {
-      final product = Product(
-        id: 'product-pan',
-        name: 'Pan',
-        lastAdded: DateTime(2025, 1, 1),
-      );
-      final repository = _LegacyCopyRepository(
-        product,
-        sharedOwnerUid: 'owner-2',
-        sharedProduct: Product(
-          id: 'shared-pan-from-owner-2',
-          name: 'Pan',
-          amount: 2,
-          lastAdded: DateTime(2025, 1, 1),
-        ),
-      );
-      final provider = ShoppingProvider(userRepository: repository);
-      provider.setCurrentUser('owner-1', isOffline: false);
-
-      const onlineBoxName = 'shopping_lists_online_cache';
-      if (Hive.isBoxOpen(onlineBoxName)) {
-        await Hive.box(onlineBoxName).clear();
-      }
-
-      await provider.saveToStorage();
-
-      expect(
-        provider.shoppingLists.keys,
-        containsAll(['Lista 6', 'Lista 6 (2)']),
-      );
-      expect(provider.isSharedList('Lista 6'), isTrue);
-      expect(provider.isSharedList('Lista 6 (2)'), isFalse);
-      expect(repository.savedPersonalLists, hasLength(1));
-    },
-  );
-
-  test('removes an exact legacy copy of another owner shared list', () async {
-    final product = Product(
-      id: 'product-pan',
-      name: 'Pan',
-      lastAdded: DateTime(2025, 1, 1),
-    );
+  test('preserves a same-named personal list when the shared owner is another user', () async {
+    final product = Product(id: 'product-pan', name: 'Pan', lastAdded: DateTime(2025, 1, 1));
     final repository = _LegacyCopyRepository(
       product,
       sharedOwnerUid: 'owner-2',
-      sharedProduct: Product(
-        id: 'shared-product-pan',
-        name: 'Pan',
-        lastAdded: DateTime(2025, 1, 2),
-      ),
+      sharedProduct: Product(id: 'shared-pan-from-owner-2', name: 'Pan', amount: 2, lastAdded: DateTime(2025, 1, 1)),
+    );
+    final provider = ShoppingProvider(userRepository: repository);
+    provider.setCurrentUser('owner-1', isOffline: false);
+
+    const onlineBoxName = 'shopping_lists_online_cache';
+    if (Hive.isBoxOpen(onlineBoxName)) {
+      await Hive.box(onlineBoxName).clear();
+    }
+
+    await provider.saveToStorage();
+
+    expect(provider.shoppingLists.keys, containsAll(['Lista 6', 'Lista 6 (2)']));
+    expect(provider.isSharedList('Lista 6'), isTrue);
+    expect(provider.isSharedList('Lista 6 (2)'), isFalse);
+    expect(repository.savedPersonalLists, hasLength(1));
+  });
+
+  test('removes an exact legacy copy of another owner shared list', () async {
+    final product = Product(id: 'product-pan', name: 'Pan', lastAdded: DateTime(2025, 1, 1));
+    final repository = _LegacyCopyRepository(
+      product,
+      sharedOwnerUid: 'owner-2',
+      sharedProduct: Product(id: 'shared-product-pan', name: 'Pan', lastAdded: DateTime(2025, 1, 2)),
     );
     final provider = ShoppingProvider(userRepository: repository);
     provider.setCurrentUser('owner-1', isOffline: false);
@@ -356,11 +306,7 @@ void main() {
   });
 
   test('removes an empty legacy generated shared alias', () async {
-    final sharedProduct = Product(
-      id: 'shared-pan',
-      name: 'Pan',
-      lastAdded: DateTime(2025, 1, 1),
-    );
+    final sharedProduct = Product(id: 'shared-pan', name: 'Pan', lastAdded: DateTime(2025, 1, 1));
     final repository = _LegacyCopyRepository(
       sharedProduct,
       sharedOwnerUid: 'owner-2',
@@ -382,38 +328,28 @@ void main() {
     expect(repository.savedPersonalLists, isEmpty);
   });
 
-  test(
-    'keeps an exact-name empty personal list under a stable local alias',
-    () async {
-      final sharedProduct = Product(
-        id: 'shared-pan',
-        name: 'Pan',
-        lastAdded: DateTime(2025, 1, 1),
-      );
-      final repository = _LegacyCopyRepository(
-        sharedProduct,
-        sharedOwnerUid: 'owner-2',
-        personalListName: 'Lista 6',
-        personalProducts: <Product>[],
-      );
-      final provider = ShoppingProvider(userRepository: repository);
-      provider.setCurrentUser('owner-1', isOffline: false);
+  test('keeps an exact-name empty personal list under a stable local alias', () async {
+    final sharedProduct = Product(id: 'shared-pan', name: 'Pan', lastAdded: DateTime(2025, 1, 1));
+    final repository = _LegacyCopyRepository(
+      sharedProduct,
+      sharedOwnerUid: 'owner-2',
+      personalListName: 'Lista 6',
+      personalProducts: <Product>[],
+    );
+    final provider = ShoppingProvider(userRepository: repository);
+    provider.setCurrentUser('owner-1', isOffline: false);
 
-      const onlineBoxName = 'shopping_lists_online_cache';
-      if (Hive.isBoxOpen(onlineBoxName)) {
-        await Hive.box(onlineBoxName).clear();
-      }
+    const onlineBoxName = 'shopping_lists_online_cache';
+    if (Hive.isBoxOpen(onlineBoxName)) {
+      await Hive.box(onlineBoxName).clear();
+    }
 
-      await provider.saveToStorage();
+    await provider.saveToStorage();
 
-      expect(
-        provider.shoppingLists.keys,
-        containsAll(['Lista 6', 'Lista 6 (personal)']),
-      );
-      expect(provider.isSharedList('Lista 6'), isTrue);
-      expect(provider.isSharedList('Lista 6 (personal)'), isFalse);
-    },
-  );
+    expect(provider.shoppingLists.keys, containsAll(['Lista 6', 'Lista 6 (personal)']));
+    expect(provider.isSharedList('Lista 6'), isTrue);
+    expect(provider.isSharedList('Lista 6 (personal)'), isFalse);
+  });
 
   test('deleting a list removes it and updates the selected list', () async {
     final provider = ShoppingProvider(userRepository: FakeUserRepository());

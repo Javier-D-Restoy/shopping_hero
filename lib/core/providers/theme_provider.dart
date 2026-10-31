@@ -28,98 +28,48 @@ class ThemeProvider extends ChangeNotifier {
   double get fontScale => _fontSize.scale;
 
   // Getters de colores centralizados
-  Color get primaryColor =>
-      _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
-  Color get navPrimaryColor =>
-      _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF1D1D1D);
-  Color get primarySoftColor =>
-      _isDarkMode ? const Color(0xFF7DBB74) : const Color(0xFF89CE80);
-  Color get navPrimarySoftColor =>
-      _isDarkMode ? const Color(0xFF7DBB74) : const Color(0xFF89CE80);
+  Color get primaryColor => _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF5E9C4C);
+  Color get navPrimaryColor => _isDarkMode ? const Color(0xFF9DD388) : const Color(0xFF1D1D1D);
+  Color get primarySoftColor => _isDarkMode ? const Color(0xFF7DBB74) : const Color(0xFF89CE80);
+  Color get navPrimarySoftColor => _isDarkMode ? const Color(0xFF7DBB74) : const Color(0xFF89CE80);
   Color get surface => _isDarkMode ? const Color(0xFF1F2A1E) : Colors.white;
-  Color get navSurface =>
-      _isDarkMode ? const Color(0xFF1F2A1E) : const Color(0xFF9DD388);
-  Color get surfaceSoft =>
-      _isDarkMode ? const Color(0xFF2C3A2D) : const Color(0xFFF4F8EE);
-  Color get borderColor =>
-      _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF9FC090);
-  Color get navBorderColor =>
-      _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF9FC090);
-  Color get borderOwnerColor =>
-      _isDarkMode ? const Color(0xFFD48E32) : const Color(0xFFD48E32);
-  Color get borderSharedColor =>
-      _isDarkMode ? const Color(0xFF954D97) : const Color(0xFF954D97);
-  Color get textStrongColor =>
-      _isDarkMode ? Colors.white : const Color(0xFF234B2A);
+  Color get navSurface => _isDarkMode ? const Color(0xFF1F2A1E) : const Color(0xFF9DD388);
+  Color get surfaceSoft => _isDarkMode ? const Color(0xFF2C3A2D) : const Color(0xFFF4F8EE);
+  Color get borderColor => _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF9FC090);
+  Color get navBorderColor => _isDarkMode ? const Color(0xFF4A6448) : const Color(0xFF9FC090);
+  Color get borderOwnerColor => _isDarkMode ? const Color(0xFFD48E32) : const Color(0xFFD48E32);
+  Color get borderSharedColor => _isDarkMode ? const Color(0xFF954D97) : const Color(0xFF954D97);
+  Color get textStrongColor => _isDarkMode ? Colors.white : const Color(0xFF234B2A);
   // Color get textStrongColor =>
   //     _isDarkMode ? Colors.white : const Color(0xFF2F4064);
-  Color get textMutedColor =>
-      _isDarkMode ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
+  Color get textMutedColor => _isDarkMode ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
   // Color get textMutedColor =>
   //     _isDarkMode ? const Color(0xFFD9E9D2) : const Color(0xFF55755E);
   Color get dangerColor => const Color(0xFFB35C5C);
-  Color get cardShadowColor => _isDarkMode
-      ? Colors.black.withValues(alpha: 0.35)
-      : Colors.black.withValues(alpha: 0.2);
+  Color get cardShadowColor => _isDarkMode ? Colors.black.withValues(alpha: 0.35) : Colors.black.withValues(alpha: 0.2);
 
   List<Shadow> get shadows => [
-    Shadow(
-      color: Colors.black.withValues(alpha: 0.4),
-      blurRadius: 8,
-      offset: Offset(0, 0),
-    ),
-    Shadow(
-      color: Colors.black.withValues(alpha: 0.3),
-      blurRadius: 4,
-      offset: Offset(0, 0),
-    ),
+    Shadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 8, offset: Offset(0, 0)),
+    Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 4, offset: Offset(0, 0)),
   ];
 
   List<Shadow> get shadowsMid => [
-    Shadow(
-      color: Colors.black.withValues(alpha: 0.3),
-      blurRadius: 8,
-      offset: Offset(0, 0),
-    ),
-    Shadow(
-      color: Colors.black.withValues(alpha: 0.2),
-      blurRadius: 2,
-      offset: Offset(0, 0),
-    ),
+    Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 8, offset: Offset(0, 0)),
+    Shadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 2, offset: Offset(0, 0)),
   ];
 
   List<Shadow> get shadowsSoft => [
-    Shadow(
-      color: Colors.black.withValues(alpha: 0.1),
-      blurRadius: 8,
-      offset: Offset(0, 0),
-    ),
-    Shadow(
-      color: Colors.black.withValues(alpha: 0.05),
-      blurRadius: 4,
-      offset: Offset(0, 0),
-    ),
+    Shadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8, offset: Offset(0, 0)),
+    Shadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: Offset(0, 0)),
   ];
 
   List<Color> get gradientColors => _isDarkMode
-      ? [
-          const Color(0xFF1D2D1F).withValues(alpha: 0.50),
-          const Color(0xFF243928).withValues(alpha: 0.50),
-        ]
-      : [
-          const Color(0xFFF6F8E8).withValues(alpha: 0.50),
-          const Color(0xFFE7F4E1).withValues(alpha: 0.50),
-        ];
+      ? [const Color(0xFF1D2D1F).withValues(alpha: 0.50), const Color(0xFF243928).withValues(alpha: 0.50)]
+      : [const Color(0xFFF6F8E8).withValues(alpha: 0.50), const Color(0xFFE7F4E1).withValues(alpha: 0.50)];
 
   List<Color> get gradientColors2 => _isDarkMode
-      ? [
-          const Color(0xFF1D2D1F).withValues(alpha: 0.85),
-          const Color(0xFF243928).withValues(alpha: 0.85),
-        ]
-      : [
-          const Color(0xFFF6F8E8).withValues(alpha: 0.95),
-          const Color(0xFFE7F4E1).withValues(alpha: 0.95),
-        ];
+      ? [const Color(0xFF1D2D1F).withValues(alpha: 0.85), const Color(0xFF243928).withValues(alpha: 0.85)]
+      : [const Color(0xFFF6F8E8).withValues(alpha: 0.95), const Color(0xFFE7F4E1).withValues(alpha: 0.95)];
 
   // Paleta centralizada de colores para categorías
   List<Color> get categoryColors => const [
@@ -127,18 +77,28 @@ class ThemeProvider extends ChangeNotifier {
     Colors.purple,
     Colors.amber,
     Colors.green,
+    Colors.white,
+    Colors.indigo,
     Colors.deepOrange,
+    Colors.lightBlueAccent,
+    Colors.orangeAccent,
+    Colors.purpleAccent,
     Colors.pink,
     Colors.teal,
-    Colors.indigo,
-    Colors.amber,
+    Colors.indigoAccent,
+    Colors.amberAccent, // testear
+    Colors.redAccent,
     Colors.brown,
-    Colors.blueGrey,
+    Colors.deepOrangeAccent, // testear
     Colors.lime,
+    Colors.white70, // testear
+    Colors.cyan, // testear
   ];
 
-  /// Devuelve el color asignado a una categoría según su posición en la lista.
+  /// Devuelve el color asignado a una categoría según su posición en la lista ('Genérico' siempre es blueGrey).
   Color getCategoryColor(String category, List<String> categories) {
+    if (category == 'Genérico') return Colors.blueGrey;
+
     final index = categories.indexOf(category);
     if (index == -1) return Colors.grey;
 
