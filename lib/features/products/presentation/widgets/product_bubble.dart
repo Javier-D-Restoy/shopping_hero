@@ -73,8 +73,7 @@ class _ProductBubbleState extends State<ProductBubble> {
   @override
   Widget build(BuildContext context) {
     final themeProvider = context.watch<ThemeProvider>();
-    final hasCategoryBorder =
-        widget.productAdd == ProductAdd.active && widget.categoryColor != null;
+    final hasCategoryBorder = widget.productAdd == ProductAdd.active && widget.categoryColor != null;
     final bubble = Material(
       color: Colors.transparent,
       child: InkWell(
@@ -126,34 +125,23 @@ class _ProductBubbleState extends State<ProductBubble> {
                         height: 28,
                         decoration: BoxDecoration(
                           color: Colors.black87,
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(4),
-                            bottomRight: Radius.circular(8),
-                          ),
+                          borderRadius: BorderRadius.only(topLeft: Radius.circular(4), bottomRight: Radius.circular(8)),
                         ),
 
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10),
                           child: Text(
                             '${widget.amount}',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight(500),
-                            ),
+                            style: TextStyle(color: Colors.white, fontWeight: FontWeight(500)),
                           ),
                         ),
                       ),
-                    if (widget.icon != null &&
-                        themeProvider.availableIconsSvg.containsKey(
-                          widget.icon,
-                        )) ...{
+                    if (widget.icon != null && themeProvider.availableIconsSvg.containsKey(widget.icon)) ...{
                       if (widget.amount < 2) Container(),
                       Container(
                         height: 28,
                         decoration: const BoxDecoration(
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: Radius.circular(8),
-                          ),
+                          borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8)),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 5),
@@ -175,10 +163,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                   ],
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 5,
-                    vertical: 1,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   child: Center(
                     child: Stack(
                       children: [
@@ -193,19 +178,11 @@ class _ProductBubbleState extends State<ProductBubble> {
                             fontWeight: FontWeight.bold,
                             foreground: Paint()
                               ..style = PaintingStyle.stroke
-                              ..strokeWidth = 3
+                              ..strokeWidth = 4
                               ..color = Colors.black,
                             shadows: [
-                              Shadow(
-                                color: Colors.black.withValues(alpha: 0.4),
-                                blurRadius: 8,
-                                offset: Offset(0, 0),
-                              ),
-                              Shadow(
-                                color: Colors.black.withValues(alpha: 0.2),
-                                blurRadius: 4,
-                                offset: Offset(0, 0),
-                              ),
+                              Shadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 8, offset: Offset(0, 0)),
+                              Shadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4, offset: Offset(0, 0)),
                             ],
                           ),
                           textAlign: TextAlign.center,
@@ -216,11 +193,7 @@ class _ProductBubbleState extends State<ProductBubble> {
                           minFontSize: 6,
                           stepGranularity: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -249,8 +222,7 @@ class _ProductBubbleState extends State<ProductBubble> {
       tween: Tween(begin: 0, end: 1),
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeIn,
-      builder: (context, opacity, child) =>
-          Opacity(opacity: opacity, child: child),
+      builder: (context, opacity, child) => Opacity(opacity: opacity, child: child),
       child: interactiveBubble,
     );
   }

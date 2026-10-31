@@ -402,7 +402,7 @@ class _ListMainPageState extends State<ListMainPage> {
                 maxHeight: MediaQuery.of(context).size.height,
                 child: Image.asset(
                   _selectedIndex == 0
-                      ? 'assets/images/background/Background_Image_2.png'
+                      ? themeProvider.listMainBackgroundImagePath
                       : _selectedIndex == 1
                       ? 'assets/images/background/Background_Profile_Image_1.png'
                       : 'assets/images/background/Background_Sharing_Image_1.jpg',

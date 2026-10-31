@@ -74,16 +74,7 @@ flutter:
     - assets/images/logos/Logo_ShoppingHero.png
     - assets/images/logos/Logo_ShoppingHero2.png
     - assets/images/logos/Logo_Register.png
-    - assets/images/background/Background_Image_1.jpg
-    - assets/images/background/Background_Image_2.png
-    - assets/images/background/Background_Image_3.jpg
-    - assets/images/background/Background_Image_4.png
-    - assets/images/background/Background_Image_5.png
-    - assets/images/background/Background_Image_6.png
-    - assets/images/background/Background_Config_Image_1.jpg
-    - assets/images/background/Background_Profile_Image_1.png
-    - assets/images/background/Background_Sharing_Image_1.jpg
-    - assets/images/background/Background_Dark_Image_1.jpg
+    - assets/images/background/
     - assets/svg/
 
 flutter_launcher_icons:

@@ -105,9 +105,13 @@ class ThemeProvider extends ChangeNotifier {
     return categoryColors[index % categoryColors.length];
   }
 
-  String get backgroundImagePath => _isDarkMode
+  String get listManagerBackgroundImagePath => _isDarkMode
       ? 'assets/images/background/Background_Dark_Image_1.jpg'
       : 'assets/images/background/Background_Image_1.jpg';
+
+  String get listMainBackgroundImagePath => _isDarkMode
+      ? 'assets/images/background/MainPage_DarkTheme_Background.jpg'
+      : 'assets/images/background/MainPage_LightTheme_Background.jpg';
 
   // Mapa de iconos disponibles
   final Map<String, IconData> availableIcons = {

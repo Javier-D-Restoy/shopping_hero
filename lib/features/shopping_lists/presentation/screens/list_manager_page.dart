@@ -55,14 +55,11 @@ class _ListManagerState extends State<ListManager> {
       return;
     }
 
-    _invitationCountSubscription = context
-        .read<ShoppingProvider>()
-        .watchPendingShareInvitationCount()
-        .listen((count) {
-          if (mounted && count != _pendingNotificationCount) {
-            setState(() => _pendingNotificationCount = count);
-          }
-        }, onError: (_) {});
+    _invitationCountSubscription = context.read<ShoppingProvider>().watchPendingShareInvitationCount().listen((count) {
+      if (mounted && count != _pendingNotificationCount) {
+        setState(() => _pendingNotificationCount = count);
+      }
+    }, onError: (_) {});
   }
 
   @override
@@ -114,13 +111,10 @@ class _ListManagerState extends State<ListManager> {
                       try {
                         if (wasLoggedIn) {
                           await shopping.saveToStorage();
-                          if (shopping.syncStatus !=
-                              ShoppingSyncStatus.synced) {
+                          if (shopping.syncStatus != ShoppingSyncStatus.synced) {
                             messenger?.showSnackBar(
                               const SnackBar(
-                                content: Text(
-                                  'No se pudieron sincronizar tus listas. Sigues dentro de tu cuenta.',
-                                ),
+                                content: Text('No se pudieron sincronizar tus listas. Sigues dentro de tu cuenta.'),
                               ),
                             );
                             return;
@@ -130,12 +124,7 @@ class _ListManagerState extends State<ListManager> {
                         await session.logout();
                         if (session.isLoggedIn) {
                           messenger?.showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                session.errorMessage ??
-                                    'No se pudo cerrar la sesión.',
-                              ),
-                            ),
+                            SnackBar(content: Text(session.errorMessage ?? 'No se pudo cerrar la sesión.')),
                           );
                           return;
                         }
@@ -147,22 +136,13 @@ class _ListManagerState extends State<ListManager> {
 
                         if (!mounted) return;
                         navigator.pushAndRemoveUntil(
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const LoginPage()),
                           (route) => false,
                         );
                       } catch (error) {
                         if (mounted) {
                           messenger?.showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                error.toString().replaceFirst(
-                                  'Exception: ',
-                                  '',
-                                ),
-                              ),
-                            ),
+                            SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
                           );
                         }
                       } finally {
@@ -178,11 +158,7 @@ class _ListManagerState extends State<ListManager> {
           minFontSize: 10,
           stepGranularity: 1,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w500,
-            color: themeProvider.textStrongColor,
-          ),
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500, color: themeProvider.textStrongColor),
         ),
         centerTitle: true,
         actions: [
@@ -196,30 +172,21 @@ class _ListManagerState extends State<ListManager> {
                 clipBehavior: Clip.none,
                 children: [
                   const Center(child: Icon(Icons.more_vert)),
-                  if (sessionProvider.isLoggedIn &&
-                      _pendingNotificationCount > 0)
+                  if (sessionProvider.isLoggedIn && _pendingNotificationCount > 0)
                     Positioned(
                       right: -5,
                       bottom: -4,
                       child: Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
+                        constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                         alignment: Alignment.center,
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         decoration: BoxDecoration(
                           color: Colors.red,
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.surface,
-                            width: 1.5,
-                          ),
+                          border: Border.all(color: Theme.of(context).colorScheme.surface, width: 1.5),
                         ),
                         child: Text(
-                          _pendingNotificationCount > 99
-                              ? '99+'
-                              : '$_pendingNotificationCount',
+                          _pendingNotificationCount > 99 ? '99+' : '$_pendingNotificationCount',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
@@ -244,17 +211,9 @@ class _ListManagerState extends State<ListManager> {
                 case _ListManagerAction.reorder:
                   _showReorderListsDialog(shoppingProvider, themeProvider);
                 case _ListManagerAction.notifications:
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const NotificationsPage(),
-                    ),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationsPage()));
                 case _ListManagerAction.settings:
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ConfigPage()),
-                  );
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => const ConfigPage()));
               }
             },
             itemBuilder: (context) => [
@@ -274,9 +233,7 @@ class _ListManagerState extends State<ListManager> {
                     Text(
                       'Reordenar',
                       style: TextStyle(
-                        color: listNames.length > 1
-                            ? themeProvider.textStrongColor
-                            : Colors.grey,
+                        color: listNames.length > 1 ? themeProvider.textStrongColor : Colors.grey,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -309,25 +266,13 @@ class _ListManagerState extends State<ListManager> {
                       if (_pendingNotificationCount > 0) ...[
                         const SizedBox(width: 8),
                         Container(
-                          constraints: const BoxConstraints(
-                            minWidth: 20,
-                            minHeight: 20,
-                          ),
+                          constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
                           alignment: Alignment.center,
                           padding: const EdgeInsets.symmetric(horizontal: 5),
-                          decoration: const BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
+                          decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
                           child: Text(
-                            _pendingNotificationCount > 99
-                                ? '99+'
-                                : '$_pendingNotificationCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
+                            _pendingNotificationCount > 99 ? '99+' : '$_pendingNotificationCount',
+                            style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
                           ),
                         ),
                       ],
@@ -348,11 +293,7 @@ class _ListManagerState extends State<ListManager> {
                     const SizedBox(width: 8),
                     Text(
                       'Configuración',
-                      style: TextStyle(
-                        color: themeProvider.textStrongColor,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(color: themeProvider.textStrongColor, fontSize: 15, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -366,10 +307,7 @@ class _ListManagerState extends State<ListManager> {
           SizedBox(
             width: screenSize.width,
             height: screenSize.height,
-            child: Image.asset(
-              themeProvider.backgroundImagePath,
-              fit: BoxFit.cover,
-            ),
+            child: Image.asset(themeProvider.listManagerBackgroundImagePath, fit: BoxFit.cover),
           ),
           SafeArea(
             child: RefreshIndicator(
@@ -386,10 +324,7 @@ class _ListManagerState extends State<ListManager> {
                       if (listNames.isEmpty) ...[
                         Container(
                           width: double.infinity,
-                          margin: const EdgeInsets.symmetric(
-                            vertical: 24,
-                            horizontal: 4,
-                          ),
+                          margin: const EdgeInsets.symmetric(vertical: 24, horizontal: 4),
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
@@ -398,10 +333,7 @@ class _ListManagerState extends State<ListManager> {
                               colors: themeProvider.gradientColors,
                             ),
                             borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: themeProvider.borderColor,
-                              width: 1.6,
-                            ),
+                            border: Border.all(color: themeProvider.borderColor, width: 1.6),
                             boxShadow: [
                               BoxShadow(
                                 color: themeProvider.cardShadowColor,
@@ -418,20 +350,13 @@ class _ListManagerState extends State<ListManager> {
                                   color: themeProvider.primaryColor,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(
-                                  Icons.list_alt_rounded,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
+                                child: const Icon(Icons.list_alt_rounded, color: Colors.white, size: 22),
                               ),
                               const SizedBox(height: 12),
                               Text(
                                 'No tienes ninguna lista de la compra.\nPulsa el botón de abajo para crear tu primera lista.',
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  color: themeProvider.textMutedColor,
-                                ),
+                                style: TextStyle(fontSize: 15, color: themeProvider.textMutedColor),
                               ),
                             ],
                           ),
@@ -441,34 +366,22 @@ class _ListManagerState extends State<ListManager> {
                           return ListBubble(
                             isDark: isDark,
                             listName: listName,
-                            productCount: shoppingProvider
-                                .activeProductsForList(listName)
-                                .length,
-                            canManageList: shoppingProvider.canManageList(
-                              listName,
-                            ),
-                            isSharedList: shoppingProvider.isSharedList(
-                              listName,
-                            ),
-                            hasAcceptedCollaborators: shoppingProvider
-                                .hasAcceptedCollaborators(listName),
+                            productCount: shoppingProvider.activeProductsForList(listName).length,
+                            canManageList: shoppingProvider.canManageList(listName),
+                            isSharedList: shoppingProvider.isSharedList(listName),
+                            hasAcceptedCollaborators: shoppingProvider.hasAcceptedCollaborators(listName),
                             onRename: (newName) {
                               shoppingProvider.renameList(listName, newName);
                             },
                             onLeaveShared: () async {
                               try {
-                                await context
-                                    .read<ShoppingProvider>()
-                                    .leaveSharedList(listName);
+                                await context.read<ShoppingProvider>().leaveSharedList(listName);
 
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text(
-                                        'Te has desvinculado de "$listName"',
-                                      ),
-                                      backgroundColor:
-                                          themeProvider.primaryColor,
+                                      content: Text('Te has desvinculado de "$listName"'),
+                                      backgroundColor: themeProvider.primaryColor,
                                     ),
                                   );
                                 }
@@ -479,8 +392,7 @@ class _ListManagerState extends State<ListManager> {
                                       content: Text(
                                         'Error al desvincularse: ${e.toString().replaceAll('Exception: ', '')}',
                                       ),
-                                      backgroundColor:
-                                          themeProvider.dangerColor,
+                                      backgroundColor: themeProvider.dangerColor,
                                     ),
                                   );
                                 }
@@ -498,25 +410,13 @@ class _ListManagerState extends State<ListManager> {
                           },
                           style: FilledButton.styleFrom(
                             backgroundColor: themeProvider.primaryColor,
-                            foregroundColor: isDark
-                                ? Colors.black
-                                : Colors.white,
+                            foregroundColor: isDark ? Colors.black : Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            side: BorderSide(
-                              color: themeProvider.borderColor.withValues(
-                                alpha: 0.3,
-                              ),
-                              width: 2,
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            side: BorderSide(color: themeProvider.borderColor.withValues(alpha: 0.3), width: 2),
                           ),
                           icon: const Icon(Icons.add, size: 19),
-                          label: const Text(
-                            'Crear lista',
-                            style: TextStyle(fontSize: 16),
-                          ),
+                          label: const Text('Crear lista', style: TextStyle(fontSize: 16)),
                         ),
                       ),
                     ],
@@ -526,9 +426,7 @@ class _ListManagerState extends State<ListManager> {
             ),
           ),
           if (_isLoggingOut) ...[
-            const Positioned.fill(
-              child: ModalBarrier(dismissible: false, color: Colors.black26),
-            ),
+            const Positioned.fill(child: ModalBarrier(dismissible: false, color: Colors.black26)),
             const Center(child: CircularProgressIndicator()),
           ],
         ],
@@ -536,10 +434,7 @@ class _ListManagerState extends State<ListManager> {
     );
   }
 
-  Future<void> _showReorderListsDialog(
-    ShoppingProvider shoppingProvider,
-    ThemeProvider themeProvider,
-  ) async {
+  Future<void> _showReorderListsDialog(ShoppingProvider shoppingProvider, ThemeProvider themeProvider) async {
     await showDialog<void>(
       context: context,
       builder: (dialogContext) {
@@ -556,15 +451,9 @@ class _ListManagerState extends State<ListManager> {
                 side: BorderSide(color: themeProvider.borderColor, width: 1.5),
               ),
               titlePadding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 0,
-              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
               title: const Center(
-                child: Text(
-                  'Reordenar listas',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
-                ),
+                child: Text('Reordenar listas', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500)),
               ),
               content: SizedBox(
                 width: double.maxFinite,
@@ -581,24 +470,14 @@ class _ListManagerState extends State<ListManager> {
                           final listName = listNames[index];
                           return ListTile(
                             key: ValueKey(listName),
-                            leading: Text(
-                              '${index + 1}.',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            leading: Text('${index + 1}.', style: const TextStyle(fontWeight: FontWeight.bold)),
                             title: Text(listName),
                             trailing: const Icon(Icons.drag_handle),
                           );
                         },
                       ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('Cerrar'),
-                ),
-              ],
+              actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cerrar'))],
             );
           },
         );
